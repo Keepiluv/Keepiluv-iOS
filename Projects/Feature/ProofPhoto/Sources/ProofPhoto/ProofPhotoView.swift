@@ -76,15 +76,15 @@ public struct ProofPhotoView: View {
             key: "comment-text",
             value: store.commentText
         )
-        // `preview-ready.true` exists when the View is in a state where
-        // the image branch of `photoPreview` will render (i.e. imageData is
-        // populated; decode is assumed to succeed for valid fixtures).
-        // Pass 4 plan §D — distinguishes "imageData set" from a future
-        // state where decode may be deferred or fail.
+        // P4-2: `preview-ready.true` now reflects the **decoded preview
+        // representation** (`store.previewImage != nil`), not merely
+        // `imageData != nil`. Plan §D semantics tightened — distinguishes
+        // "decoded preview prepared and renderable" from "imageData set
+        // but decode failed or pending".
         .perfStateMarker(
             slug: "proof-photo",
             key: "preview-ready",
-            value: store.hasImage ? "true" : "false"
+            value: store.previewImage != nil ? "true" : "false"
         )
         .onAppear {
             store.send(.onAppear)
@@ -144,9 +144,9 @@ private extension ProofPhotoView {
     @ViewBuilder
     var photoPreview: some View {
         Group {
-            if store.hasImage,
-               let imageData = store.imageData,
-               let image = UIImage(data: imageData) {
+            // P4-2: render from pre-decoded `previewImage` instead of
+            // recreating `UIImage(data: imageData)` per body re-eval.
+            if let image = store.previewImage {
                 previewContainer {
                     Image(uiImage: image)
                         .resizable()

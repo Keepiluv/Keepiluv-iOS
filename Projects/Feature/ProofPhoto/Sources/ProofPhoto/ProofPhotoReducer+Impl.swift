@@ -90,6 +90,7 @@ extension ProofPhotoReducer {
                 
             case .returnButtonTapped:
                 state.imageData = nil
+                state.previewImage = nil
                 state.selectedPhotoItem = nil
                 state.isCapturing = false
                 let position: AVCaptureDevice.Position = state.isFront ? .front : .back
@@ -234,6 +235,7 @@ extension ProofPhotoReducer {
             case .binding(\.selectedPhotoItem):
                 guard let selectedPhotoItem = state.selectedPhotoItem else {
                     state.imageData = nil
+                    state.previewImage = nil
                     return .none
                 }
 
@@ -246,10 +248,15 @@ extension ProofPhotoReducer {
 
             case let .galleryPhotoLoaded(imageData):
                 state.imageData = imageData
+                // P4-2: decode once at ingestion. `imageData` remains the
+                // upload source-of-truth; preview branch renders from
+                // `previewImage` so body re-evals never re-decode.
+                state.previewImage = UIImage(data: imageData)
                 return .none
-                
+
             case let .captureCompleted(imageData: imageData):
                 state.imageData = imageData
+                state.previewImage = UIImage(data: imageData)
                 state.isCapturing = false
                 return .none
                 

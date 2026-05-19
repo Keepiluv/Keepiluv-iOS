@@ -28,6 +28,12 @@ public struct ProofPhotoReducer {
         public var scopeText: String = "1x"
         public var captureSession: AVCaptureSession?
         public var imageData: Data?
+        /// P4-2: decoded preview representation prepared once at ingestion.
+        /// Renders the preview branch in `ProofPhotoView` without per-body
+        /// `UIImage(data:)`. `imageData` remains the upload source of truth.
+        /// Auto-derived `Equatable` uses NSObject pointer equality for
+        /// `UIImage?` — stable between ingestions since we set it once.
+        public var previewImage: UIImage?
         public var selectedPhotoItem: PhotosPickerItem?
         public var isFront: Bool = false
         public var isFlashOn: Bool = false
