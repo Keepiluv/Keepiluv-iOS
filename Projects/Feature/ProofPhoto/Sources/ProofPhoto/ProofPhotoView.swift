@@ -76,6 +76,16 @@ public struct ProofPhotoView: View {
             key: "comment-text",
             value: store.commentText
         )
+        // `preview-ready.true` exists when the View is in a state where
+        // the image branch of `photoPreview` will render (i.e. imageData is
+        // populated; decode is assumed to succeed for valid fixtures).
+        // Pass 4 plan §D — distinguishes "imageData set" from a future
+        // state where decode may be deferred or fail.
+        .perfStateMarker(
+            slug: "proof-photo",
+            key: "preview-ready",
+            value: store.hasImage ? "true" : "false"
+        )
         .onAppear {
             store.send(.onAppear)
         }
