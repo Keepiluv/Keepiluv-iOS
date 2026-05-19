@@ -8,6 +8,8 @@
 
 **기본 규칙**: 하나의 파일에는 하나의 주요 타입만 정의합니다.
 
+Interface 모듈도 예외가 아닙니다. Interface 모듈은 public API를 외부에 노출하는 boundary이지만, 이것이 모든 public 타입을 반드시 하나의 `Source.swift` 파일에 모아야 한다는 뜻은 아닙니다.
+
 **목적**:
 - 파일 이름만으로 내용 파악 가능
 - 코드 탐색 및 유지보수 용이
@@ -73,6 +75,19 @@ struct AppRootReducer {
 ```
 
 **이유**: TCA 표준 패턴이며, State/Action/Reducer는 하나의 단위로 이해되어야 함
+
+### 4. Interface 모듈은 public boundary
+
+**Interface 모듈은 외부 소비자가 의존하는 public boundary입니다.**
+
+- public reducer/state/action, client, factory, dependency key 등 외부 조립에 필요한 계약을 노출합니다.
+- Sources 모듈의 View, live 구현, reducer 세부 로직 등 implementation details를 숨깁니다.
+- 소비자는 특별한 예외가 없는 한 implementation Sources가 아니라 Interface 모듈에 의존해야 합니다.
+- 새로 만들거나 크게 수정하는 Interface 모듈은 One Type Per File을 우선 적용합니다.
+- 기존 `Interface/Sources/Source.swift` 파일은 legacy/compatibility 패턴으로 유지할 수 있습니다.
+- 기존 모듈을 수정할 때는 주변 패턴을 따르되, public API가 불명확해지거나 architecture boundary를 약화시키면 One Type Per File로 정리합니다.
+
+이전 문서의 `Interface/Sources/Source.swift` 예시는 “Interface 모듈을 통해 public interface 타입을 노출한다”는 의미였으며, 모든 public 타입을 하나의 파일에 강제한다는 의미가 아닙니다.
 
 ---
 
@@ -315,19 +330,21 @@ Projects/Core/Logging/Sources/
 └── PulseNetworkLogViewProvider.swift
 ```
 
-### 3. Protocol/Implementation 패턴
+### 3. Interface/Implementation 패턴
 
-이미 적용된 Interface/Implementation 분리:
+Interface 모듈은 public boundary, Sources 모듈은 implementation layer입니다. 새로 만들거나 크게 수정하는 Interface 모듈은 One Type Per File을 우선합니다.
 
 ```
 Projects/Core/Network/
 ├── Interface/
 │   └── Sources/
-│       ├── NetworkProviderProtocol.swift  # Protocol 정의
-│       └── NetworkClient.swift            # TCA Client
+│       ├── NetworkProviderProtocol.swift  # public protocol/contract
+│       └── NetworkClient.swift            # public TCA Client
 └── Sources/
     └── NetworkProvider.swift              # 실제 구현
 ```
+
+기존 `Interface/Sources/Source.swift` 파일은 compatibility 목적으로 유지할 수 있지만, 신규 public 타입을 추가할 때는 주변 패턴과 public API 명확성을 함께 고려합니다.
 
 ---
 
@@ -422,8 +439,9 @@ import Foundation
 - [ ] 불필요한 import를 제거했는가?
 
 ### 분리 후
-- [ ] `tuist generate` 성공하는가?
-- [ ] `tuist build` 성공하는가?
+- [ ] 필요한 경우 `tuist generate` 성공하는가?
+- [ ] 빌드 검증이 필요한 경우, 알려진 scheme/destination/configuration으로 검증했는가?
+- [ ] 빌드 명령을 알 수 없는 경우 검증 제한을 보고했는가?
 - [ ] 기존 코드가 정상 작동하는가?
 - [ ] Public API가 변경 없이 작동하는가?
 - [ ] Git status로 의도한 파일만 변경되었는지 확인했는가?

@@ -2,6 +2,15 @@
 
 > 10분 만에 TCA 기본 개념을 이해하고 첫 Feature를 만들어봅시다
 
+이 문서는 TCA와 Feature 구조를 이해하기 위한 **입문용 튜토리얼**입니다. 예제는 설명을 위해 단순화되어 있으므로, production 구현 전에는 canonical docs를 기준으로 검증하세요.
+
+- Architecture / module boundary: [Architecture/Overview.md](./Architecture/Overview.md)
+- Implementation checklist: [Reference/Checklists.md](./Reference/Checklists.md)
+- File organization: [Reference/FileOrganization.md](./Reference/FileOrganization.md)
+- Naming: [Reference/NamingConventions.md](./Reference/NamingConventions.md)
+- Navigation: [Guides/NavigationStack.md](./Guides/NavigationStack.md)
+- Network / client patterns: [Guides/NetworkGuide.md](./Guides/NetworkGuide.md)
+
 ## 📋 목차
 
 1. [TCA 핵심 개념 (5분)](#tca-핵심-개념)
@@ -35,7 +44,7 @@ struct State: Equatable {
 
 **핵심**:
 - 화면에 표시되는 모든 데이터
-- `Equitable` 준수 필수
+- `Equatable` 준수 필수
 - `@ObservableState` 매크로로 SwiftUI 자동 구독
 
 ### 2. Action - 발생 가능한 모든 이벤트
@@ -348,14 +357,16 @@ case .onAppear:
 
 ### 실제 프로젝트에서 Feature 만들기
 
+아래 구조는 개념 설명용 예시입니다. 실제 production 구현에서는 Interface 모듈을 public boundary로 유지하고, 새로 만들거나 크게 수정하는 Interface 모듈은 One Type Per File을 우선합니다. 기존 `Interface/Sources/Source.swift`는 legacy/compatibility 패턴으로 남아 있을 수 있습니다.
+
 ```
 Projects/Feature/Counter/
-├── Interface/Sources/Source.swift       # Public API
-├── Sources/CounterReducer.swift         # 로직 구현
-└── Sources/CounterView.swift            # View (internal)
+├── Interface/Sources/CounterReducer.swift  # Public API 예시
+├── Sources/CounterReducer.swift            # 로직 구현
+└── Sources/CounterView.swift               # View (internal)
 ```
 
-**Interface/Sources/Source.swift**:
+**Interface/Sources/CounterReducer.swift**:
 ```swift
 import ComposableArchitecture
 
@@ -413,18 +424,14 @@ extension CounterReducer {
 ### 📚 더 배우기
 
 1. **아키텍처 이해**
-   - [아키텍처 개요](../Architecture/Overview.md) - 전체 구조
-   - [Reducer 패턴](../Architecture/ReducerPattern.md) - Reducer 심화
-   - [Dependency Injection](../Architecture/DependencyInjection.md) - 의존성 주입
+   - [아키텍처 개요](./Architecture/Overview.md) - 전체 구조와 module boundary
+   - [구현 체크리스트](./Reference/Checklists.md) - production 구현 전 확인 항목
+   - [파일 구조화 규칙](./Reference/FileOrganization.md) - 파일 분리 및 Interface 파일 정책
+   - [네이밍 규칙](./Reference/NamingConventions.md) - Action, File 네이밍
 
 2. **실전 가이드**
-   - [네트워크 통신](./Guides/NetworkGuide.md) - API 호출
+   - [네트워크 통신](./Guides/NetworkGuide.md) - API 호출과 TCA Client 패턴
    - [NavigationStack](./Guides/NavigationStack.md) - 화면 전환
-   - [테스트 작성](./Guides/Testing.md) - Reducer 테스트
-
-3. **예제 분석**
-   - [Auth Feature](./Examples/Auth.md) - 실제 로그인 Feature
-   - [MainTab Feature](./Examples/MainTab.md) - 탭 구조
 
 ### 🛠️ 직접 해보기
 

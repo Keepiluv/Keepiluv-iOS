@@ -1,8 +1,16 @@
 // MARK: - NavigationStack 패턴 완전한 예제
 // 이 파일은 학습용 예제입니다. 실제 프로젝트에서는 Feature 모듈로 분리하세요.
+// 프로젝트 canonical [Route] 배열 NavigationStack 패턴을 따릅니다.
 
 import ComposableArchitecture
 import SwiftUI
+
+// MARK: - Route
+
+enum HomeRoute: Hashable {
+    case detail
+    case settings
+}
 
 // MARK: - 1️⃣ Home Feature (Root)
 
@@ -11,57 +19,69 @@ struct HomeReducer {
     @ObservableState
     struct State: Equatable {
         var items: [Item] = Item.samples
-        var path = StackState<Path.State>()  // ✨ NavigationStack!
+        var routes: [HomeRoute] = []
+        var detail: DetailReducer.State?
+        var settings: SettingsReducer.State?
 
-        // Stack에 들어갈 수 있는 화면들을 Enum으로 정의
-        @CasePathable
-        enum Path: Equatable {
-            case detail(DetailReducer.State)
-            case settings(SettingsReducer.State)
+        mutating func syncChildStatesWithRoutes() {
+            if !routes.contains(.detail) {
+                detail = nil
+            }
+            if !routes.contains(.settings) {
+                settings = nil
+            }
         }
     }
 
-    enum Action {
-        case itemTapped(Item)          // 항목 클릭
-        case settingsButtonTapped      // 설정 버튼 클릭
-        case path(StackActionOf<Path>) // ✨ Stack 액션 (자식 Reducer들의 액션 포함)
-
-        @CasePathable
-        enum Path {
-            case detail(DetailReducer.Action)
-            case settings(SettingsReducer.Action)
-        }
+    enum Action: BindableAction {
+        case binding(BindingAction<State>)
+        case itemTapped(Item)
+        case settingsButtonTapped
+        case detail(DetailReducer.Action)
+        case settings(SettingsReducer.Action)
     }
 
     var body: some ReducerOf<Self> {
+        BindingReducer()
+
         Reduce { state, action in
             switch action {
+            case .binding:
+                // System back/pop mutates NavigationStack(path:) directly.
+                // Keep optional child states in sync with the remaining routes.
+                state.syncChildStatesWithRoutes()
+                return .none
+
             case .itemTapped(let item):
-                // ✨ Push: Stack에 Detail 화면 추가
-                state.path.append(.detail(DetailReducer.State(item: item)))
+                state.detail = DetailReducer.State(item: item)
+                state.routes.append(.detail)
                 return .none
 
             case .settingsButtonTapped:
-                // ✨ Push: Stack에 Settings 화면 추가
-                state.path.append(.settings(SettingsReducer.State()))
+                state.settings = SettingsReducer.State()
+                state.routes.append(.settings)
                 return .none
 
-            case .path(.element(id: _, action: .detail(.settingsButtonTapped))):
-                // Detail 화면에서 설정 버튼 클릭 → Settings 추가
-                state.path.append(.settings(SettingsReducer.State()))
+            case .detail(.settingsButtonTapped):
+                state.settings = SettingsReducer.State()
+                state.routes.append(.settings)
                 return .none
 
-            case .path(.element(id: _, action: .settings(.delegate(.logoutRequested)))):
-                // Settings에서 로그아웃 요청 → 모든 Stack Pop
-                state.path.removeAll()
+            case .settings(.delegate(.logoutRequested)):
+                state.routes.removeAll()
+                state.syncChildStatesWithRoutes()
                 return .none
 
-            case .path:
+            case .detail, .settings:
                 return .none
             }
         }
-        // ✨ forEach: Stack의 각 화면을 해당 Reducer와 연결
-        .forEach(\.path, action: \.path)
+        .ifLet(\.detail, action: \.detail) {
+            DetailReducer()
+        }
+        .ifLet(\.settings, action: \.settings) {
+            SettingsReducer()
+        }
     }
 }
 
@@ -69,7 +89,7 @@ struct HomeView: View {
     @Bindable var store: StoreOf<HomeReducer>
 
     var body: some View {
-        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
+        NavigationStack(path: $store.routes) {
             List {
                 ForEach(store.items) { item in
                     Button {
@@ -92,14 +112,24 @@ struct HomeView: View {
                     Image(systemName: "gearshape")
                 }
             }
-        } destination: { store in
-            // ✨ Stack의 각 케이스에 따라 View 렌더링
-            switch store.case {
-            case .detail(let detailStore):
-                DetailView(store: detailStore)
+            .navigationDestination(for: HomeRoute.self) { route in
+                switch route {
+                case .detail:
+                    if let detailStore = store.scope(
+                        state: \.detail,
+                        action: \.detail
+                    ) {
+                        DetailView(store: detailStore)
+                    }
 
-            case .settings(let settingsStore):
-                SettingsView(store: settingsStore)
+                case .settings:
+                    if let settingsStore = store.scope(
+                        state: \.settings,
+                        action: \.settings
+                    ) {
+                        SettingsView(store: settingsStore)
+                    }
+                }
             }
         }
     }
@@ -133,7 +163,7 @@ struct DetailReducer {
                 }
 
             case .settingsButtonTapped:
-                // Parent가 처리 (HomeReducer에서 .path 액션으로 받음)
+                // Parent가 처리 (HomeReducer에서 child action으로 받음)
                 return .none
 
             case .detailsResponse(let details):

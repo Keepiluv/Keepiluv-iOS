@@ -21,11 +21,19 @@
 ### URLSession → TCA Client 변환 과정
 
 ```
-1. Interface에 Client Protocol 정의
-2. Sources에 URLSession 기반 구현
+1. Interface에 struct-based TCA Client 계약 정의
+2. Sources에 URLSession/NetworkProvider 기반 live 구현
 3. Reducer에서 @Dependency로 주입
 4. Effect로 비동기 호출
 ```
+
+Feature dependency는 **struct-based TCA Client**를 기본으로 사용합니다. 새 Feature Client마다 protocol을 만들지 않습니다.
+
+Protocol-based client/abstraction은 다음 경우에만 사용합니다.
+- 기존 Core protocol이 이미 존재하는 경우
+- 플랫폼 abstraction에 protocol이 필요한 경우
+- legacy integration이 protocol을 요구하는 경우
+- 명시적인 문서/요구사항이 protocol을 요구하는 경우
 
 ### 왜 Client로 래핑하나?
 
@@ -39,6 +47,8 @@
 ---
 
 ## 현재 프로젝트 구조
+
+아래 `NetworkProviderProtocol`, `Endpoint`는 Core Network의 infrastructure-level protocol입니다. 이는 Feature별 dependency도 protocol로 만들어야 한다는 뜻이 아닙니다. Feature Reducer가 주입받는 dependency는 일반적으로 struct-based TCA Client입니다.
 
 ```
 Projects/Core/Network/
@@ -114,8 +124,10 @@ extension NetworkError {
 
 ### 전체 구현 예시
 
+Feature dependency는 아래처럼 `struct`로 정의합니다. 같은 책임의 protocol을 추가로 만들지 않습니다.
+
 ```swift
-// 1️⃣ Interface에 Client 정의
+// 1️⃣ Interface에 struct-based TCA Client 정의
 public struct PostsClient {
     public var fetchPosts: @Sendable () async throws -> [Post]
     public var fetchPost: @Sendable (_ id: Int) async throws -> Post
@@ -818,6 +830,10 @@ case .incrementRetryCount:
 
 ## 고급: NetworkProvider를 Dependency로 주입
 
+이 섹션은 Core Network infrastructure를 TCA Dependency로 감싸는 고급 패턴입니다. 기존 `NetworkProviderProtocol` 같은 infrastructure-level protocol을 보존하는 경우에 사용합니다.
+
+일반적인 Feature dependency는 여전히 struct-based TCA Client를 우선합니다. 새 Feature Client마다 protocol을 만들기 위한 패턴으로 사용하지 않습니다.
+
 NetworkProvider 자체도 Dependency로 주입하여 테스트 시 Mock으로 교체 가능합니다.
 
 ### 1. NetworkProvider를 Dependency로 등록
@@ -923,6 +939,7 @@ func testFetchPosts() async throws {
 
 - [ ] Endpoint 정의 (baseURL, path, method, headers 등)
 - [ ] Client struct 정의 (Interface)
+- [ ] 새 protocol을 만들지 않았는지 확인 (기존 Core/platform/legacy boundary가 필요한 경우 제외)
 - [ ] TestDependencyKey 구현 (assertionFailure)
 - [ ] Live Implementation (NetworkProvider 사용)
 - [ ] Mock Implementation (Preview/테스트용)
@@ -1269,17 +1286,41 @@ struct PostsListView: View {
 
 ### 핵심 포인트
 
-1. **Client 패턴** - 3가지 구현 (live, test, mock)으로 유연성 확보
-2. **Effect 사용** - `.run { send in ... }` 패턴으로 비동기 처리
-3. **에러 처리** - Result 타입으로 성공/실패 분기
-4. **Mock 주입** - `withDependencies`로 Preview 및 테스트에서 Mock 사용
-5. **취소 가능** - `.cancellable(id:)`로 중복 요청 방지
+1. **Struct-based TCA Client** - Feature dependency의 기본 형태
+2. **Client 패턴** - 3가지 구현 (live, test, mock)으로 유연성 확보
+3. **Infrastructure protocol 보존** - 기존 Core/platform/legacy boundary가 있을 때만 protocol 사용
+4. **Effect 사용** - `.run { send in ... }` 패턴으로 비동기 처리
+5. **에러 처리** - Result 타입으로 성공/실패 분기
+6. **Mock 주입** - `withDependencies`로 Preview 및 테스트에서 Mock 사용
+7. **취소 가능** - `.cancellable(id:)`로 중복 요청 방지
+
+## 인증 토큰 처리
+
+Authorization header가 필요한 요청은 token storage나 Keychain을 직접 읽지 않습니다.
+
+현재 승인된 패턴:
+
+- `TokenManager`: `Projects/Domain/Auth/Interface/Sources/TokenManager.swift`
+- `AuthInterceptor`: `Projects/Domain/Auth/Sources/AuthInterceptor.swift`
+- `AuthInterceptor`는 `TokenManager`에서 access token을 읽고, refresh flow는 `AuthClient.refreshToken` 경로로 위임합니다.
+- App/root wiring은 `Projects/App/Sources/View/TwixApp.swift`에서 live token storage dependency를 설정합니다.
+
+금지:
+
+- Feature Client나 Network request code에서 `@Dependency(\.tokenStorage)` 직접 사용
+- `TokenStorageClient`, `TokenStorageProtocol`, `KeychainTokenStorage`, Keychain, UserDefaults를 Authorization header 생성을 위해 직접 읽기
+- Feature Client마다 token refresh logic을 중복 구현
+- owner 승인 없이 새로운 token/header path 도입
+
+직접 TokenStorage 사용은 `TokenManager` 내부, Core Storage interface/implementation, App/root dependency wiring, tests/mocks로 제한합니다. 인증 인프라를 추가해야 한다면 `TokenStorage`가 아니라 `TokenManager`에 의존하도록 설계합니다.
+
+---
 
 ### 다음 단계
 
 - [ ] 실제 프로젝트에 API Client 구현
 - [ ] 여러 Endpoint 추가
-- [ ] 인증 토큰 처리 (Authorization Header)
+- [ ] 인증 토큰 처리는 `TokenManager` + `AuthInterceptor` 패턴 확인
 - [ ] 캐싱 전략 구현
 - [ ] 오프라인 대응
 

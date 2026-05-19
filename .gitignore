@@ -177,3 +177,6 @@ Network Trash Folder
 Temporary Items
 .apdisk
 src/SupportingFiles/Booket/GoogleService-Info.plist
+
+# Temporary files AI agent uses
+.agent/handoff

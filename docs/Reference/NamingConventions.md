@@ -72,7 +72,7 @@ public enum Action: BindableAction {
     case delegate(Delegate)
 
     // MARK: - Navigation (Coordinator에서 사용)
-    case path(StackActionOf<Path>)
+    case routeChanged([FeatureRoute])
 }
 ```
 
@@ -82,7 +82,7 @@ public enum Action: BindableAction {
 - **User Action**: 사용자 인터랙션 (`~Tapped`, `~Changed`, `~Selected`)
 - **Update State**: 상태 업데이트 응답 (`~Completed`, `~Dismissed`)
 - **Delegate**: 부모에게 전달하는 이벤트
-- **Navigation**: Coordinator의 path 액션 (필요시)
+- **Navigation**: Coordinator의 route/path 변경 액션 (필요시). 이 프로젝트는 `[Route]` 배열 기반 NavigationStack 패턴을 사용합니다.
 - **Child Action**: 자식 Reducer 액션 (필요시)
 
 ### Delegate: `delegate(<결과>)`
@@ -112,8 +112,16 @@ case notificationReceived(Notification)
 
 ### Interface 모듈
 
+Interface 모듈은 외부 소비자가 의존하는 public boundary입니다. 이전 `Source.swift` 예시는 public interface 타입을 Interface 모듈을 통해 노출한다는 의미였으며, 모든 public 타입을 하나의 파일에 강제한다는 의미가 아닙니다.
+
+새로 만들거나 크게 수정하는 Interface 모듈은 One Type Per File을 우선합니다. 기존 `Interface/Sources/Source.swift` 파일은 legacy/compatibility 패턴으로 유지할 수 있습니다.
+
 ```
-Interface/Sources/Source.swift           # 모든 public 타입 정의 (하나의 파일)
+Interface/Sources/{Feature}Reducer.swift     # public Reducer / State / Action
+Interface/Sources/{Feature}Factory.swift     # public ViewFactory 또는 factory
+Interface/Sources/{Domain}Client.swift       # public TCA Client
+Interface/Sources/{Feature}Route.swift       # public Route enum (필요 시)
+Interface/Sources/Source.swift               # 기존 compatibility/re-export 파일 (필요 시)
 ```
 
 ### Sources 모듈
@@ -138,6 +146,21 @@ Example/Sources/{Feature}App.swift       # 독립 실행 앱
 ```
 Testing/Sources/Mock{Feature}Client.swift  # Mock Client
 Testing/Sources/{Feature}Fixtures.swift    # Test Fixtures
+```
+
+---
+
+## 코드 스타일
+
+메서드의 매개변수가 2개 이상일 때는 개행하여 가독성을 높입니다.
+
+```swift
+public func example(
+    a: Int,
+    b: Int
+) -> ReturnType {
+    // ...
+}
 ```
 
 ---
