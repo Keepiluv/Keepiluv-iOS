@@ -57,6 +57,18 @@ public enum UITestMode {
         arguments.contains("-UITEST_SWIFTUI_SELF_RUN_FEED_SCROLL")
     }
 
+    /// Pass 4-S3 — Stats feed self-running scroll. Analogous to
+    /// `isSwiftUISelfRunFeedScroll` (Pass 4-S2) but for the Stats
+    /// `StatsCardView` LazyVStack under the `stats-heavy` seed. When set,
+    /// `StatsView.cardList` wraps its `ScrollView` in a `ScrollViewReader`
+    /// and a Task drives `proxy.scrollTo(...)` across a stride of stats
+    /// item `goalId`s so SwiftUI Template launch-mode can capture
+    /// interactive scroll attribution for the Stats list. Example/perf-only;
+    /// production code must not branch on this.
+    public static var isSwiftUISelfRunStatsScroll: Bool {
+        arguments.contains("-UITEST_SWIFTUI_SELF_RUN_STATS_SCROLL")
+    }
+
     public static func configureApplication() {
         guard isEnabled, disablesAnimations else { return }
         UIView.setAnimationsEnabled(false)
