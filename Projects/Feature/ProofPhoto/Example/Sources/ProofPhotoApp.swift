@@ -121,6 +121,11 @@ private struct ExampleHost: View {
 
     @State private var ingestedSource: String = "none"
     @State private var reselectCount: Int = 0
+    /// Pass 4-S retry — flips to `"true"` once the launch-mode self-run typing
+    /// sequence has dispatched all 5 `.commentTextChanged` actions. Used as a
+    /// SwiftUI Template trace marker so trace analysis can isolate the
+    /// self-run window. Example/perf-only.
+    @State private var swiftUISelfRunDone: String = "false"
 
     var body: some View {
         ProofPhotoView(store: store)
@@ -136,8 +141,18 @@ private struct ExampleHost: View {
                 key: "reselect",
                 value: "\(reselectCount)"
             )
+            .perfStateMarker(
+                slug: "proof-photo",
+                key: "swiftui-selfrun",
+                value: swiftUISelfRunDone
+            )
             .overlay(alignment: .top) { reselectTestHarness }
-            .onAppear { performInitialIngestion() }
+            .onAppear {
+                performInitialIngestion()
+                if UITestMode.isEnabled, UITestMode.isSwiftUISelfRunTyping {
+                    performSwiftUISelfRunTyping()
+                }
+            }
             .onChange(of: store.imageData) { oldValue, newValue in
                 if oldValue != nil, newValue != nil {
                     reselectCount += 1
@@ -157,6 +172,34 @@ private struct ExampleHost: View {
         let data = fixture.data()
         store.send(.galleryPhotoLoaded(imageData: data))
         ingestedSource = fixture.source
+    }
+
+    /// Pass 4-S retry — feasibility experiment.
+    ///
+    /// SwiftUI Template attach-mode produces 0 rows on this device/OS, so an
+    /// XCUITest-driven typing scenario cannot be attributed at the SwiftUI
+    /// layer. This self-run mode dispatches the same `.commentTextChanged`
+    /// action that the production `TXCommentCircle` `TextField` binding
+    /// emits, with realistic 150 ms inter-keystroke pacing. It does not fake
+    /// preview/image state, does not bypass the reducer, and does not use
+    /// any private API.
+    ///
+    /// Result is state-driven self-run: same reducer pathway, no real
+    /// keyboard or focus event. Treat captured SwiftUI rows as evidence of
+    /// state-mutation-driven invalidation, NOT as proof that the production
+    /// typing path's full cost is reproduced.
+    private func performSwiftUISelfRunTyping() {
+        let preRunDelayNanos: UInt64 = 1_000_000_000
+        let keystrokeIntervalNanos: UInt64 = 150_000_000
+        let keystrokes = ["a", "ab", "abc", "abcd", "abcde"]
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: preRunDelayNanos)
+            for text in keystrokes {
+                store.send(.commentTextChanged(text))
+                try? await Task.sleep(nanoseconds: keystrokeIntervalNanos)
+            }
+            swiftUISelfRunDone = "true"
+        }
     }
 
     /// Hidden test-only harness. Exposes a tappable Color.clear region with

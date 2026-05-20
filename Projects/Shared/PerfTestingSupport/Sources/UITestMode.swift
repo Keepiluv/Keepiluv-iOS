@@ -36,6 +36,17 @@ public enum UITestMode {
         arguments.contains("-UITEST_WAIT_READY")
     }
 
+    /// Pass 4-S retry — SwiftUI Template self-run feasibility flag.
+    /// When set, Example apps may dispatch reducer/binding actions from inside
+    /// `launch-mode` to mimic interaction (e.g. comment typing) so that
+    /// `xcrun xctrace --template SwiftUI --launch` can capture interactive
+    /// SwiftUI rows without needing an XCUITest driver (attach-mode produces
+    /// 0 rows on this device/OS). Example-only; production code must not branch
+    /// on this.
+    public static var isSwiftUISelfRunTyping: Bool {
+        arguments.contains("-UITEST_SWIFTUI_SELF_RUN_TYPING")
+    }
+
     public static func configureApplication() {
         guard isEnabled, disablesAnimations else { return }
         UIView.setAnimationsEnabled(false)
