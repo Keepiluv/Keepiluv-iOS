@@ -127,9 +127,9 @@ None of these are proposed. H-C5-a's REVERT does NOT mean C5 is permanently clos
 
 ## 8. Plan §11 approval-protocol step 4 — REVERT verdict
 
-User pre-approved revert-on-failure: "H-C5-a가 실패하면 revert하고 결과 문서화한다." Proceeding with `git revert 405dc38` as part of this verdict doc's commit sequence:
+User pre-approved revert-on-failure: "H-C5-a가 실패하면 revert하고 결과 문서화한다." Executed:
 
-1. Commit this result doc.
-2. `git revert 405dc38` to restore `StatsCardCompletionCell.swift` to baseline.
-3. Smoke-test the reverted state.
-4. Update Pass 4-S3 result doc / closeout to reflect the gate-and-revert outcome.
+1. ✅ Commit this result doc → `9a0351d docs(perf): record Pass 4-S3 H-C5-a after-gate REVERT verdict`.
+2. ✅ `git revert 405dc38` → `73f4a00 Revert "perf(stats): replace stamp grid LazyVGrid with eager VStack rows"`. `StatsCardCompletionCell.swift` restored to baseline (LazyVGrid form).
+3. ✅ Smoke-test the reverted state → `xcodebuild test-without-building -scheme FeatureStatsExample -configuration PerfProfile -destination 'iOS Simulator, iPhone 16 Pro Max'` → **TEST EXECUTE SUCCEEDED** (247 s, all suites pass). Baseline production behavior confirmed intact.
+4. Pass 4-S3 closeout TBD per user direction.
