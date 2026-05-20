@@ -1,7 +1,7 @@
 # Pass 4 — Rendering Optimization (final)
 
 - **작성일**: 2026-05-20 (final: Pass 4-S3 closeout 시점)
-- **Baseline tag**: `pass4-rendering-before` = `6fe027c`
+- **Baseline tag**: `pass4-rendering-before` = `cd989de`
 - **Authoritative metric**: Xcode Instruments / xctrace (Time Profiler + Animation Hitches), iOS 26.4.2 device (Jiyong의 iPhone, UDID `00008110-00096DC42632801E`), **PerfProfile** configuration
 - **Probe metric (보조)**: XCTest XCUI driver — driver/marker sanity 신호 (개선 evidence 아님)
 
@@ -15,12 +15,12 @@
 
 | sub-track | 결과 | production commit | 핵심 수치 |
 |---|---|---|---|
-| Pass 4 ProofPhoto image pipeline (P4-2) | **KEEP** | `bb33235` | typing-large total stall `0.82s → 0.53s` (-35%), longest hang `233ms → 114ms` (-51%), TP ImageIO/JPEG decode top-frame **3/3 reps 제거** |
+| Pass 4 ProofPhoto image pipeline (P4-2) | **KEEP** | `4cfabd0` | typing-large total stall `0.82s → 0.53s` (-35%), longest hang `233ms → 114ms` (-51%), TP ImageIO/JPEG decode top-frame **3/3 reps 제거** |
 | Pass 4 ProofPhoto P4-3 (downsample) | **SKIP** | — | P4-2 적용 후 ImageIO frame이 typing TP에서 0/3로 사라짐. 남은 stall은 keyboard-side UIKit |
 | Pass 4 ProofPhoto P4-4 (subtree isolation) | **SKIP** | — | image subtree re-render 문제가 P4-2로 해결됨 |
 | Pass 4-S App-wide SwiftUI Template Audit (idle scenarios) | **closed — inventory only** | (no production commit) | launch-mode tooling validated; attach-mode 0-row limitation confirmed; 21 idle traces + 8-candidate inventory; C3 (TXCalendarDateCell) + C4 (GoalDetailView) SKIPPED on idle gates |
-| Pass 4-S2 Home self-run scroll (H-C2-a) | **KEEP** | `d3f66be` | swiftui-updates -41%, GoalCardView.body events -94%, Animation Hitches `0/2/4 → 0/0/0` (-100%), 133.34 ms severe hitch eliminated, "37 offscreen passes" narrative eliminated, 8/8 UITests pass |
-| Pass 4-S3 Stats self-run scroll (H-C5-a) | **REVERT** | `405dc38` (reverted by `73f4a00`) | swiftui-updates -15% (KEEP target ≥30% missed); Animation Hitches `4/1/2 → 3/4/4` (+60%, REVERT trigger); "Potentially expensive app update(s)" narrative reproducibility unchanged 3/3 |
+| Pass 4-S2 Home self-run scroll (H-C2-a) | **KEEP** | `0c0da63` | swiftui-updates -41%, GoalCardView.body events -94%, Animation Hitches `0/2/4 → 0/0/0` (-100%), 133.34 ms severe hitch eliminated, "37 offscreen passes" narrative eliminated, 8/8 UITests pass |
+| Pass 4-S3 Stats self-run scroll (H-C5-a) | **REVERT** | `da2278e` (reverted by `aa4a160`) | swiftui-updates -15% (KEEP target ≥30% missed); Animation Hitches `4/1/2 → 3/4/4` (+60%, REVERT trigger); "Potentially expensive app update(s)" narrative reproducibility unchanged 3/3 |
 
 ### 1.2 Methodology validation
 
@@ -88,7 +88,7 @@ Pass 4 large fixture는 4032×3024 / 7.46 MiB JPEG로, Pass 3 ProofPhoto baselin
 
 ## 3. Measurement infrastructure (Pass 4 변경분만)
 
-### 3.1 P4-0 commit (`6fe027c`)
+### 3.1 P4-0 commit (`cd989de`)
 
 - **Bundled fixtures** (`Projects/Feature/ProofPhoto/Example/Resources/`):
   - `proof-photo-prefilled-large.jpg` — 7,826,161 bytes (7.46 MiB), SHA-256 `e7a11b…`
@@ -142,7 +142,7 @@ Window: **30s** for both templates (decision: dry-run showed all scenarios ≤20
 
 ---
 
-## 4. Pass 4 baseline (`pass4-rendering-before` = `6fe027c`)
+## 4. Pass 4 baseline (`pass4-rendering-before` = `cd989de`)
 
 ### 4.1 Collection results
 
@@ -220,7 +220,7 @@ Pass 3 참고치: ±10.4% rep-to-rep on total trace time. Pass 4의 stall 기반
 
 ---
 
-## 5. P4-2 — preview decode out of body (KEEP, `bb33235`)
+## 5. P4-2 — preview decode out of body (KEEP, `4cfabd0`)
 
 ### 5.1 Hypothesis & change
 
@@ -391,14 +391,14 @@ After-trace 결과 잔존 hot path는 **image pipeline 영역이 아니라 frame
 Pass 4 진행 중 SwiftUI Template 검증을 ProofPhoto P4-2/P4-3/P4-4의 entry gate처럼 다뤘는데 이는 잘못된 분류였다. SwiftUI Template은 ProofPhoto-specific optimization step이 아니라 **App-wide candidate-discovery layer**다.
 
 **Final outcome** (Pass 4-S / S2 / S3 종합):
-- **Launch-mode validated** (Pass 4-S retry, commit `d35efec`): `xcrun xctrace --template SwiftUI --launch -- <bundle-id>` + UITest args가 self-loading 시나리오에 대해 `swiftui-updates` / `swiftui-causes` / `swiftui-changes` / `swiftui-update-groups`를 실제로 채운다. 2/2 reps reproducible. Target attribution은 launched feature app process.
+- **Launch-mode validated** (Pass 4-S retry, commit `79b6393`): `xcrun xctrace --template SwiftUI --launch -- <bundle-id>` + UITest args가 self-loading 시나리오에 대해 `swiftui-updates` / `swiftui-causes` / `swiftui-changes` / `swiftui-update-groups`를 실제로 채운다. 2/2 reps reproducible. Target attribution은 launched feature app process.
 - **Self-run path validated** (Pass 4-S2, S3): launch-mode 내부에서 reducer action 또는 public SwiftUI API (`ScrollViewProxy.scrollTo`)로 self-run interaction을 실행하면 interactive scroll/typing의 SwiftUI rows를 capture할 수 있다. 이는 XCUITest attach-mode가 0 rows를 반환하는 한계의 우회로다.
 - **Attach-mode 0-row limitation re-confirmed** (Pass 4-S audit, Pass 4-S retry, current device/OS): XCUITest driver가 app을 띄운 뒤 `xctrace --attach`하면 SwiftUI tables의 schema는 보이나 rows는 모두 0. Pass 3 finding을 Xcode 26.0 / iOS 26.4.2에서 재현. Driver-required interaction은 SwiftUI Template attribution 대상이 아니다.
 - **Authoritative evidence remains Time Profiler + Animation Hitches.** SwiftUI Template counts alone never justify a production change. 본 Pass에서 양방향으로 검증됨:
   - **Positive (Pass 4-S2 H-C2-a, KEPT)**: SwiftUI 신호 -41%, TP `GoalCardView.body.getter` 2/3 reps에서 top-10 제거, Hitches `0/2/4 → 0/0/0`. 모든 layer corroborated → production-valid.
   - **Negative (Pass 4-S3 H-C5-a, REVERTED)**: SwiftUI `LazySubviewPlacements<LazyVGridLayout>` events `0`까지 떨어졌으나 (mechanism worked), Hitches count는 오히려 `2.3 → 3.67` 상승 (+60%) AND "Potentially expensive app update(s)" narrative reproducibility는 `3/3` 그대로 유지. 즉 **moved counts but not real cost** → revert.
 
-이 contract — "SwiftUI Template counts → candidate discovery only; TP + Animation Hitches → authoritative" — 는 Pass 4-S2 closeout (`d015879`)에 명시되어 있고, Pass 4-S3가 negative example로 검증했다.
+이 contract — "SwiftUI Template counts → candidate discovery only; TP + Animation Hitches → authoritative" — 는 Pass 4-S2 closeout (`b6297f0`)에 명시되어 있고, Pass 4-S3가 negative example로 검증했다.
 
 §8에서 sub-track별 상세 결과 기재.
 
@@ -411,12 +411,12 @@ Pass 4 진행 중 SwiftUI Template 검증을 ProofPhoto P4-2/P4-3/P4-4의 entry 
 **Outcome**: launch-mode tooling validated; attach-mode 0-row limitation confirmed; 21 launch-mode idle traces collected across 7 scenarios; 8-candidate inventory produced. Idle gates: C3 (TXCalendarDateCell) and C4 (GoalDetailView) **SKIPPED** at TP+Hitches gate — both below noise floor on idle scenarios.
 
 Key commits:
-- `e6274bd docs(perf): record Pass 4-S SwiftUI Template app-wide audit`
-- `e1ee57b docs(perf): record Pass 4-S C3 TXCalendarDateCell gate and skip`
-- `c488fe3 docs(perf): record Pass 4-S C4 GoalDetailView gate, skip, and closeout`
+- `fb83216 docs: SwiftUI Template 앱 전역 감사 기록 - #310`
+- `8f17d45 docs: TXCalendarDateCell 측정 결과 정리 - #310`
+- `b7a791f docs: GoalDetailView 측정 결과 정리 - #310`
 
 Self-run feasibility extension:
-- `d35efec perf(infra): validate SwiftUI Template self-run interaction capture` — Pass 4-S retry, ProofPhoto state-driven self-run via reducer actions. Validated the methodology that Pass 4-S2 / S3 then used.
+- `79b6393 test: SwiftUI Template 셀프런 입력 하네스 검증 - #310` — Pass 4-S retry, ProofPhoto state-driven self-run via reducer actions. Validated the methodology that Pass 4-S2 / S3 then used.
 
 Result doc: `pass4-s-swiftui-template-audit.md`, `pass4-s-c3-txcalendardatecell.md`, `pass4-s-c4-goaldetailview.md`, `pass4-s-closeout.md`, `pass4-s-selfrun-swiftui-template-feasibility.md`.
 
@@ -440,7 +440,7 @@ Headline numbers (3 reps mean, before vs after):
 
 Root-cause fix (single file): replaced shared `outsideBorder(...)` modifier usage in GoalCardView with local `.background { RoundedRectangle.stroke(lineWidth * 2) }`. The shared modifier's `overlay(shape.stroke.overlay(self))` re-renders the entire subtree under the stroke layer; the local replacement avoids the duplicated composition while preserving identical visible outside border.
 
-Key commits: `b325943` (harness + before-gate), `d3f66be` (production fix), `68e2cb9` (after-gate KEEP), `d015879` (closeout).
+Key commits: `fde7d41` (harness + before-gate), `0c0da63` (production fix), `bf15856` (after-gate KEEP), `b6297f0` (closeout).
 Result doc: `pass4-s2-home-selfrun-scroll-result.md`, `pass4-s2-h-c2-a-comparison.md`, `pass4-s2-closeout.md`.
 
 ### 8.3 Pass 4-S3 — Stats self-running scroll (gate-and-revert)
@@ -457,11 +457,11 @@ Investigation steps:
   - Animation Hitches count: `4/1/2 → 3/4/4` (+60 % per rep mean, REVERT criterion triggered).
   - "Potentially expensive app update(s)" narrative reproducibility unchanged at 3/3.
   - TP framework self-time ~unchanged; cost moved from `LazyVGridLayout` (SwiftUI-visible) to `Layout.makeDynamicView` + `_VStackLayout` / `_HStackLayout` (TP-framework-visible).
-- Production commit `405dc38` reverted by `73f4a00`. Post-revert smoke `FeatureStatsExampleUITests` TEST EXECUTE SUCCEEDED.
+- Production commit `da2278e` reverted by `aa4a160`. Post-revert smoke `FeatureStatsExampleUITests` TEST EXECUTE SUCCEEDED.
 
 **Interpretation**: The "single inner container swap" hypothesis class is exhausted. The real cost concentration is at the cell-composition level (every visible cell re-composes its full subtree on materialization), not at the inner-container level. C5 status: **deferred with gate-and-revert outcome** — not permanently closed; larger-scope hypothesis classes (Equatable on StatsCardView / cell-content reduction / cell-pool / cell-snapshot caching) remain available but require fresh plan + explicit user approval.
 
-Key commits: `55047c2` (plan), `a4a14c5` (harness, kept), `28adce3` (ablation attribution + DEFER), `c842d7e` (H-C5-a plan), `405dc38` (H-C5-a production attempt, **reverted**), `9a0351d` (after-gate REVERT verdict), `73f4a00` (revert), `88ae481` (revert + smoke confirmation), `d3e1bf9` (closeout).
+Key commits: `16330c4` (plan), `caa26be` (harness, kept), `687901c` (ablation attribution + DEFER), `3026b03` (H-C5-a plan), `da2278e` (H-C5-a production attempt, **reverted**), `ac1f73c` (after-gate REVERT verdict), `aa4a160` (revert), `21c734d` (revert + smoke confirmation), `7873646` (closeout).
 Result doc: `pass4-s3-stats-selfrun-scroll-plan.md`, `pass4-s3-stats-selfrun-scroll-result.md`, `pass4-s3-h-c5-a-plan.md`, `pass4-s3-h-c5-a-after-gate.md`, `pass4-s3-closeout.md`.
 
 ### 8.4 Keyboard / focus UX investigation (image pipeline 범위 밖)
@@ -530,42 +530,42 @@ Pass 4 P4-2 after-trace의 잔여 stall은 framework keyboard 영역. 다음 sta
 
 | commit | role |
 |---|---|
-| `6fe027c` perf(proof-photo): add 4032×3024 bundled fixture + reselect/typing-large rendering scenarios for Pass 4 | P4-0 infra (large fixture + scenarios + markers + Tuist Example resource path fix). `pass4-rendering-before` tag. |
-| `bb33235` perf(proof-photo): P4-2 — preview decode out of body | **KEEP** — production code change, decoded preview representation in State. |
-| `76fadf6` docs(perf): Pass 4 final report — ProofPhoto image pipeline (P4-2 KEEP) | ProofPhoto sub-track closeout. |
+| `cd989de` test: ProofPhoto 대용량 이미지 렌더링 시나리오 추가 - #310 | P4-0 infra (large fixture + scenarios + markers + Tuist Example resource path fix). `pass4-rendering-before` tag. |
+| `4cfabd0` refactor: ProofPhoto 미리보기 디코딩 위치 개선 - #310 | **KEEP** — production code change, decoded preview representation in State. |
+| `a9eea07` docs: ProofPhoto 이미지 파이프라인 Pass 4 결과 정리 - #310 | ProofPhoto sub-track closeout. |
 
 ### 11.2 Pass 4-S App-wide SwiftUI Template audit (no production change)
 
 | commit | role |
 |---|---|
-| `e6274bd` docs(perf): record Pass 4-S SwiftUI Template app-wide audit | launch-mode validation + attach-mode 0-row limit + 8-candidate inventory. |
-| `e1ee57b` docs(perf): record Pass 4-S C3 TXCalendarDateCell gate and skip | C3 SKIPPED on idle TP+Hitches gate. |
-| `c488fe3` docs(perf): record Pass 4-S C4 GoalDetailView gate, skip, and closeout | C4 SKIPPED on idle TP+Hitches gate. Pass 4-S closed as inventory-only. |
-| `d35efec` perf(infra): validate SwiftUI Template self-run interaction capture | Pass 4-S retry — self-run feasibility (ProofPhoto state-driven typing). Validated the methodology Pass 4-S2 / S3 then used. |
+| `fb83216` docs: SwiftUI Template 앱 전역 감사 기록 - #310 | launch-mode validation + attach-mode 0-row limit + 8-candidate inventory. |
+| `8f17d45` docs: TXCalendarDateCell 측정 결과 정리 - #310 | C3 SKIPPED on idle TP+Hitches gate. |
+| `b7a791f` docs: GoalDetailView 측정 결과 정리 - #310 | C4 SKIPPED on idle TP+Hitches gate. Pass 4-S closed as inventory-only. |
+| `79b6393` test: SwiftUI Template 셀프런 입력 하네스 검증 - #310 | Pass 4-S retry — self-run feasibility (ProofPhoto state-driven typing). Validated the methodology Pass 4-S2 / S3 then used. |
 
 ### 11.3 Pass 4-S2 Home self-running scroll (production change KEPT)
 
 | commit | role |
 |---|---|
-| `10dc39b` docs(perf): draft Pass 4-S2 Home self-running scroll plan | plan. |
-| `b325943` perf(infra): add Home self-run scroll harness and record C2 gate result | harness + before-gate result (3-AND passed). |
-| `d3f66be` perf(home): reduce GoalCardView outside-border render duplication | **KEEP** — production code change in `GoalCardView.swift` only. |
-| `68e2cb9` docs(perf): record Pass 4-S2 H-C2-a after-gate keep verdict | after-gate KEEP decision. |
-| `d015879` docs(perf): close Pass 4-S2 Home self-run scroll optimization | closeout. |
+| `0b19112` docs: Home 셀프런 스크롤 측정 계획 작성 - #310 | plan. |
+| `fde7d41` test: Home 셀프런 스크롤 하네스 추가 - #310 | harness + before-gate result (3-AND passed). |
+| `0c0da63` refactor: GoalCardView 외곽선 렌더링 중복 제거 - #310 | **KEEP** — production code change in `GoalCardView.swift` only. |
+| `bf15856` docs: Home 외곽선 렌더링 개선 결과 정리 - #310 | after-gate KEEP decision. |
+| `b6297f0` docs: Home 셀프런 스크롤 최적화 종료 - #310 | closeout. |
 
 ### 11.4 Pass 4-S3 Stats self-running scroll (production change REVERTED)
 
 | commit | role |
 |---|---|
-| `55047c2` docs(perf): draft Pass 4-S3 Stats self-running scroll plan | plan. |
-| `a4a14c5` perf(infra): add Stats self-run scroll harness for Pass 4-S3 | harness (kept as perf infrastructure). |
-| `28adce3` docs(perf): record Pass 4-S3 C5 ablation attribution and defer production fix | C5 baseline gate + ablation experiments A/B + DEFER verdict. |
-| `c842d7e` docs(perf): draft Pass 4-S3 H-C5-a stamp grid explicit rows plan | H-C5-a hypothesis plan. |
-| `405dc38` perf(stats): replace stamp grid LazyVGrid with eager VStack rows | H-C5-a production attempt — **REVERTED**. |
-| `9a0351d` docs(perf): record Pass 4-S3 H-C5-a after-gate REVERT verdict | after-gate evidence; KEEP target missed, REVERT criterion triggered. |
-| `73f4a00` Revert "perf(stats): replace stamp grid LazyVGrid with eager VStack rows" | revert of `405dc38`. `StatsCardCompletionCell.swift` restored to baseline. |
-| `88ae481` docs(perf): record Pass 4-S3 H-C5-a revert + smoke confirmation | post-revert smoke test pass. |
-| `d3e1bf9` docs(perf): close Pass 4-S3 Stats self-run scroll investigation | closeout. |
+| `16330c4` docs: Stats 셀프런 스크롤 측정 계획 작성 - #310 | plan. |
+| `caa26be` test: Stats 셀프런 스크롤 하네스 추가 - #310 | harness (kept as perf infrastructure). |
+| `687901c` docs: Stats 스탬프 그리드 원인 분석 정리 - #310 | C5 baseline gate + ablation experiments A/B + DEFER verdict. |
+| `3026b03` docs: Stats 스탬프 그리드 개선 계획 작성 - #310 | H-C5-a hypothesis plan. |
+| `da2278e` refactor: Stats 스탬프 그리드 행 레이아웃 적용 - #310 | H-C5-a production attempt — **REVERTED**. |
+| `ac1f73c` docs: Stats 스탬프 그리드 개선 되돌림 결정 기록 - #310 | after-gate evidence; KEEP target missed, REVERT criterion triggered. |
+| `aa4a160` refactor: Stats 스탬프 그리드 행 레이아웃 되돌림 - #310 | revert of `da2278e`. `StatsCardCompletionCell.swift` restored to baseline. |
+| `21c734d` docs: Stats 스탬프 그리드 되돌림 검증 기록 - #310 | post-revert smoke test pass. |
+| `7873646` docs: Stats 셀프런 스크롤 조사 종료 - #310 | closeout. |
 
 ---
 

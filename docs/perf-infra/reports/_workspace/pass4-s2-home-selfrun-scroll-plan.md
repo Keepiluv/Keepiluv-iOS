@@ -1,6 +1,6 @@
 # Pass 4-S2 — Home self-running scroll SwiftUI Template gate (plan draft)
 
-**Status**: DRAFT — not yet executed. Successor to Pass 4-S retry feasibility commit `d35efec`. Purpose: investigate Pass 4-S audit candidate **C2 Home LazyVStack adaptor revalidation** using the now-validated state-driven self-run path.
+**Status**: DRAFT — not yet executed. Successor to Pass 4-S retry feasibility commit `79b6393`. Purpose: investigate Pass 4-S audit candidate **C2 Home LazyVStack adaptor revalidation** using the now-validated state-driven self-run path.
 
 **This document is candidate-discovery + gate plan only. No production code is to be written without explicit user approval after the TP+Hitches gate has produced evidence.**
 

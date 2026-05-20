@@ -323,4 +323,3 @@ The plan for H-C5-a will live at `docs/perf-infra/reports/_workspace/pass4-s3-h-
 - **C5 attribution recorded.** The candidate is no longer "ScrollViewChildContainerSize re-query" nor "TXVector caching" — it is "Stats heavy scroll LazyVGrid container/ForEach materialization in `StatsCardCompletionCell`."
 - **H-C5-a is the next production hypothesis, deferred.** Awaiting user approval of its plan + execution.
 - **No further experiments at this stage.** Plan §5 stop condition triggered (B did not materially reduce SwiftUI signal); ablation has done its job.
-

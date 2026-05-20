@@ -323,4 +323,3 @@ Classification per Step 3 rubric:
 - **PerfProfile only**: Pass 4 baseline configuration (drift from Pass 3 `Profile` documented in pass-4 final report §2.1).
 - **`<unknown>` module entries**: typically views created before tracing started or framework-internal nodes; not actionable from this trace alone.
 - **No optimization claim**: nothing in this report is evidence of a regression or improvement. It is a candidate-discovery inventory.
-

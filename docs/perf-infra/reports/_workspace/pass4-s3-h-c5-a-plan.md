@@ -80,7 +80,7 @@ Decision deferred to implementation: whether the trailing-row `Spacer(minLength:
 - `Constants.gridColumnCount`, `Constants.gridSpacing`, `Constants.iconSize`, `Constants.cellPadding`, `Constants.cellVerticalSpacing` — unchanged.
 - `StatsCardCompletionCell` init signature — unchanged.
 - `StatsCardView` — unchanged.
-- `StatsView` (and the Stats self-run scroll harness committed at `28adce3` predecessors) — unchanged.
+- `StatsView` (and the Stats self-run scroll harness committed at `caa26be`) — unchanged.
 - `outsideBorder` shared modifier — unchanged (Pass 4-S2 H-C2-a's lesson stays a separate hypothesis if ever needed for Stats).
 - Reducer / state / identity / Equatable conformance — unchanged.
 - Image / Kingfisher / icon caching — unchanged.
@@ -103,7 +103,7 @@ Decision deferred to implementation: whether the trailing-row `Spacer(minLength:
 
 ## 6. After-gate (mandatory before keep, after commit)
 
-Same scenario, same device, same PerfProfile configuration as the C5 baseline gate. Reuse the harness committed at `b325943`'s predecessor (Stats self-run scroll, `-UITEST_SWIFTUI_SELF_RUN_STATS_SCROLL`).
+Same scenario, same device, same PerfProfile configuration as the C5 baseline gate. Reuse the harness committed at `caa26be` (Stats self-run scroll, `-UITEST_SWIFTUI_SELF_RUN_STATS_SCROLL`).
 
 | template | reps | window |
 |---|---:|---:|
@@ -195,7 +195,7 @@ No production code is written and no traces are collected without explicit appro
 
 If approved and executed:
 
-- One production commit modifying `StatsCardCompletionCell.swift` only. Commit message: `perf(stats): replace stamp grid LazyVGrid with eager VStack rows`.
+- One production commit modifying `StatsCardCompletionCell.swift` only. Commit message: `refactor: Stats 스탬프 그리드 행 레이아웃 적용 - #310`.
 - One after-gate result doc: `docs/perf-infra/reports/_workspace/pass4-s3-h-c5-a-after-gate.md`.
 - Possibly one closeout doc: `docs/perf-infra/reports/_workspace/pass4-s3-closeout.md` matching Pass 4-S2's pattern.
 - If REVERT triggered: one revert commit + an addendum to the result doc.

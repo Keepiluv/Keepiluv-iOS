@@ -216,8 +216,8 @@ If approved:
 7. **Revert**: any of the above unmet, or "moved counts but not real cost."
 
 Sequencing question for user:
-- **Commit the harness first** (`UITestMode.isSwiftUISelfRunFeedScroll` + HomeView gated branch) as `perf(infra): Home self-running scroll harness`, separate from any GoalCardView change. This makes the C2 before/after traces reproducible against a stable tag.
-- THEN, if approved, propose H-C2-a as a separate `perf(home): GoalCardView offscreen-pass reduction` commit.
+- **Commit the harness first** (`UITestMode.isSwiftUISelfRunFeedScroll` + HomeView gated branch) as `test: Home 셀프런 스크롤 하네스 추가 - #310`, separate from any GoalCardView change. This makes the C2 before/after traces reproducible against a stable tag.
+- THEN, if approved, propose H-C2-a as a separate `refactor: GoalCardView 외곽선 렌더링 중복 제거 - #310` commit.
 
 ## 13. Honest caveats
 
@@ -239,7 +239,7 @@ Sequencing question for user:
 
 ## 15. Awaiting approval
 
-- (a) Commit the harness (UITestMode flag + HomeView `#if PERF_TESTING` gated branch + this result doc) as `perf(infra): Home self-running scroll harness + C2 gate result`?
+- (a) Commit the harness (UITestMode flag + HomeView `#if PERF_TESTING` gated branch + this result doc) as `test: Home 셀프런 스크롤 하네스 추가 - #310`?
 - (b) After (a), proceed with H-C2-a one-commit production change proposal? Or pick a different hypothesis from §10?
 - (c) If neither is approved, hold the position and consider Pass 4-S2 closed as "gate passed, no fix implemented."
 

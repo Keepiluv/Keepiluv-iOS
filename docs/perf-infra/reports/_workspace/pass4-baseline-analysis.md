@@ -1,7 +1,7 @@
 # Pass 4 — baseline analysis (24 traces under `pass4-rendering-before`)
 
 - **Date**: 2026-05-19
-- **Baseline tag**: `pass4-rendering-before = 6fe027c`
+- **Baseline tag**: `pass4-rendering-before = cd989de`
 - **Configuration**: PerfProfile (caveat: Pass 3 official = Profile; PerfProfile/PERF_TESTING introduced post-Pass 3 by `5d507fa`)
 - **Device**: Jiyong의 iPhone (UDID `00008110-00096DC42632801E`, iOS 26.4.2)
 - **Traces**: `/tmp/twix-perf-traces/pass4-before/proof-photo/`

@@ -1,11 +1,11 @@
 # Pass 4-S3 H-C5-a — after-gate verdict: REVERT
 
-**Production commit**: `405dc38 perf(stats): replace stamp grid LazyVGrid with eager VStack rows`.
+**Production commit**: `da2278e refactor: Stats 스탬프 그리드 행 레이아웃 적용 - #310`.
 **After-gate scenario**: Stats self-run scroll (`-UITEST_SWIFTUI_SELF_RUN_STATS_SCROLL`), PerfProfile, device `00008110-00096DC42632801E`, 30 s window.
 **Templates**: SwiftUI × 3 + Time Profiler × 3 + Animation Hitches × 3 (9 traces).
 **Verdict**: **REVERT per plan §8.** KEEP criterion #1 (swiftui-updates ≥ 30 % drop) fails. REVERT criterion #4 (Animation Hitches count rises vs baseline) triggers. Visual sanity passes; tests pass (smoke build clean).
 
-The change is being reverted. The Stats self-run scroll harness (commit `a4a14c5`) stays; the ablation attribution documented in `pass4-s3-stats-selfrun-scroll-result.md` stays. H-C5-a's hypothesis class (LazyVGrid → explicit rows) is recorded as **gated-and-reverted**, not as "fixed" or "skipped without trying."
+The change is being reverted. The Stats self-run scroll harness (commit `caa26be`) stays; the ablation attribution documented in `pass4-s3-stats-selfrun-scroll-result.md` stays. H-C5-a's hypothesis class (LazyVGrid → explicit rows) is recorded as **gated-and-reverted**, not as "fixed" or "skipped without trying."
 
 ## 1. Headline before vs after (3 reps mean)
 
@@ -115,12 +115,12 @@ None of these are proposed. H-C5-a's REVERT does NOT mean C5 is permanently clos
 - After-gate traces: `/tmp/twix-perf-traces/pass4-s3-after/h-c5-a/{swiftui,timeprofiler,hitches}/stats-heavy-h-c5-a-rep[123].trace`
 - Summary TSV: `/tmp/twix-perf-traces/pass4-s3-after/h-c5-a/summary.tsv`
 - Pre-revert simulator screenshot: `/tmp/pass4-s3-visual/stats-h-c5-a.png` (matches baseline `stats-default.png`)
-- Production commit (being reverted): `405dc38 perf(stats): replace stamp grid LazyVGrid with eager VStack rows`
+- Production commit (being reverted): `da2278e refactor: Stats 스탬프 그리드 행 레이아웃 적용 - #310`
 
 ## 7. Recommendation
 
-- **REVERT `405dc38`.** Plan §8 criterion #4 triggered. Per closeout rule: SwiftUI Template count alone never justifies a production change; the Hitches gate's count-based reading is decisive.
-- **Keep** the Pass 4-S3 self-run scroll harness (`a4a14c5`) and the ablation result doc (`28adce3`) and the H-C5-a plan doc (`c842d7e`) — they are accurate records of the investigation and are reusable if a future hypothesis revisits C5.
+- **REVERT `da2278e`.** Plan §8 criterion #4 triggered. Per closeout rule: SwiftUI Template count alone never justifies a production change; the Hitches gate's count-based reading is decisive.
+- **Keep** the Pass 4-S3 self-run scroll harness (`caa26be`) and the ablation result doc (`687901c`) and the H-C5-a plan doc (`3026b03`) — they are accurate records of the investigation and are reusable if a future hypothesis revisits C5.
 - **Do NOT propose another C5 production candidate in this session.** H-C5-a was the smallest-scope candidate that the attribution evidence pointed at; any next attempt requires a different hypothesis class with its own evidence cycle (per §5 of this document).
 - **Run smoke tests on the reverted state** to confirm baseline still passes (planned right after the revert commit).
 - **Mark Pass 4-S3 closeout** as "C5 deferred with gate-and-revert outcome; methodology contract upheld."
@@ -129,7 +129,7 @@ None of these are proposed. H-C5-a's REVERT does NOT mean C5 is permanently clos
 
 User pre-approved revert-on-failure: "H-C5-a가 실패하면 revert하고 결과 문서화한다." Executed:
 
-1. ✅ Commit this result doc → `9a0351d docs(perf): record Pass 4-S3 H-C5-a after-gate REVERT verdict`.
-2. ✅ `git revert 405dc38` → `73f4a00 Revert "perf(stats): replace stamp grid LazyVGrid with eager VStack rows"`. `StatsCardCompletionCell.swift` restored to baseline (LazyVGrid form).
+1. ✅ Commit this result doc → `ac1f73c docs: Stats 스탬프 그리드 개선 되돌림 결정 기록 - #310`.
+2. ✅ `git revert da2278e` → `aa4a160 refactor: Stats 스탬프 그리드 행 레이아웃 되돌림 - #310`. `StatsCardCompletionCell.swift` restored to baseline (LazyVGrid form).
 3. ✅ Smoke-test the reverted state → `xcodebuild test-without-building -scheme FeatureStatsExample -configuration PerfProfile -destination 'iOS Simulator, iPhone 16 Pro Max'` → **TEST EXECUTE SUCCEEDED** (247 s, all suites pass). Baseline production behavior confirmed intact.
 4. Pass 4-S3 closeout TBD per user direction.

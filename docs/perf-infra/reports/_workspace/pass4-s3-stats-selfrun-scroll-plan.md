@@ -1,6 +1,6 @@
 # Pass 4-S3 — Stats self-running scroll SwiftUI Template gate (plan draft)
 
-**Status**: DRAFT — not yet executed. Successor to Pass 4-S2 (closed at `d015879`) targeting Pass 4-S audit candidate **C5 — Stats `ScrollViewChildContainerSize` re-query / Stats heavy scroll container churn**.
+**Status**: DRAFT — not yet executed. Successor to Pass 4-S2 (closed at `b6297f0`) targeting Pass 4-S audit candidate **C5 — Stats `ScrollViewChildContainerSize` re-query / Stats heavy scroll container churn**.
 
 **This document is candidate-discovery + gate plan only. No production code is to be written without explicit user approval after the TP + Animation Hitches gate has produced evidence.**
 
@@ -8,7 +8,7 @@
 
 ## 1. Why C5 is next
 
-- **Pass 4-S2 reference implementation succeeded.** The C2 Home scroll self-run pattern produced a kept production optimization (commit `d3f66be`) that survived SwiftUI Template + Time Profiler + Animation Hitches gates simultaneously. C5 is structurally the closest remaining candidate to C2.
+- **Pass 4-S2 reference implementation succeeded.** The C2 Home scroll self-run pattern produced a kept production optimization (commit `0c0da63`) that survived SwiftUI Template + Time Profiler + Animation Hitches gates simultaneously. C5 is structurally the closest remaining candidate to C2.
 - **Highest remaining Pass 4-S audit magnitude that has not been gated.** C1 (TXNavigationBar) is in the same magnitude class as C3 / C4, which both failed their idle gates. C6 (ImageAccessibilityProvider) was partially addressed as a side effect of H-C2-a (~-50 % event count) and should be re-measured before being opened as a separate track. C5 is the only Pass 4-S candidate that (a) had a non-trivial Pass 4-S idle signal, (b) has not been gated yet, and (c) has a self-run pattern proven on the sibling Home scenario.
 - **Stats Pass 4-S idle signal already pointed at scroll/lazy-container cost.** This is the cleanest hypothesis class for the self-run approach.
 

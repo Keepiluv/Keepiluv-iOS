@@ -1,7 +1,7 @@
 # Pass 4 — P4-2 (preview decode out of body) before/after comparison
 
-- **P4-2 commit**: `bb33235`
-- **Before tag**: `pass4-rendering-before` (`6fe027c`)
+- **P4-2 commit**: `4cfabd0`
+- **Before tag**: `pass4-rendering-before` (`cd989de`)
 - **Configuration**: PerfProfile (same as baseline)
 - **Window**: 30s xctrace, same scenarios × templates × reps
 - **Before traces**: `/tmp/twix-perf-traces/pass4-before/proof-photo/`

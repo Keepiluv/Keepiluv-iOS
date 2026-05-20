@@ -4,24 +4,24 @@
 
 ## 1. Outcome summary
 
-- **No production code change.** `StatsCardCompletionCell.swift` is at baseline. The Pass 4-S3 production attempt (`405dc38 perf(stats): replace stamp grid LazyVGrid with eager VStack rows`) was reverted by `73f4a00`. Post-revert smoke test (`FeatureStatsExampleUITests` under PerfProfile / iOS Simulator iPhone 16 Pro Max) → **TEST EXECUTE SUCCEEDED**. Baseline production behavior intact.
-- **Self-run scroll harness committed and kept** as `a4a14c5 perf(infra): add Stats self-run scroll harness for Pass 4-S3` — reusable by any future C5 investigation. UITestMode flag `isSwiftUISelfRunStatsScroll` + `#if PERF_TESTING ScrollViewReader` branch in `StatsView.cardList`. Production path under `#else` and the default-flag branch is identical to current behavior.
-- **Root cause for the Stats C5 SwiftUI signal documented.** From the ablation work (`28adce3`): the dominant signal source is the `LazyVGrid` container / `ForEach(0..<goalCount)` placement work in `StatsCardCompletionCell`, not the per-stamp `TXVector` content. The H-C5-a after-gate (`9a0351d` + `88ae481`) further proved that *swapping the inner container alone* is insufficient — the real cost concentration is at the cell-composition level (every visible cell re-composes its full subtree on materialization), not at the inner-container level.
+- **No production code change.** `StatsCardCompletionCell.swift` is at baseline. The Pass 4-S3 production attempt (`da2278e refactor: Stats 스탬프 그리드 행 레이아웃 적용 - #310`) was reverted by `aa4a160`. Post-revert smoke test (`FeatureStatsExampleUITests` under PerfProfile / iOS Simulator iPhone 16 Pro Max) → **TEST EXECUTE SUCCEEDED**. Baseline production behavior intact.
+- **Self-run scroll harness committed and kept** as `caa26be test: Stats 셀프런 스크롤 하네스 추가 - #310` — reusable by any future C5 investigation. UITestMode flag `isSwiftUISelfRunStatsScroll` + `#if PERF_TESTING ScrollViewReader` branch in `StatsView.cardList`. Production path under `#else` and the default-flag branch is identical to current behavior.
+- **Root cause for the Stats C5 SwiftUI signal documented.** From the ablation work (`687901c`): the dominant signal source is the `LazyVGrid` container / `ForEach(0..<goalCount)` placement work in `StatsCardCompletionCell`, not the per-stamp `TXVector` content. The H-C5-a after-gate (`ac1f73c` + `21c734d`) further proved that *swapping the inner container alone* is insufficient — the real cost concentration is at the cell-composition level (every visible cell re-composes its full subtree on materialization), not at the inner-container level.
 - **C5 status: deferred with gate-and-revert outcome.** Not permanently closed. Not a successful optimization. The methodology was strictly applied: SwiftUI Template counts moved, but the authoritative Time Profiler + Animation Hitches gate did not corroborate a user-visible improvement, so the change was reverted.
 
 ## 2. C5 investigation timeline
 
 | step | commit | what |
 |---|---|---|
-| 1. Plan | `55047c2` | `docs(perf): draft Pass 4-S3 Stats self-running scroll plan` |
-| 2. Harness + before-gate baseline | `a4a14c5` (plus baseline traces) | `perf(infra): add Stats self-run scroll harness for Pass 4-S3` — Phase A + B SwiftUI x3 + gate TP x3 + Hitches x3. Baseline 3-AND failed on TP criterion #2 (no Stats user-code in TP top-10). |
-| 3. Ablation attribution doc + DEFER verdict (with addendum §13) | `28adce3` | `docs(perf): record Pass 4-S3 C5 ablation attribution and defer production fix`. Experiment A (ABLATE_STAMP_GRID): -69 % swiftui-updates, 0 narratives — over-removal, not production-valid. Experiment B (ABLATE_TXVECTOR): -10 % only — rules out TXVector-content as primary. Root cause = LazyVGrid container / ForEach placement work. |
-| 4. H-C5-a plan | `c842d7e` | `docs(perf): draft Pass 4-S3 H-C5-a stamp grid explicit rows plan` — one file, no TXVector caching, no shared modifier change, no Equatable refactor, no Canvas. |
-| 5. H-C5-a implementation | `405dc38` (reverted) | `perf(stats): replace stamp grid LazyVGrid with eager VStack rows`. Visual sanity passed (simulator screenshot identical to baseline). |
-| 6. H-C5-a after-gate verdict | `9a0351d` | `docs(perf): record Pass 4-S3 H-C5-a after-gate REVERT verdict`. 9 traces collected; KEEP criterion #1 failed (-15 % vs ≥ 30 % target); REVERT criterion #4 triggered (Hitches +60 %); narrative reproducibility unchanged at 3/3. |
-| 7. Revert | `73f4a00` | `Revert "perf(stats): replace stamp grid LazyVGrid with eager VStack rows"` — `StatsCardCompletionCell.swift` restored to baseline LazyVGrid form. |
-| 8. Revert + smoke confirmation doc | `88ae481` | `docs(perf): record Pass 4-S3 H-C5-a revert + smoke confirmation` — `FeatureStatsExampleUITests` TEST EXECUTE SUCCEEDED on reverted state. |
-| 9. Closeout | (this commit) | `docs(perf): close Pass 4-S3 Stats self-run scroll investigation`. |
+| 1. Plan | `16330c4` | `docs: Stats 셀프런 스크롤 측정 계획 작성 - #310` |
+| 2. Harness + before-gate baseline | `caa26be` (plus baseline traces) | `test: Stats 셀프런 스크롤 하네스 추가 - #310` — Phase A + B SwiftUI x3 + gate TP x3 + Hitches x3. Baseline 3-AND failed on TP criterion #2 (no Stats user-code in TP top-10). |
+| 3. Ablation attribution doc + DEFER verdict (with addendum §13) | `687901c` | `docs: Stats 스탬프 그리드 원인 분석 정리 - #310`. Experiment A (ABLATE_STAMP_GRID): -69 % swiftui-updates, 0 narratives — over-removal, not production-valid. Experiment B (ABLATE_TXVECTOR): -10 % only — rules out TXVector-content as primary. Root cause = LazyVGrid container / ForEach placement work. |
+| 4. H-C5-a plan | `3026b03` | `docs: Stats 스탬프 그리드 개선 계획 작성 - #310` — one file, no TXVector caching, no shared modifier change, no Equatable refactor, no Canvas. |
+| 5. H-C5-a implementation | `da2278e` (reverted) | `refactor: Stats 스탬프 그리드 행 레이아웃 적용 - #310`. Visual sanity passed (simulator screenshot identical to baseline). |
+| 6. H-C5-a after-gate verdict | `ac1f73c` | `docs: Stats 스탬프 그리드 개선 되돌림 결정 기록 - #310`. 9 traces collected; KEEP criterion #1 failed (-15 % vs ≥ 30 % target); REVERT criterion #4 triggered (Hitches +60 %); narrative reproducibility unchanged at 3/3. |
+| 7. Revert | `aa4a160` | `refactor: Stats 스탬프 그리드 행 레이아웃 되돌림 - #310` — `StatsCardCompletionCell.swift` restored to baseline LazyVGrid form. |
+| 8. Revert + smoke confirmation doc | `21c734d` | `docs: Stats 스탬프 그리드 되돌림 검증 기록 - #310` — `FeatureStatsExampleUITests` TEST EXECUTE SUCCEEDED on reverted state. |
+| 9. Closeout | (this commit) | `docs: Stats 셀프런 스크롤 조사 종료 - #310`. |
 
 ## 3. Headline table
 
@@ -39,9 +39,9 @@
 
 ## 4. Final verdict
 
-- **H-C5-a REVERTED.** Production commit `405dc38` reverted by `73f4a00`. `StatsCardCompletionCell.swift` is at baseline `LazyVGrid` form. Post-revert smoke confirms baseline behavior.
+- **H-C5-a REVERTED.** Production commit `da2278e` reverted by `aa4a160`. `StatsCardCompletionCell.swift` is at baseline `LazyVGrid` form. Post-revert smoke confirms baseline behavior.
 - **No production performance change from Pass 4-S3.** Stats's scroll behavior on device is identical to its state at the start of the pass.
-- **Stats self-run scroll harness kept as perf infrastructure** (`a4a14c5`). UITestMode flag + `#if PERF_TESTING` branch in `StatsView.cardList`. Default-off; no production impact.
+- **Stats self-run scroll harness kept as perf infrastructure** (`caa26be`). UITestMode flag + `#if PERF_TESTING` branch in `StatsView.cardList`. Default-off; no production impact.
 - **C5 remains deferred, not closed forever.** The root cause (LazyVGrid / cell-composition work) is identified and documented; the smallest-scope hypothesis class (inner-container swap) has been gated and refuted. Any future C5 attempt requires a fresh plan with explicit user approval and its own gate.
 
 ## 5. Methodology lesson
@@ -75,7 +75,7 @@ None of these are proposed. None should be opened without:
 
 If C5 is ever reopened, the entry conditions remain:
 
-- Use the existing Stats self-run scroll harness (commit `a4a14c5`).
+- Use the existing Stats self-run scroll harness (commit `caa26be`).
 - Reuse the C5 baseline gate at `/tmp/twix-perf-traces/pass4-s3/c5-before/` as the reference, OR re-collect if the device/OS/configuration drifts meaningfully.
 - Apply the methodology contract: SwiftUI Template signal → Time Profiler + Animation Hitches gate (authoritative) → one small commit → after-gate → keep/revert per documented criteria. SwiftUI Template counts alone never justify a production change.
 - Read this closeout's §5–§6 before drafting any new C5 hypothesis. The smallest-scope inner-container swap is already gated and refuted; new hypothesis must be a different class.
@@ -84,14 +84,14 @@ If C5 is ever reopened, the entry conditions remain:
 
 | commit | category |
 |---|---|
-| `55047c2` | docs (plan) |
-| `a4a14c5` | infra (harness, kept) |
-| `28adce3` | docs (ablation attribution + DEFER) |
-| `c842d7e` | docs (H-C5-a plan) |
-| `405dc38` | perf (H-C5-a production attempt) |
-| `9a0351d` | docs (H-C5-a after-gate REVERT verdict) |
-| `73f4a00` | **revert** of `405dc38` |
-| `88ae481` | docs (revert + smoke confirmation) |
+| `16330c4` | docs (plan) |
+| `caa26be` | infra (harness, kept) |
+| `687901c` | docs (ablation attribution + DEFER) |
+| `3026b03` | docs (H-C5-a plan) |
+| `da2278e` | perf (H-C5-a production attempt) |
+| `ac1f73c` | docs (H-C5-a after-gate REVERT verdict) |
+| `aa4a160` | **revert** of `da2278e` |
+| `21c734d` | docs (revert + smoke confirmation) |
 | (this commit) | docs (closeout) |
 
 ## 9. Honest summary

@@ -5,7 +5,7 @@
 ## 1. Outcome
 
 - **C2 Home self-running scroll gate PASSED.** All three plan §5.1 criteria met: SwiftUI Template signal scaled an order of magnitude vs idle baseline; `GoalCardView.body.getter` appeared in Time Profiler top-10 at 5–6 ms in 2 / 3 reps; Animation Hitches showed a reproducible "Potentially expensive app update(s)" narrative including a 133.34 ms Brief Unresponsiveness in rep2 and a "37 offscreen passes" render hitch in rep3. Detailed evidence in `pass4-s2-home-selfrun-scroll-result.md`.
-- **H-C2-a GoalCardView outside-border fix was implemented and kept.** Single-file diff in `Projects/Shared/DesignSystem/Sources/Components/Card/Goal/GoalCardView.swift` (commit `d3f66be`) replacing the shared `outsideBorder(...)` modifier usage with a local `.background { RoundedRectangle(...).stroke(..., lineWidth: borderWidth * 2) }`. Removes the duplicated subtree composition that `outsideBorder` produced via its internal `.overlay(self)` trick. After-gate verdict KEEP recorded in commit `68e2cb9`. Detailed before/after numbers in `pass4-s2-h-c2-a-comparison.md`.
+- **H-C2-a GoalCardView outside-border fix was implemented and kept.** Single-file diff in `Projects/Shared/DesignSystem/Sources/Components/Card/Goal/GoalCardView.swift` (commit `0c0da63`) replacing the shared `outsideBorder(...)` modifier usage with a local `.background { RoundedRectangle(...).stroke(..., lineWidth: borderWidth * 2) }`. Removes the duplicated subtree composition that `outsideBorder` produced via its internal `.overlay(self)` trick. After-gate verdict KEEP recorded in commit `bf15856`. Detailed before/after numbers in `pass4-s2-h-c2-a-comparison.md`.
 
 ## 2. Headline numbers (before-gate mean of 3 reps vs after-gate mean of 3 reps)
 
@@ -41,7 +41,7 @@ SwiftUI Template signal (launch-mode self-run if interactive)
 
 SwiftUI Template counts alone never justify a production change. A SwiftUI signal that improves without a corresponding TP / Animation Hitches improvement = revert. Visual regression = revert. New top-20 hot path = revert.
 
-Pass 4-S2 H-C2-a (commits `b325943` + `d3f66be` + `68e2cb9`) is the reference implementation of this contract.
+Pass 4-S2 H-C2-a (commits `fde7d41` + `0c0da63` + `bf15856`) is the reference implementation of this contract.
 
 ## 5. Remaining candidates — DEFERRED, not rejected
 
@@ -64,11 +64,11 @@ These three are **deferred, not rejected**. Opening any of them requires a fresh
 
 | commit | what |
 |---|---|
-| `d35efec` | infra — SwiftUI Template self-run feasibility (Pass 4-S retry, the prerequisite that unlocked Pass 4-S2) |
-| `10dc39b` | docs — Pass 4-S2 plan draft |
-| `b325943` | infra + before-gate result (Home self-run scroll harness, UITestMode flag, gate evidence) |
-| `d3f66be` | production fix — GoalCardView outside-border render duplication removed |
-| `68e2cb9` | docs — H-C2-a after-gate KEEP verdict |
+| `79b6393` | infra — SwiftUI Template self-run feasibility (Pass 4-S retry, the prerequisite that unlocked Pass 4-S2) |
+| `0b19112` | docs — Pass 4-S2 plan draft |
+| `fde7d41` | infra + before-gate result (Home self-run scroll harness, UITestMode flag, gate evidence) |
+| `0c0da63` | production fix — GoalCardView outside-border render duplication removed |
+| `bf15856` | docs — H-C2-a after-gate KEEP verdict |
 | (this commit) | docs — Pass 4-S2 closeout |
 
 ## 8. Close

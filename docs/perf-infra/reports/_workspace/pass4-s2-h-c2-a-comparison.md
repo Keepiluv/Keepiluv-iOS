@@ -2,8 +2,8 @@
 
 **Verdict: KEEP.** All plan §5.2 KEEP criteria met; no REVERT criterion triggered.
 
-- **Before commit**: `b325943` (harness + before-gate result doc, no production change).
-- **H-C2-a commit**: `d3f66be` (`perf(home): reduce GoalCardView outside-border render duplication`).
+- **Before commit**: `fde7d41` (harness + before-gate result doc, no production change).
+- **H-C2-a commit**: `0c0da63` (`refactor: GoalCardView 외곽선 렌더링 중복 제거 - #310`).
 - **Scenario**: home-heavy self-run scroll (`-UITEST_SWIFTUI_SELF_RUN_FEED_SCROLL`), PerfProfile, launch mode, 30 s window, device `00008110-00096DC42632801E`.
 - **Before-gate**: 3 SwiftUI + 3 TP + 3 Hitches reps at `/tmp/twix-perf-traces/pass4-s2/c2-before/home-selfrun-scroll/`.
 - **After-gate**: 3 SwiftUI + 3 TP + 3 Hitches reps at `/tmp/twix-perf-traces/pass4-s2-after/h-c2-a/`.
@@ -136,9 +136,9 @@ This is the "moved counts but not real cost" sanity check inverted: SwiftUI inte
 
 ## 10. Recommendation
 
-- **KEEP H-C2-a (commit `d3f66be`)**.
+- **KEEP H-C2-a (commit `0c0da63`)**.
 - **No follow-up production commit in this Pass 4-S2 iteration.** The improvement is decisive on the gated scenario; additional changes would each need their own hypothesis + gate.
-- **Pass 4-S2 closeable** as the first SwiftUI-template-discovery-driven optimization that produced measurable TP + Hitches improvement on this codebase, validating both the self-run harness (`d35efec`, `b325943`) and the candidate-discovery → gate → small-commit methodology end-to-end.
+- **Pass 4-S2 closeable** as the first SwiftUI-template-discovery-driven optimization that produced measurable TP + Hitches improvement on this codebase, validating both the self-run harness (`79b6393`, `fde7d41`) and the candidate-discovery → gate → small-commit methodology end-to-end.
 - Future candidates (C1 TXNavigationBar, C5 Stats scroll, C6 image accessibility) can reuse the same template: extend the self-run flag to the relevant Example app, collect SwiftUI Template → TP → Hitches gate, propose smallest possible change, gate after. Each is a separate plan with separate approval.
 
 ## 11. Workspace artifacts
