@@ -47,6 +47,16 @@ public enum UITestMode {
         arguments.contains("-UITEST_SWIFTUI_SELF_RUN_TYPING")
     }
 
+    /// Pass 4-S2 — Home feed self-running scroll. When set, the Home Example
+    /// host's `LazyVStack` ScrollView is wrapped in a `ScrollViewReader` and
+    /// a Task drives `proxy.scrollTo(...)` across a stride of `home-heavy`
+    /// item ids so SwiftUI Template launch-mode can capture interactive
+    /// scroll attribution. Example/perf-only; production code must not
+    /// branch on this.
+    public static var isSwiftUISelfRunFeedScroll: Bool {
+        arguments.contains("-UITEST_SWIFTUI_SELF_RUN_FEED_SCROLL")
+    }
+
     public static func configureApplication() {
         guard isEnabled, disablesAnimations else { return }
         UIView.setAnimationsEnabled(false)
