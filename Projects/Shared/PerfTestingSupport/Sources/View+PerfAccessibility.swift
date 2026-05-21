@@ -1,15 +1,11 @@
 import SwiftUI
 
 public extension View {
-    /// Exposes a root-level accessibility marker for the feature.
+    /// feature root-level accessibility marker를 노출합니다.
     ///
-    /// IMPORTANT: applied as an overlay (Color.clear 1x1) rather than a
-    /// direct `.accessibilityIdentifier` on the receiver. `accessibilityIdentifier`
-    /// on a parent SwiftUI view propagates to descendant accessibility
-    /// elements that don't have their own — so a direct identifier here
-    /// would override child `perfControl(slug:element:)` / accessibility
-    /// identifiers everywhere in the feature tree. The overlay pattern
-    /// keeps the marker scoped to the inserted Color.clear element only.
+    /// Parent SwiftUI view에 직접 `accessibilityIdentifier`를 붙이면
+    /// child identifier를 덮을 수 있으므로,
+    /// 1x1 `Color.clear` overlay에만 marker를 붙입니다.
     func perfRoot(_ slug: String) -> some View {
 #if PERF_TESTING
         overlay(alignment: .topLeading) {
@@ -22,6 +18,8 @@ public extension View {
 #endif
     }
 
+    /// feature feed container에 deterministic accessibility identifier를 부여합니다.
+    /// PERF_TESTING build가 아니면 원본 view를 그대로 반환합니다.
     func perfFeed(_ slug: String) -> some View {
 #if PERF_TESTING
         accessibilityIdentifier("feature.\(slug).feed")
@@ -30,6 +28,8 @@ public extension View {
 #endif
     }
 
+    /// feature feed cell에 stable id 기반 accessibility identifier를 부여합니다.
+    /// UITest driver가 특정 cell을 찾거나 scroll target을 잡을 때 사용합니다.
     func perfCell(slug: String, stableId: CustomStringConvertible) -> some View {
 #if PERF_TESTING
         accessibilityIdentifier("feature.\(slug).cell.\(stableId)")
@@ -38,6 +38,8 @@ public extension View {
 #endif
     }
 
+    /// feature control에 accessibility identifier를 부여합니다.
+    /// Button, calendar 등 interaction target을 UITest에서 안정적으로 찾기 위한 helper입니다.
     func perfControl(slug: String, element: String) -> some View {
 #if PERF_TESTING
         accessibilityIdentifier("feature.\(slug).\(element)")
@@ -46,6 +48,8 @@ public extension View {
 #endif
     }
 
+    /// feature가 perf scenario 준비를 마쳤음을 나타내는 ready marker를 노출합니다.
+    /// UITest는 이 marker가 나타날 때까지 기다린 뒤 action을 시작합니다.
     func perfReadyMarker(_ slug: String) -> some View {
 #if PERF_TESTING
         overlay(alignment: .topLeading) {
@@ -58,9 +62,9 @@ public extension View {
 #endif
     }
 
-    /// Exposes a deterministic accessibility marker whose identifier changes when
-    /// `value` changes. UITests can `waitForExistence` on a specific value to
-    /// detect that SwiftUI has reflected a state mutation.
+    /// `value` 변경에 따라 identifier가 바뀌는 deterministic accessibility marker를 노출합니다.
+    /// UITest는 특정 값의 marker를 기다려 SwiftUI가 state mutation을 반영했는지
+    /// 확인할 수 있습니다.
     func perfStateMarker(slug: String, key: String, value: String) -> some View {
 #if PERF_TESTING
         overlay(alignment: .topLeading) {
@@ -73,16 +77,10 @@ public extension View {
 #endif
     }
 
-    /// Exposes one accessibility marker per `PerfCounters` key. Each marker's
-    /// identifier embeds the current counter value, e.g.
-    /// `feature.home.counter.home.view.rebuild.proxy.42`. UITests can enumerate
-    /// `feature.<slug>.counter.*` after a scenario completes to capture
-    /// deltas. The markers are evaluated when the surrounding view body
-    /// re-renders; trigger a body re-render via a state-change marker before
-    /// reading.
+    /// `PerfCounters` key마다 accessibility marker를 하나씩 노출합니다.
+    /// 각 marker identifier에는 현재 counter 값이 포함됩니다.
     ///
-    /// **Probe-only**. The counter values are sanity signals for the UITest
-    /// driver, not authoritative SwiftUI rendering metrics.
+    /// Probe 전용 sanity signal이며, authoritative SwiftUI rendering metric으로 인용하지 않습니다.
     func perfCounterMarkers(slug: String, keys: [String]) -> some View {
 #if PERF_TESTING
         overlay(alignment: .topLeading) {

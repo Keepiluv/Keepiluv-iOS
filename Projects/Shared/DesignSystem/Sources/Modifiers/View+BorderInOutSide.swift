@@ -45,11 +45,10 @@ extension View {
         lineWidth: CGFloat?
     ) -> some View {
         if let lineWidth {
-            overlay(
+            background {
                 shape
                     .stroke(content, lineWidth: lineWidth * 2)
-                    .overlay(self)
-            )
+            }
         } else {
             self
         }

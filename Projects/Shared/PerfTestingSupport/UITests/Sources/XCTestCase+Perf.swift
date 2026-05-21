@@ -1,5 +1,7 @@
 import XCTest
 
+/// feature ready marker가 나타날 때까지 기다립니다.
+/// Example host가 `perfReadyMarker(_:)`를 노출한 뒤 action을 시작하도록 맞추는 helper입니다.
 public func waitForFeatureReady(
     _ slug: String,
     timeout: TimeInterval = 10,
@@ -16,9 +18,9 @@ public func waitForFeatureReady(
     )
 }
 
-/// Waits for a `perfStateMarker(slug:key:value:)` to exist. Each unique value
-/// produces a unique accessibility identifier, so `waitForExistence` can be
-/// used to detect that SwiftUI has reflected a specific state mutation.
+/// `perfStateMarker(slug:key:value:)`가 특정 값으로 나타날 때까지 기다립니다.
+/// 값마다 accessibility identifier가 달라지므로 SwiftUI가 state mutation을
+/// 반영했는지 확인할 수 있습니다.
 public func awaitPerfMarker(
     slug: String,
     key: String,
@@ -38,11 +40,9 @@ public func awaitPerfMarker(
     )
 }
 
-/// Reads the latest value of a `PerfCounters` counter via its accessibility
-/// marker (see `perfCounterMarkers(slug:keys:)`). Returns `-1` if no marker is
-/// present (e.g. counter never written, or view body has not yet re-evaluated
-/// after the increment). Trigger a body re-render via a state-change marker
-/// before reading to ensure the marker reflects the latest counter value.
+/// accessibility marker를 통해 `PerfCounters` counter 최신 값을 읽습니다.
+/// marker가 없으면 `-1`을 반환합니다. 최신 값을 보장하려면 읽기 전에
+/// state-change marker로 body re-render를 유도해야 합니다.
 public func readPerfCounter(slug: String, key: String) -> Int {
     let app = XCUIApplication()
     let prefix = "feature.\(slug).counter.\(key)."
@@ -59,6 +59,7 @@ public func readPerfCounter(slug: String, key: String) -> Int {
     return -1
 }
 
+/// 기본 perf probe에서 사용하는 XCTest metric 묶음입니다.
 public var defaultPerfMetrics: [XCTMetric] {
     [
         XCTClockMetric(),
@@ -67,12 +68,9 @@ public var defaultPerfMetrics: [XCTMetric] {
     ]
 }
 
-/// Metrics tuned for **probe-only** driver/marker sanity measurements.
-/// Excludes memory delta (dominated by SwiftUI internals and not the action
-/// path). These numbers include XCUI tap synthesis, marker polling,
-/// accessibility-tree synchronization, and app/test process IPC — they do
-/// not isolate SwiftUI rendering cost and must not be cited as the
-/// authoritative UI Rendering metric.
+/// Probe 전용 driver / marker sanity measurement에 맞춘 metric 묶음입니다.
+/// XCUI tap synthesis, marker polling, accessibility synchronization, app/test process IPC가 포함되므로
+/// authoritative UI Rendering metric으로 인용하지 않습니다.
 public var actionLatencyMetrics: [XCTMetric] {
     [
         XCTClockMetric(),
@@ -81,19 +79,13 @@ public var actionLatencyMetrics: [XCTMetric] {
 }
 
 public extension XCTestCase {
-    /// **Probe-only** helper. Wraps `measure(metrics:)` and repeats the
-    /// supplied closure `repetitions` times per iteration to amortize XCTest
-    /// measurement overhead.
+    /// Probe 전용 helper입니다.
+    /// XCTest measurement overhead를 줄이기 위해 `measure(metrics:)` 한 iteration 안에서
+    /// body를 여러 번 반복합니다.
     ///
-    /// The measured `Clock Monotonic Time` is the **bundle latency** for all
-    /// `repetitions` of `body`. To derive per-action latency you must divide
-    /// by `repetitions` and by the number of state changes per repetition.
-    ///
-    /// The reported numbers are a driver/marker sanity signal — they include
-    /// XCUI tap synthesis, marker polling, accessibility synchronization, and
-    /// app/test process IPC. They are **not** the authoritative UI Rendering
-    /// metric. Use Xcode Instruments / xctrace `Time Profiler` (or `SwiftUI`)
-    /// traces recorded on a real device for any final rendering comparison.
+    /// 측정값은 전체 반복의 bundle latency입니다. Action별 latency가 필요하면
+    /// `repetitions`와 반복당 state change 수로 나눠야 합니다.
+    /// 최종 rendering 비교에는 xctrace trace를 사용합니다.
     func measureActionLatency(
         metrics: [XCTMetric] = actionLatencyMetrics,
         repetitions: Int = 5,

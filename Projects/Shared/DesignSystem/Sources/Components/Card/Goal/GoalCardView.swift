@@ -75,22 +75,11 @@ public struct GoalCardView: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: Constants.cornerRadius))
-        // Pass 4-S2 H-C2-a: avoid the shared `outsideBorder` modifier whose
-        // implementation re-overlays `self` inside the stroke (see
-        // `View+BorderInOutSide.swift`). During Home self-run scroll that
-        // duplicated subtree composition correlated with the
-        // "37 offscreen passes" hitch narrative and the 133 ms cold-cache
-        // hitch. The `.background { stroke }` form below is the local
-        // equivalent: stroke drawn at the view's bounds (half inside, half
-        // outside), the inside half hidden by the clipped content above,
-        // the outside half visible — same width / color / outside-edge
-        // alignment as `outsideBorder`, but without the second `self`
-        // composition. Shared `outsideBorder` modifier is intentionally
-        // unchanged; other call sites keep their existing behavior.
-        .background {
-            RoundedRectangle(cornerRadius: Constants.cornerRadius)
-                .stroke(Constants.borderColor, lineWidth: Constants.borderWidth * 2)
-        }
+        .outsideBorder(
+            Constants.borderColor,
+            shape: RoundedRectangle(cornerRadius: Constants.cornerRadius),
+            lineWidth: Constants.borderWidth
+        )
     }
 }
 
