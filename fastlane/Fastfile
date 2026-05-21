@@ -31,6 +31,7 @@ platform :ios do
   MAIN_APP_SCHEME    = "Twix"
   DEBUG_APP_SCHEME   = "TwixDebug"
   WORKSPACE_SCHEME   = "Twix-Workspace"
+  FIREBASE_CRASHLYTICS_UPLOAD_SYMBOLS_PATH = "Tuist/.build/checkouts/firebase-ios-sdk-xcframeworks/Sources/FirebaseCrashlytics/upload-symbols"
 
   BUNDLE_ID          = ENV["APP_IDENTIFIER"]
   APPLE_ID           = ENV["APPLE_ID"]
@@ -199,7 +200,7 @@ platform :ios do
     # zip 경로를 채워둠 — upload_symbols_to_crashlytics가 그걸 자동 사용.
     upload_symbols_to_crashlytics(
       gsp_path: "Projects/App/Resources/GoogleService-Info.plist",
-      binary_path: "Tuist/.build/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols"
+      binary_path: FIREBASE_CRASHLYTICS_UPLOAD_SYMBOLS_PATH
     )
 
     upload_to_testflight(
@@ -242,7 +243,7 @@ platform :ios do
 
     upload_symbols_to_crashlytics(
       gsp_path: "Projects/App/Resources/GoogleService-Info.plist",
-      binary_path: "Tuist/.build/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols"
+      binary_path: FIREBASE_CRASHLYTICS_UPLOAD_SYMBOLS_PATH
     )
 
     upload_to_testflight(
