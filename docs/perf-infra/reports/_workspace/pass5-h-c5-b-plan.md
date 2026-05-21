@@ -185,7 +185,7 @@ public var body: some View {
 4. **Visual sanity (simulator)**: launch `FeatureStatsExample` simulator, compare card border rendering with a baseline screenshot (before applying diff or from git stash). Any geometry mismatch → revert diff before commit.
 5. **Smoke test**: `FeatureStatsExampleSmokeTests` + `FeatureStatsExampleRenderingTests` (non-perf parts) pass on simulator.
 6. **Commit production change** as a single commit:
-   - message: `perf(stats): StatsCardView outsideBorder render duplication removal - #310`
+   - message: `refactor: StatsCardView 외곽선 렌더링 중복 제거 - #312`
    - paired with no other change.
 7. **After-gate trace collection** (9 traces) on device per §4.3.
 8. **Analyze**:

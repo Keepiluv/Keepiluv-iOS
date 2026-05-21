@@ -1,6 +1,8 @@
 # Pass 5 H-C5-b — after-gate verdict: KEEP
 
-**Production commit**: `5085d27 perf(stats): StatsCardView outsideBorder render duplication removal - #310`.
+**Measured production commit**: `3f83193 refactor: StatsCardView 외곽선 렌더링 중복 제거 - #312`.
+
+**Final PR code-shape note**: this after-gate measured the one-file `StatsCardView` local swap. Later review feedback promoted the same `background { stroke }` implementation into shared `outsideBorder` in `f664f2a`, so `StatsCardView` now uses the common modifier without reintroducing the duplicated subtree composition.
 
 **After-gate scenario**: Stats self-run scroll (`-UITEST_SWIFTUI_SELF_RUN_STATS_SCROLL`), PerfProfile, device `00008110-00096DC42632801E` (iPhone, iOS 26.4.2), `--time-limit 35s` xctrace window, `stats-heavy` seed, launch mode.
 
@@ -127,8 +129,9 @@ H-C2-a's identical-visual outcome on `GoalCardView` is the relevant precedent: s
 
 - **After-gate traces**: `/tmp/twix-perf-traces/pass5-after/h-c5-b/{swiftui,timeprofiler,hitches}/stats-heavy-selfrun-scroll-rep[123].trace` (9 bundles; SwiftUI ~104 MB each, TP 7-8 MB each, Hitches 153-258 MB each; disk free 74 GB after collection).
 - **Before-gate traces** (reused intact): `/tmp/twix-perf-traces/pass4-s3/c5-before/stats-selfrun-scroll/{timeprofiler,hitches}/...` and `/tmp/twix-perf-traces/pass4-s3/swiftui-selfrun-scroll/...`.
-- **Production commit**: `5085d27 perf(stats): StatsCardView outsideBorder render duplication removal - #310`.
-- **Plan**: `docs/perf-infra/reports/_workspace/pass5-h-c5-b-plan.md` (commit `cb99884`).
+- **Measured production commit**: `3f83193 refactor: StatsCardView 외곽선 렌더링 중복 제거 - #312`.
+- **Plan**: `docs/perf-infra/reports/_workspace/pass5-h-c5-b-plan.md` (commit `349e1d3`).
+- **Final shared modifier follow-up**: `f664f2a refactor: 리뷰 피드백 반영 - #312`.
 - **Visual sanity screenshot**: `/tmp/stats-h-c5-b-after.png`.
 
 ## 8. C5 closure
@@ -136,7 +139,7 @@ H-C2-a's identical-visual outcome on `GoalCardView` is the relevant precedent: s
 C5 is **closed** by Pass 5 with verdict **KEEP**:
 
 - Pass 4-S3 H-C5-a (LazyVGrid → eager VStack rows): gated-and-reverted (`da2278e` → `aa4a160`). Single-inner-container swap class exhausted.
-- Pass 5 H-C5-b (StatsCardView `outsideBorder` → local `.background { stroke }`): gated-and-kept (`5085d27`). Render-side duplication class succeeded on Stats analog to H-C2-a's Home success.
+- Pass 5 H-C5-b (StatsCardView `outsideBorder` → local `.background { stroke }`): gated-and-kept (`3f83193`). Render-side duplication class succeeded on Stats analog to H-C2-a's Home success. Final PR shape then moved the same implementation into shared `outsideBorder` via `f664f2a`.
 
 Open hypothesis classes from handoff §2.1 (Equatable on StatsCardView, cell-content reduction, cell-pool, cell-snapshot caching) remain explicitly **not opened** in Pass 5. Pass 5's one-pass-one-hypothesis budget for C5 is satisfied; further C5 work — if ever — is a new pass with its own plan and approval.
 

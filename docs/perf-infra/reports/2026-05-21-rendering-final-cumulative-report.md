@@ -3,7 +3,7 @@
 - **작성일**: 2026-05-21
 - **상태**: 시리즈 종결. Pass 5가 마지막 pass이며 Pass 6는 계획되어 있지 않다. 현재 PR에는 추가 production rendering optimization을 포함하지 않는다. 남은 항목은 future reference only다.
 - **Anchor baseline**: tag `baseline-render-pass-1` = commit `56b5b63` (Sun 2026-05-17 14:46 KST), configuration **Profile**, device "Jiyong의 iPhone" (UDID `00008110-00096DC42632801E`, iOS 26.4.2).
-- **Final HEAD reference**: Pass 5 closure 시점 (Pass 5 final report commit `10881a7` 직후).
+- **Final HEAD reference**: Pass 5 closure/reporting sequence after commit-message rewrite (`fff6b75` Pass 5 final, `4712343` cumulative report). Review feedback later promoted H-C5-b's measured local border implementation into shared `outsideBorder` in `f664f2a`.
 - **Authoritative metric**: Xcode Instruments / xctrace (Time Profiler + Animation Hitches).
 - **Probe metric (보조)**: XCTest driver / marker — sanity 신호로만 사용, 공식 개선 evidence 아님.
 
@@ -23,7 +23,7 @@
 | Pass 3 | Commit 7 — GoalDetail TimelineView idle guard | `aae16d3` | GoalDetail initial | TimelineView UpdateFilter user-code top-1 frame **9-12 ms 3/3 reps 제거**. idle CPU / 배터리 카테고리 |
 | Pass 4 | P4-2 — ProofPhoto image pipeline (preview decode-out-of-body + decoded preview representation) | `4cfabd0` | ProofPhoto comment typing (large fixture) | typing total stall `0.82 s → 0.53 s` (**-35 %**), longest hang `233 ms → 114 ms` (**-51 %**), TP ImageIO / JPEG decode top-frame **3/3 reps 제거** |
 | Pass 4 | Pass 4-S2 H-C2-a — Home GoalCardView outsideBorder render duplication removal | `0c0da63` | Home self-run scroll | Animation Hitches `0/2/4 → 0/0/0` (**-100 %**), 133.34 ms severe hitch eliminated, "37 offscreen passes" narrative eliminated, swiftui-updates **-40.7 %**, GoalCardView.body events **-94 %**, Image accessibility events **-50 %** (side effect) |
-| Pass 5 | H-C5-b — Stats StatsCardView outsideBorder render duplication removal | `5085d27` | Stats self-run scroll | Animation Hitches `4/1/2 → 2/0/0` (**-71 %**), hangs `1 (35.89 ms severe) → 0` (**-100 %**), "Potentially expensive app update(s)" narrative `3/3 → 0/3` (**eliminated**), swiftui-updates **-47.6 %** |
+| Pass 5 | H-C5-b — Stats StatsCardView outsideBorder render duplication removal | `3f83193` | Stats self-run scroll | Animation Hitches `4/1/2 → 2/0/0` (**-71 %**), hangs `1 (35.89 ms severe) → 0` (**-100 %**), "Potentially expensive app update(s)" narrative `3/3 → 0/3` (**eliminated**), swiftui-updates **-47.6 %** |
 
 **Production-valid 개선 5건** (3 rendering + 1 idle CPU + 1 structural cleanup). 모두 강제 reverted 되지 않고 현재 main branch에 남아 있다.
 
@@ -113,11 +113,11 @@
 
 | commit | scenario | metric | before (pass4-s3 c5-before, identical to Pass 5 H-C5-b baseline state) | after | delta |
 |---|---|---|---:|---:|---:|
-| H-C5-b (`5085d27`) | Stats self-run scroll | Animation Hitches per-rep | 4 / 1 / 2 (mean 2.33, total 7) | **2 / 0 / 0** (mean 0.67, total 2) | **-71 %** |
-| H-C5-b (`5085d27`) | Stats self-run scroll | hangs ≥ 33 ms | 1 (35.89 ms severe) | **0** | **-100 %** |
-| H-C5-b (`5085d27`) | Stats self-run scroll | "Potentially expensive app update(s)" narrative reproducibility | **3 / 3 reps** | **0 / 3 reps** | **eliminated** |
-| H-C5-b (`5085d27`) | Stats self-run scroll | swiftui-updates total | 641,276 | 336,120 | **-47.6 %** (raw; window-normalized ≥ -40 %) |
-| H-C5-b (`5085d27`) | Stats self-run scroll | TP user-code Stats frame in top-10 | absent (0/3) | absent (0/3) | unchanged (PASS, no regression) |
+| H-C5-b (`3f83193`) | Stats self-run scroll | Animation Hitches per-rep | 4 / 1 / 2 (mean 2.33, total 7) | **2 / 0 / 0** (mean 0.67, total 2) | **-71 %** |
+| H-C5-b (`3f83193`) | Stats self-run scroll | hangs ≥ 33 ms | 1 (35.89 ms severe) | **0** | **-100 %** |
+| H-C5-b (`3f83193`) | Stats self-run scroll | "Potentially expensive app update(s)" narrative reproducibility | **3 / 3 reps** | **0 / 3 reps** | **eliminated** |
+| H-C5-b (`3f83193`) | Stats self-run scroll | swiftui-updates total | 641,276 | 336,120 | **-47.6 %** (raw; window-normalized ≥ -40 %) |
+| H-C5-b (`3f83193`) | Stats self-run scroll | TP user-code Stats frame in top-10 | absent (0/3) | absent (0/3) | unchanged (PASS, no regression) |
 
 ### 3.3 trace contamination
 
@@ -185,7 +185,7 @@ Docs-only commits (각 pass의 workspace docs, plan, after-gate 검증 doc, fina
 
 | category | mechanism | 사례 |
 |---|---|---|
-| **Render-side composition duplication** | shared `outsideBorder` modifier가 `overlay { stroke.overlay(self) }`로 cell subtree를 두 번 composition. local `.background { stroke }`로 대체해서 중복 제거 | Pass 4-S2 H-C2-a (Home GoalCardView), Pass 5 H-C5-b (Stats StatsCardView) |
+| **Render-side composition duplication** | shared `outsideBorder` modifier가 `overlay { stroke.overlay(self) }`로 cell subtree를 두 번 composition. H-C2-a/H-C5-b 측정은 local `.background { stroke }` 대체로 검증했고, 최종 PR에서는 같은 구현을 shared `outsideBorder`로 승격 | Pass 4-S2 H-C2-a (Home GoalCardView), Pass 5 H-C5-b (Stats StatsCardView), review follow-up `f664f2a` |
 | **Main-thread image decode-in-body** | `UIImage(data:)`가 SwiftUI body 안에서 매 invalidation마다 재실행. ingestion 시점 한 번 decode + decoded representation을 state로 저장 | Pass 4 P4-2 (ProofPhoto preview / typing) |
 | **Idle TimelineView re-evaluation** | `TimelineView` schedule이 idle 상태에서도 frame-tick 마다 user-code update 호출. idle guard 추가로 GoalDetail initial 시나리오에서 user-code top-1 frame 제거 | Pass 3 Commit 7 (GoalDetail) |
 | **Read-set / observation surface 정리** | `HomePresentationLayer`로 Home의 read-set을 분리해 향후 attribution을 단순화 (직접적 rendering 개선은 noise floor 내) | Pass 3 Commit 3 (Home structural cleanup) |
@@ -235,7 +235,7 @@ Docs-only commits (각 pass의 workspace docs, plan, after-gate 검증 doc, fina
 | Pass 2 | — | — | `0fbd8f8` (Instruments dryrun) | (Pass 3 baseline 문서에 흡수) |
 | Pass 3 | `d6482c9` (Commit 3), `aae16d3` (Commit 7) | — | `5d507fa` (PerfProfile 분리) | `e9b6e45` (Pass 3 final), `766a6c3` (Commit 6 investigation), etc |
 | Pass 4 | `4cfabd0` (P4-2), `0c0da63` (H-C2-a) | `aa4a160` (revert of `da2278e` H-C5-a) | `cd989de` (P4-0 large fixture + scenarios), `79b6393` (ProofPhoto self-run typing harness), `fde7d41` (Home self-run scroll harness), `caa26be` (Stats self-run scroll harness), `d35efec` (SwiftUI Template self-run validation) | `76fadf6` / `a9eea07` / `78b592c` (Pass 4 final), `e6274bd` / `fb83216` (Pass 4-S audit), 등 다수 |
-| Pass 5 | `5085d27` (H-C5-b) | — | — (재사용) | `e2523f8` (handoff), `cb99884` (plan), `ec2b8f2` (after-gate), `10881a7` (Pass 5 final), (this commit) |
+| Pass 5 | `3f83193` (H-C5-b) | — | — (재사용) | `e2523f8` (handoff), `349e1d3` (plan), `6eb6048` (after-gate), `fff6b75` (Pass 5 final), `4712343` (cumulative), `173f29a` (Korean final summary), `f664f2a` (review feedback) |
 
 **Total production-kept rendering commits: 5** (Pass 3 × 2 + Pass 4 × 2 + Pass 5 × 1).
 **Total reverts: 1** (Pass 4-S3 H-C5-a).

@@ -14,6 +14,14 @@ public extension XCUIApplication {
 
     /// perf UITest용 launch argument를 구성하고 앱을 실행합니다.
     /// seed, scenario, animation 비활성화 여부를 한 곳에서 맞추기 위한 helper입니다.
+    ///
+    /// ## 사용 예시
+    /// ```swift
+    /// let app = XCUIApplication.launchForPerf(
+    ///     seed: "stats-heavy",
+    ///     scenario: .rendering
+    /// )
+    /// ```
     static func launchForPerf(
         seed: String,
         scenario: PerfScenarioKind? = nil,

@@ -14,6 +14,11 @@ public enum PerfCounters {
 
     /// 이름이 같은 counter를 1 증가시킵니다.
     /// Production build 또는 UITest가 아닌 실행에서는 no-op입니다.
+    ///
+    /// ## 사용 예시
+    /// ```swift
+    /// PerfCounters.increment("home.view.rebuild.proxy")
+    /// ```
     public static func increment(_ key: String) {
 #if PERF_TESTING
         guard UITestMode.isEnabled else { return }
@@ -27,6 +32,11 @@ public enum PerfCounters {
 
     /// counter의 현재 값을 읽습니다.
     /// Production build 또는 UITest가 아닌 실행에서는 항상 0을 반환합니다.
+    ///
+    /// ## 사용 예시
+    /// ```swift
+    /// let count = PerfCounters.value(for: "home.view.rebuild.proxy")
+    /// ```
     public static func value(for key: String) -> Int {
 #if PERF_TESTING
         guard UITestMode.isEnabled else { return 0 }
@@ -49,6 +59,11 @@ public enum PerfCounters {
 /// Xcode Instruments / xctrace trace를 사용합니다.
 public struct PerfRebuildProxyPing: View {
     /// 추적할 counter key로 proxy ping view를 생성합니다.
+    ///
+    /// ## 사용 예시
+    /// ```swift
+    /// PerfRebuildProxyPing("home.view.rebuild.proxy")
+    /// ```
     public init(_ key: String) {
 #if PERF_TESTING
         PerfCounters.increment(key)

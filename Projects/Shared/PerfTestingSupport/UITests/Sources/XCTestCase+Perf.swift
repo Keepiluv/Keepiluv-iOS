@@ -2,6 +2,11 @@ import XCTest
 
 /// feature ready marker가 나타날 때까지 기다립니다.
 /// Example host가 `perfReadyMarker(_:)`를 노출한 뒤 action을 시작하도록 맞추는 helper입니다.
+///
+/// ## 사용 예시
+/// ```swift
+/// waitForFeatureReady("home")
+/// ```
 public func waitForFeatureReady(
     _ slug: String,
     timeout: TimeInterval = 10,
@@ -21,6 +26,11 @@ public func waitForFeatureReady(
 /// `perfStateMarker(slug:key:value:)`가 특정 값으로 나타날 때까지 기다립니다.
 /// 값마다 accessibility identifier가 달라지므로 SwiftUI가 state mutation을
 /// 반영했는지 확인할 수 있습니다.
+///
+/// ## 사용 예시
+/// ```swift
+/// awaitPerfMarker(slug: "home", key: "toast", value: "visible")
+/// ```
 public func awaitPerfMarker(
     slug: String,
     key: String,
@@ -43,6 +53,11 @@ public func awaitPerfMarker(
 /// accessibility marker를 통해 `PerfCounters` counter 최신 값을 읽습니다.
 /// marker가 없으면 `-1`을 반환합니다. 최신 값을 보장하려면 읽기 전에
 /// state-change marker로 body re-render를 유도해야 합니다.
+///
+/// ## 사용 예시
+/// ```swift
+/// let count = readPerfCounter(slug: "home", key: "home.view.rebuild.proxy")
+/// ```
 public func readPerfCounter(slug: String, key: String) -> Int {
     let app = XCUIApplication()
     let prefix = "feature.\(slug).counter.\(key)."
@@ -86,6 +101,14 @@ public extension XCTestCase {
     /// 측정값은 전체 반복의 bundle latency입니다. Action별 latency가 필요하면
     /// `repetitions`와 반복당 state change 수로 나눠야 합니다.
     /// 최종 rendering 비교에는 xctrace trace를 사용합니다.
+    ///
+    /// ## 사용 예시
+    /// ```swift
+    /// let app = XCUIApplication()
+    /// measureActionLatency {
+    ///     app.buttons["feature.home.perf.toast-show"].tap()
+    /// }
+    /// ```
     func measureActionLatency(
         metrics: [XCTMetric] = actionLatencyMetrics,
         repetitions: Int = 5,

@@ -59,6 +59,11 @@ public enum UITestMode {
 
     /// 현재 launch argument에 따라 앱 전역 UITest 설정을 적용합니다.
     /// 지금은 `-UITEST_DISABLE_ANIMATIONS`가 있을 때 UIKit animation을 비활성화합니다.
+    ///
+    /// ## 사용 예시
+    /// ```swift
+    /// UITestMode.configureApplication()
+    /// ```
     public static func configureApplication() {
         guard isEnabled, disablesAnimations else { return }
         UIView.setAnimationsEnabled(false)
@@ -66,6 +71,16 @@ public enum UITestMode {
 
     /// UITest일 때만 TCA dependency override를 적용하는 wrapper를 반환합니다.
     /// Production launch에서는 전달된 update closure를 실행하지 않습니다.
+    ///
+    /// ## 사용 예시
+    /// ```swift
+    /// let update = UITestMode.dependencyValues { _ in
+    ///     // UITest launch에서만 dependency override 적용
+    /// }
+    /// withDependencies(update) {
+    ///     // UITest launch에서만 override 적용
+    /// }
+    /// ```
     public static func dependencyValues(
         _ update: @escaping (inout DependencyValues) -> Void
     ) -> (inout DependencyValues) -> Void {

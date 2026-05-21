@@ -51,7 +51,7 @@ Rendering optimization series는 **완료**되었다. Pass 3 → Pass 4 → Pass
 | Pass 3 Commit 7 | `aae16d3` | GoalDetail | `TimelineView` idle guard | TimelineView idle frame 9-12ms가 3/3 reps에서 top user-code frame에서 제거 | KEEP |
 | Pass 4 P4-2 | `4cfabd0` | ProofPhoto | preview decode out of body + decoded preview representation | typing total stall `0.82s → 0.53s` (-35%), longest hang `233ms → 114ms` (-51%), ImageIO/JPEG decode top-frame 3/3 typing reps에서 제거 | KEEP |
 | Pass 4-S2 H-C2-a | `0c0da63` | Home | `GoalCardView` `outsideBorder` render duplication removal | `swiftui-updates` -40.7%, `GoalCardView.body` events -93.7%, Animation Hitches `0/2/4 → 0/0/0`, 133.34ms severe hitch 제거, "37 offscreen passes" narrative 제거 | KEEP |
-| Pass 5 H-C5-b | `5085d27` | Stats | `StatsCardView` `outsideBorder` render duplication removal | Hitches `4/1/2 → 2/0/0` (-71%), hangs `1 → 0`, "Potentially expensive app update(s)" `3/3 → 0/3`, `swiftui-updates` `641,276 → 336,120` (-47.6%) | KEEP |
+| Pass 5 H-C5-b | `3f83193` | Stats | `StatsCardView` `outsideBorder` render duplication removal (측정은 local swap, 최종 PR은 shared `outsideBorder` 구현 승격) | Hitches `4/1/2 → 2/0/0` (-71%), hangs `1 → 0`, "Potentially expensive app update(s)" `3/3 → 0/3`, `swiftui-updates` `641,276 → 336,120` (-47.6%) | KEEP |
 
 요약하면 production에 남은 성과는 5건이다: rendering 개선 3건, idle CPU cleanup 1건, structural cleanup 1건.
 

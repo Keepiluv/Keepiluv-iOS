@@ -15,7 +15,7 @@
 
 | sub-track | 결과 | production commit | 핵심 수치 |
 |---|---|---|---|
-| Pass 5 Stats C5 — H-C5-b (`StatsCardView` `outsideBorder` → local `.background { stroke }`) | **KEEP** | `5085d27` | Animation Hitches `4/1/2 → 2/0/0` (-71 %), hangs `1 (35.89 ms severe) → 0` (-100 %), "Potentially expensive app update(s)" narrative `3/3 → 0/3` (eliminated), swiftui-updates -47.6 %, no new TP top-20 user-code frame |
+| Pass 5 Stats C5 — H-C5-b (`StatsCardView` `outsideBorder` render duplication removal) | **KEEP** | `3f83193` | Animation Hitches `4/1/2 → 2/0/0` (-71 %), hangs `1 (35.89 ms severe) → 0` (-100 %), "Potentially expensive app update(s)" narrative `3/3 → 0/3` (eliminated), swiftui-updates -47.6 %, no new TP top-20 user-code frame |
 | Pass 5 C1 — TXNavigationBar idle re-eval | **CLOSED-as-deferred** | — | Pass 4-S audit magnitude class matched C3 (gated and SKIPPED on idle TP). Pass 5 진입 시 cross-feature scope (Home / Stats / GoalDetail) + interaction-time harness 신설이 필요 → §4.8 one-file rule 및 Pass 5 closing 취지에 부합하지 않음 |
 | Pass 5 C6 — `Image.ImageViewChild<…AccessibilityProvider>` | **CLOSED-resolved-as-side-effect** | (Pass 4-S2 H-C2-a `0c0da63`의 side effect, additional Pass 5 H-C5-b expected reduction) | Pass 4-S2 H-C2-a after-gate에서 Home scroll C6 events `2,563 → 1,270` (-50 %), µs `38,200 → 30,250` (-21 %). Stats scroll의 C6 magnitude는 H-C5-b after-gate의 swiftui-updates total -47.6 % 일관 reduction에 포함되어 noise floor 아래로 collapse. 신규 production 변경 없음 |
 | Pass 5 ProofPhoto keyboard residual | **CLOSED-out-of-scope** | — | UIKit framework-side keyboard / focus stack (`_UIKeyboardStateManager`, `UIKeyboardCache`, `UIInputWindowController`, `UIAssistantBarButtonItemProvider`). Rendering / image-pipeline category 밖. 향후 UX latency / input handling 별도 카테고리로만 추적 |
@@ -28,7 +28,7 @@ Pass 4가 양방향으로 검증한 contract — "SwiftUI Template signal alone 
 - **Pass 4-S3 H-C5-a (REVERT)**: SwiftUI signal moved (-15 %) BUT Hitches 오히려 +60 % → reject (Stats container swap).
 - **Pass 5 H-C5-b (KEEP)**: SwiftUI signal moved (-47.6 %) + Hitches -71 % + hangs -100 % + 목표 narrative eliminated → production-valid (Stats render duplication).
 
-세 사례는 같은 룰의 양방향 + 동일 메커니즘 cross-feature 재현이다. H-C2-a (Home `outsideBorder`)와 H-C5-b (Stats `outsideBorder`)는 동일 `outsideBorder` modifier의 재중복 composition을 local `.background { RoundedRectangle.stroke(...) }`로 대체하는 같은 패턴이며, 두 feature에서 모두 measurable improvement를 생산했다. 단, cross-feature 적용 자체는 handoff §4.5의 "독립 gate evidence 없는 blind transfer 금지" 룰을 준수했다 — Pass 5 H-C5-b는 Stats self-run scroll에서 자체 before/after gate를 수행한 뒤에만 KEEP된다.
+세 사례는 같은 룰의 양방향 + 동일 메커니즘 cross-feature 재현이다. H-C2-a (Home `outsideBorder`)와 H-C5-b (Stats `outsideBorder`)는 동일 `outsideBorder` modifier의 재중복 composition을 `.background { RoundedRectangle.stroke(...) }` 형태로 제거하는 같은 패턴이며, 두 feature에서 모두 measurable improvement를 생산했다. 단, cross-feature 적용 자체는 handoff §4.5의 "독립 gate evidence 없는 blind transfer 금지" 룰을 준수했다 — Pass 5 H-C5-b는 Stats self-run scroll에서 자체 before/after gate를 수행한 뒤에만 KEEP된다. 측정 commit `3f83193`은 Stats local swap이었고, 리뷰 반영 commit `f664f2a`에서 같은 구현을 shared `outsideBorder`로 승격했다.
 
 ### 1.3 One-line summary
 
@@ -73,7 +73,7 @@ C1 / C6 / keyboard residual은 신규 trace 수집을 수행하지 않았다 (�
 
 ### 3.1 Hypothesis
 
-`StatsCardView` (`Projects/Shared/DesignSystem/Sources/Components/Card/Stats/View/StatsCardView.swift`)의 `outsideBorder(...)` modifier가 `overlay { shape.stroke().overlay(self) }`로 구현되어 (`Projects/Shared/DesignSystem/Sources/Modifiers/View+BorderInOutSide.swift:42-56`) cell subtree를 매 render마다 두 번 composition한다. 이를 local `.background { RoundedRectangle.stroke(..., lineWidth: × 2) }`로 대체해서 render-side 중복 composition을 제거한다.
+측정 당시 `StatsCardView` (`Projects/Shared/DesignSystem/Sources/Components/Card/Stats/View/StatsCardView.swift`)의 `outsideBorder(...)` modifier가 `overlay { shape.stroke().overlay(self) }`로 구현되어 (`Projects/Shared/DesignSystem/Sources/Modifiers/View+BorderInOutSide.swift`) cell subtree를 매 render마다 두 번 composition했다. H-C5-b는 이를 local `.background { RoundedRectangle.stroke(..., lineWidth: × 2) }`로 대체해서 render-side 중복 composition을 제거한다.
 
 Pass 4-S2 H-C2-a (Home `GoalCardView`)에서 동일 mechanism이 KEPT — Pass 5는 cross-feature 적용 시 handoff §4.5 (blind cross-transfer 금지) 룰 준수를 위해 Stats self-run scroll에서 독립 gate를 수행했다.
 
@@ -101,7 +101,7 @@ Pass 4-S2 H-C2-a (Home `GoalCardView`)에서 동일 mechanism이 KEPT — Pass 5
 +        }
 ```
 
-Shared `outsideBorder` modifier (`View+BorderInOutSide.swift`)는 unchanged. 다른 consumer (`GoalEditCardView`, `CardHeaderView`)도 unchanged.
+측정 commit에서는 shared `outsideBorder` modifier (`View+BorderInOutSide.swift`)와 다른 consumer (`GoalEditCardView`, `CardHeaderView`)가 unchanged였다. 최종 PR code shape에서는 리뷰 반영으로 같은 `background { stroke }` 구현을 shared `outsideBorder`에 적용했고, `StatsCardView` / `GoalCardView`는 다시 공통 modifier를 사용한다.
 
 ### 3.3 Before-gate (재사용)
 
@@ -257,10 +257,11 @@ Pass 4 P4-2 (`4cfabd0`)가 ProofPhoto image pipeline을 KEPT (typing total stall
 | commit | category |
 |---|---|
 | `e2523f8` | docs — Pass 5 handoff (Pass 4 종결 시점 작성) |
-| `cb99884` | docs — Pass 5 execution plan + H-C5-b plan |
-| `5085d27` | **perf — H-C5-b production attempt (KEPT)** |
-| `ec2b8f2` | docs — H-C5-b after-gate KEEP 검증 |
-| (this commit) | docs — Pass 5 final report |
+| `349e1d3` | docs — Pass 5 execution plan + H-C5-b plan |
+| `3f83193` | **refactor — H-C5-b production attempt (KEPT)** |
+| `6eb6048` | docs — H-C5-b after-gate KEEP 검증 |
+| `fff6b75` | docs — Pass 5 final report |
+| `f664f2a` | refactor — PR review feedback (shared `outsideBorder` final code shape) |
 
 **Production change count**: 1 (kept). **Reverted production change count**: 0. **Infra commit count**: 0 (Stats self-run scroll harness는 Pass 4-S3 `caa26be`에 이미 존재; Pass 5에서 새로 추가 안 함).
 
