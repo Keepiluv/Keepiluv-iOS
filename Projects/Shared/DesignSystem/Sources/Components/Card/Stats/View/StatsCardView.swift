@@ -52,11 +52,18 @@ public struct StatsCardView: View {
             completionSection
         }
         .clipShape(RoundedRectangle(cornerRadius: Constants.cardCornerRadius))
-        .outsideBorder(
-            Color.Gray.gray500,
-            shape: RoundedRectangle(cornerRadius: Constants.cardCornerRadius),
-            lineWidth: Constants.borderLineWidth
-        )
+        // Pass 5 H-C5-b: render-side duplication removal — same mechanism as
+        // Pass 4-S2 H-C2-a (`GoalCardView.swift`). The shared `outsideBorder`
+        // modifier is implemented as `overlay { shape.stroke().overlay(self) }`,
+        // which composes the card subtree twice per render. Local
+        // `.background { stroke }` replicates the visual (stroke drawn at the
+        // view's bounds, inside half hidden by the clipped content above,
+        // outside half visible) without the second `self` composition. Shared
+        // `outsideBorder` modifier is intentionally unchanged.
+        .background {
+            RoundedRectangle(cornerRadius: Constants.cardCornerRadius)
+                .stroke(Color.Gray.gray500, lineWidth: Constants.borderLineWidth * 2)
+        }
         .onTapGesture { onTap(item.goalId) }
     }
 }
