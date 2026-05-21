@@ -1,7 +1,7 @@
 # Rendering Optimization — Final Cumulative Report (Pass 1 → Pass 5)
 
 - **작성일**: 2026-05-21
-- **상태**: 시리즈 종결. 추가 production rendering hypothesis는 새 시리즈로 시작해야 한다.
+- **상태**: 시리즈 종결. Pass 5가 마지막 pass이며 Pass 6는 계획되어 있지 않다. 현재 PR에는 추가 production rendering optimization을 포함하지 않는다. 남은 항목은 future reference only다.
 - **Anchor baseline**: tag `baseline-render-pass-1` = commit `56b5b63` (Sun 2026-05-17 14:46 KST), configuration **Profile**, device "Jiyong의 iPhone" (UDID `00008110-00096DC42632801E`, iOS 26.4.2).
 - **Final HEAD reference**: Pass 5 closure 시점 (Pass 5 final report commit `10881a7` 직후).
 - **Authoritative metric**: Xcode Instruments / xctrace (Time Profiler + Animation Hitches).
@@ -69,7 +69,7 @@
 
 | pass | sub-track | 분류 | 사유 |
 |---|---|---|---|
-| Pass 5 | C1 — TXNavigationBar idle re-eval | CLOSED-as-deferred | C3 magnitude class와 동일 (SKIPPED 선례). 신규 interaction-time harness + cross-feature scope (≥ 3 features) 필요 → §4.8 one-file rule + Pass 5 closing 취지에 충돌. 향후 새 시리즈에서만 재오픈 가능 |
+| Pass 5 | C1 — TXNavigationBar idle re-eval | CLOSED-as-deferred | C3 magnitude class와 동일 (SKIPPED 선례). 신규 interaction-time harness + cross-feature scope (≥ 3 features) 필요 → §4.8 one-file rule + Pass 5 closing 취지에 충돌. Future reference only; 현재 PR scope 아님 |
 | Pass 5 | C6 — Image accessibility | CLOSED-resolved-as-side-effect | Pass 4-S2 H-C2-a (Home, -50 % events) + Pass 5 H-C5-b (Stats, -47.6 % SwiftUI total)의 cell-subtree composition 감소의 side effect로 noise floor 아래로 collapse. TP top-30 부재, Hitches narrative 부재 |
 | Pass 5 | ProofPhoto keyboard residual | CLOSED-out-of-scope | UIKit framework keyboard / focus stack. SwiftUI / view layer로 직접 최적화 불가. UX latency / input handling 별도 카테고리로만 추적 |
 
@@ -138,9 +138,9 @@
 
 §1.1의 5건 (Pass 3 Commit 3 + Pass 3 Commit 7 + Pass 4 P4-2 + Pass 4-S2 H-C2-a + Pass 5 H-C5-b)이 현재 main에 남아 있는 production-valid 개선의 전부. Reverted commit (H-C5-a), SKIPPED commits (Pass 3 Commit 4 / 5 / 6, Pass 4 P4-3 / P4-4, Pass 4-S C3 / C4), CLOSED candidates (Pass 5 C1 / C6 / keyboard residual)는 production impact에 포함되지 않는다.
 
-Infra-only commits (perf harness, fixture 시드, marker infra, self-run scroll harness 등)도 production behavior 변경이 없으므로 production impact에 포함되지 않는다. 단, 측정 인프라로서의 가치는 future series에서 reusable assets로 유지된다 — §6.1 참조.
+Infra-only commits (perf harness, fixture 시드, marker infra, self-run scroll harness 등)도 production behavior 변경이 없으므로 production impact에 포함되지 않는다. 단, 측정 인프라로서의 가치는 future reference asset으로 유지된다 — §6.1 참조.
 
-Docs-only commits (각 pass의 workspace docs, plan, after-gate 검증 doc, final report)도 production impact 외. 단, 의사결정 재현성 / methodology 검증 / 향후 시리즈 진입 시 reference로서의 가치는 유지.
+Docs-only commits (각 pass의 workspace docs, plan, after-gate 검증 doc, final report)도 production impact 외. 단, 의사결정 재현성 / methodology 검증 / future reference로서의 가치는 유지.
 
 ---
 
@@ -198,7 +198,7 @@ Docs-only commits (각 pass의 workspace docs, plan, after-gate 검증 doc, fina
 | Pass 4 P4-3 (ProofPhoto downsample) / P4-4 (subtree isolation) | P4-2 적용 후 진입 조건 미충족. |
 | Pass 4-S C3 (TXCalendarDateCell) / C4 (GoalDetailView) | idle gate에서 TP top-30 부재. SKIP. |
 | Pass 4-S3 H-C5-a (Stats LazyVGrid swap) | gated-and-reverted — counts moved, real cost did not. Single-inner-container swap class exhausted. |
-| Pass 5 C5 잔여 hypothesis classes (Equatable on StatsCardView, cell-content reduction, cell-pool, cell-snapshot caching) | Pass 5 one-pass-one-hypothesis budget for C5는 H-C5-b로 충족. 잔여 class는 각각 multi-file rewrite 또는 visual-behavior change 또는 stale-closure risk 동반. 새 시리즈의 새 plan + approval로만 진입. |
+| Pass 5 C5 잔여 hypothesis classes (Equatable on StatsCardView, cell-content reduction, cell-pool, cell-snapshot caching) | Pass 5 one-pass-one-hypothesis budget for C5는 H-C5-b로 충족. 잔여 class는 각각 multi-file rewrite 또는 visual-behavior change 또는 stale-closure risk 동반. Future reference only; 현재 PR scope 아님. |
 | Pass 5 C1 (TXNavigationBar idle re-eval) | cross-feature scope (≥ 3 features) + interaction-time harness 신설 필요. §4.8 one-file rule 및 Pass 5 closing 취지 충돌. CLOSED-as-deferred. |
 | Pass 5 C6 (Image accessibility) | Pass 4-S2 H-C2-a + Pass 5 H-C5-b의 side effect로 noise floor 아래로 collapse. CLOSED-resolved-as-side-effect. |
 | Pass 5 ProofPhoto keyboard residual | UIKit framework cost — SwiftUI / view layer 최적화 불가. CLOSED-out-of-scope. |
@@ -209,19 +209,21 @@ Docs-only commits (각 pass의 workspace docs, plan, after-gate 검증 doc, fina
 2. **남은 후보는 cost / risk가 benefit을 초과**: C1 (cross-feature scope), C5 잔여 (multi-file rewrite / visual change / closure risk), C6 (이미 해결), keyboard residual (out of category). 추가 작업의 marginal benefit이 진입 cost (새 harness, 새 plan, 새 gate, multi-file diff)를 정당화하지 않는다.
 3. **Methodology contract가 안정적으로 작동함을 3번 입증**: H-C2-a KEEP, H-C5-a REVERT, H-C5-b KEEP. "SwiftUI Template counts alone never justify; TP + Animation Hitches가 authoritative" 룰은 양방향 + 같은 메커니즘 cross-feature 재현으로 확립.
 4. **Trace 신뢰도 0 contamination**: 138 production-decision-relevant traces 중 0건 contaminated. 추가 시리즈가 진입할 때 baseline 신뢰도는 매우 높음.
-5. **Reusable infrastructure intact**: ProofPhoto self-run typing harness (`79b6393`), Home self-run scroll harness (`fde7d41`), Stats self-run scroll harness (`caa26be`), large fixture infrastructure (`cd989de` 시점 Pass 4 baseline tag), PerfProfile configuration + PERF_TESTING gating. 새 시리즈가 시작될 때 이 infra를 그대로 활용 가능.
-6. **Future risk / known unresolved area는 명시적으로 문서화됨**: §6.3 표 + 본 cumulative report 자체가 inventory. 새 pass는 새 plan으로 진입할 때 본 리포트의 §6.3 표를 참조해 hypothesis class를 정한다.
+5. **Reusable infrastructure intact**: ProofPhoto self-run typing harness (`79b6393`), Home self-run scroll harness (`fde7d41`), Stats self-run scroll harness (`caa26be`), large fixture infrastructure (`cd989de` 시점 Pass 4 baseline tag), PerfProfile configuration + PERF_TESTING gating. 현재 PR에는 추가 optimization이 없지만, infra는 future reference asset으로 보존된다.
+6. **Future reference / known unresolved area는 명시적으로 문서화됨**: §6.3 표 + 본 cumulative report 자체가 inventory. 이 항목들은 현재 scope가 아니며 Pass 6 계획도 없다.
 
 ---
 
-## 7. Future risk / known unresolved area
+## 7. Future reference / known unresolved area
+
+이 섹션은 남은 항목을 future reference로 보존하기 위한 inventory다. 현재 PR의 active scope가 아니며, Pass 6 계획도 없다.
 
 - **Stats C5 — larger-scope hypothesis classes**: Pass 5에서 의도적으로 열지 않음. Equatable on StatsCardView (closure-identity risk), cell-content reduction (visual change), cell-pool (architectural rewrite), cell-snapshot caching (first-paint cost + lifecycle complexity). 잔여 cost는 H-C5-b 후 baseline 대비 Animation Hitches `2/0/0` (mean 0.67) 수준 — practical impact 매우 낮음.
 - **C1 — TXNavigationBar idle re-eval**: cross-feature scope. 재오픈 조건은 §2.4 참조.
-- **ProofPhoto keyboard / focus framework residual**: UIKit framework cost. UX latency / input handling 별도 카테고리로만 추적. SwiftUI rendering 시리즈 밖.
-- **Configuration drift**: `Profile` vs `PerfProfile` configuration 차이가 직접 비교를 가로막음. 향후 시리즈는 처음부터 `PerfProfile` baseline tag로 시작해서 본 caveat을 피할 수 있음.
-- **Animation Hitches metric의 count vs severity tension**: Pass 4-S3 H-C5-a가 보여준 것처럼 count는 +60 %, severity (hangs)는 -100 %로 갈 수 있음. 본 시리즈는 plan의 명시적 KEEP/REVERT criteria가 count-based였기 때문에 그 게이트를 따랐음. 향후 시리즈는 severity-weighted metric을 별도 KEEP criterion에 추가하는 것을 고려할 수 있음.
-- **SwiftUI Template attach-mode 0-row 제한**: iOS 26.4.2 / Xcode 26.0에서 재확인된 tooling limit. Driver-required scenario (XCUITest typing / reselect / interactive scroll)는 self-run harness 우회로만 SwiftUI Template attribution 가능. 향후 OS / Xcode 업데이트가 이 제한을 풀 수 있음.
+- **ProofPhoto keyboard / focus framework residual**: UIKit framework cost. UX latency / input handling 별도 카테고리 참고 항목. SwiftUI rendering 시리즈 밖.
+- **Configuration drift**: `Profile` vs `PerfProfile` configuration 차이가 직접 비교를 가로막음. Future reference로 기록.
+- **Animation Hitches metric의 count vs severity tension**: Pass 4-S3 H-C5-a가 보여준 것처럼 count는 +60 %, severity (hangs)는 -100 %로 갈 수 있음. 본 시리즈는 plan의 명시적 KEEP/REVERT criteria가 count-based였기 때문에 그 게이트를 따랐음. Future reference로 기록.
+- **SwiftUI Template attach-mode 0-row 제한**: iOS 26.4.2 / Xcode 26.0에서 재확인된 tooling limit. Driver-required scenario (XCUITest typing / reselect / interactive scroll)는 self-run harness 우회로만 SwiftUI Template attribution 가능. Future reference로 기록.
 
 ---
 
@@ -245,6 +247,6 @@ Docs-only commits (각 pass의 workspace docs, plan, after-gate 검증 doc, fina
 
 Rendering optimization 시리즈 (Pass 1 → Pass 5) 종료.
 
-향후 rendering 관련 production 변경이 필요한 경우, 본 cumulative report의 §6.3 (의도적으로 최적화하지 않은 후보 inventory) 및 §7 (future risk / known unresolved area)을 starting point로 사용해서 새 시리즈로 진입한다. Pass 5의 H-C5-b가 입증한 "render-side duplication removal" 패턴이 또 다른 cross-feature 후보 (`CardHeaderView`, `GoalEditCardView` 등 `outsideBorder` consumer)에서 재현 가능한지는 본 시리즈가 명시적으로 다루지 않은 영역이므로, 그 자체로 다음 시리즈의 candidate가 될 수 있다 (단, handoff §4.5 룰 — 각 cross-feature 적용은 independent gate evidence 필수 — 그대로 적용).
+Pass 5가 최종 pass이며 Pass 6는 계획되어 있지 않다. 현재 PR에는 추가 rendering optimization이 포함되지 않는다. 본 cumulative report의 §6.3 및 §7은 남은 항목을 future reference only로 보존하기 위한 inventory이며, current scope나 즉시 follow-up 구현 계획을 의미하지 않는다.
 
 본 시리즈는 이로써 결론을 내고 closed.

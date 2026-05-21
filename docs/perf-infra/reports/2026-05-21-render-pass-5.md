@@ -5,7 +5,7 @@
 - **Authoritative metric**: Xcode Instruments / xctrace (Time Profiler + Animation Hitches), iOS 26.4.2 device (Jiyong의 iPhone, UDID `00008110-00096DC42632801E`), **PerfProfile** configuration.
 - **Probe metric (보조)**: XCTest XCUI driver — driver/marker sanity 신호 (개선 evidence 아님).
 
-이 리포트는 Pass 5 전체 (Stats C5 H-C5-b primary track + C1/C6/keyboard residual closure)의 최종 결과를 정리한다. Pass 5는 rendering 시리즈의 **마지막 pass**다.
+이 리포트는 Pass 5 전체 (Stats C5 H-C5-b primary track + C1/C6/keyboard residual closure)의 최종 결과를 정리한다. Pass 5는 rendering 시리즈의 **마지막 pass**다. **Pass 6는 계획되어 있지 않으며, 현재 PR에는 추가 rendering optimization을 포함하지 않는다.** 남은 candidate / residual 항목은 future reference only로 기록한다.
 
 ---
 
@@ -63,9 +63,9 @@ C1 / C6 / keyboard residual은 신규 trace 수집을 수행하지 않았다 (�
 ### 2.3 Out of scope
 
 - **Auth / Onboarding** rendering: VoC 우선순위 아님.
-- **GoalDetail particle / overlay** (Pass 3 Commit 7 KEEP 이후): Pass 4-S 진입 조건 미충족.
-- **GoalDetail / Stats / Settings 추가 hypothesis**: evidence-gated 유지, Pass 5 baseline에 추가 진입 조건 없음.
-- **C5 잔여 hypothesis classes** (Equatable on StatsCardView, cell-content reduction, cell-pool, cell-snapshot caching): handoff §2.1 inventory에 기록. Pass 5 one-pass-one-hypothesis budget for C5는 H-C5-b로 충족. 잔여 class는 Pass 5에서 열지 않음.
+- **GoalDetail particle / overlay** (Pass 3 Commit 7 KEEP 이후): Pass 4-S 진입 조건 미충족. Future reference only.
+- **GoalDetail / Stats / Settings 추가 hypothesis**: evidence-gated 유지, Pass 5 baseline에 추가 진입 조건 없음. 현재 PR scope 아님.
+- **C5 잔여 hypothesis classes** (Equatable on StatsCardView, cell-content reduction, cell-pool, cell-snapshot caching): handoff §2.1 inventory에 기록. Pass 5 one-pass-one-hypothesis budget for C5는 H-C5-b로 충족. 잔여 class는 Pass 5에서 열지 않으며, Pass 6 계획도 없다.
 
 ---
 
@@ -190,7 +190,7 @@ Pass 4-S audit (`pass4-s-swiftui-template-audit.md` §C1)이 cross-feature idle 
 
 ### 4.3 Verdict
 
-**CLOSED-as-deferred**. 향후 재오픈 시 — (a) interaction-time harness 신설 commit, (b) cross-feature scope에 대한 명시적 hypothesis class 결정, (c) §4.8 룰의 형식적 우회가 아닌 본질적 정당화 — 세 가지가 모두 갖춰진 새 pass로 처리한다.
+**CLOSED-as-deferred**. 이 항목은 future reference only이며 현재 PR에서 더 진행하지 않는다. Pass 6 계획은 없다. 언젠가 별도 승인된 작업으로 재오픈하려면 — (a) interaction-time harness 신설 commit, (b) cross-feature scope에 대한 명시적 hypothesis class 결정, (c) §4.8 룰의 형식적 우회가 아닌 본질적 정당화 — 세 가지가 모두 필요하다.
 
 ---
 
@@ -223,7 +223,7 @@ Pass 5 H-C5-b는 같은 `outsideBorder` mechanism을 Stats `StatsCardView`에 �
 
 ### 5.3 Verdict
 
-**CLOSED-resolved-as-side-effect**. C6는 Pass 4-S2 H-C2-a + Pass 5 H-C5-b의 cell-subtree composition 감소의 side effect로 noise floor 아래로 collapse. 별도 production 변경 없음. 향후 재오픈은 (a) post-Pass-5 measurement에서 image accessibility magnitude가 다시 상승하거나 (b) 새로운 image-heavy scenario에서 TP top-30 또는 Hitches narrative에 attributable hot path가 등장할 때.
+**CLOSED-resolved-as-side-effect**. C6는 Pass 4-S2 H-C2-a + Pass 5 H-C5-b의 cell-subtree composition 감소의 side effect로 noise floor 아래로 collapse. 별도 production 변경 없음. 이 항목은 future reference only이며 현재 PR scope가 아니다.
 
 ---
 
@@ -248,7 +248,7 @@ Pass 4 P4-2 (`4cfabd0`)가 ProofPhoto image pipeline을 KEPT (typing total stall
 
 ### 6.3 Verdict
 
-**CLOSED-out-of-scope**. 향후 재오픈은 별도 카테고리 (rendering 시리즈가 아닌 UX latency 시리즈)로만. Pass 5는 이를 rendering 시리즈의 정상 closure로 처리하고 cumulative final report에 "future risk / known unresolved area"로 기록한다.
+**CLOSED-out-of-scope**. 이 항목은 rendering 시리즈의 current scope가 아니며, future reference only로 남긴다. Pass 5는 이를 rendering 시리즈의 정상 closure로 처리하고 cumulative final report에 "future reference / known unresolved area"로 기록한다.
 
 ---
 
@@ -278,8 +278,8 @@ Pass 5 closure 후 별도 cumulative final report (`2026-05-21-rendering-final-c
 
 - **Trace window 차이**: Pass 5 H-C5-b after-gate는 `--time-limit 35s`로 수집, Pass 4-S3 C5 before-gate는 30s로 수집. SwiftUI updates 총량 비교에서 raw -47.6 %는 window normalization (30/35)을 적용해도 ≥ -40 %로 여전히 large reduction. Hitches와 narrative는 active-scroll-window 기반 event metric이라 window 차이에 둔감 — KEEP 결정은 window-insensitive metric 기반.
 - **rep3 TP rank-10 closure frame**: `closure #1 in closure #1 in closure #1 in StatsView.scrollCardList.getter` (5 ms / 5 samples)는 self-run scroll harness driver code (`#if PERF_TESTING` 블록 내). Production code 아님. H-C5-a after-gate에서도 동일 패턴 관찰됨.
-- **C6 Stats-side magnitude는 직접 재측정하지 않음**: H-C5-b after-gate의 일관 swiftui-updates -47.6 % reduction과 Pass 4-S2 H-C2-a의 Home C6 -50 % side-effect를 inference 근거로 사용. 보수적 표현으로 "resolved as side effect"로 표기. 엄격한 per-view C6 magnitude는 future re-measurement 시 확인 가능.
+- **C6 Stats-side magnitude는 직접 재측정하지 않음**: H-C5-b after-gate의 일관 swiftui-updates -47.6 % reduction과 Pass 4-S2 H-C2-a의 Home C6 -50 % side-effect를 inference 근거로 사용. 보수적 표현으로 "resolved as side effect"로 표기. 엄격한 per-view C6 magnitude는 future reference로만 남긴다.
 - **H-C2-a → H-C5-b cross-feature 적용**: 같은 `outsideBorder` mechanism의 cross-feature 재현이지만, blind transfer는 아니다. Stats self-run scroll에서 자체 before/after gate를 수행하고 모든 KEEP criteria를 통과한 뒤에만 KEEP. handoff §4.5 룰 준수.
-- **C5 잔여 hypothesis classes**: Equatable on StatsCardView, cell-content reduction, cell-pool, cell-snapshot caching은 Pass 5에서 열지 않음. 향후 필요 시 새 pass의 새 plan + approval로만 진입.
+- **C5 잔여 hypothesis classes**: Equatable on StatsCardView, cell-content reduction, cell-pool, cell-snapshot caching은 Pass 5에서 열지 않음. 현재 PR scope가 아니며 Pass 6 계획도 없다.
 
-Pass 5 종결.
+Pass 5 종결. Rendering optimization 시리즈도 여기서 종료한다.
