@@ -30,11 +30,11 @@ public struct AuthView: View {
             "로그인 실패",
             isPresented: Binding(
                 get: { store.errorMessage != nil },
-                set: { _ in store.send(.dismissError) }
+                set: { _ in store.send(.view(.dismissError)) }
             )
         ) {
             Button("확인") {
-                store.send(.dismissError)
+                store.send(.view(.dismissError))
             }
         } message: {
             Text(store.errorMessage ?? "")
@@ -119,7 +119,7 @@ private extension AuthView {
 private extension AuthView {
     var kakaoLoginButton: some View {
         Button {
-            store.send(.kakaoLoginButtonTapped)
+            store.send(.view(.kakaoLoginButtonTapped))
         } label: {
             HStack(spacing: Spacing.spacing6) {
                 Image.Icon.Symbol.kakao
@@ -142,7 +142,7 @@ private extension AuthView {
 
     var googleLoginButton: some View {
         Button {
-            store.send(.googleLoginButtonTapped)
+            store.send(.view(.googleLoginButtonTapped))
         } label: {
             HStack(spacing: Spacing.spacing6) {
                 Image.Icon.Symbol.google
@@ -169,7 +169,7 @@ private extension AuthView {
 
     var appleLoginButton: some View {
         Button {
-            store.send(.appleLoginButtonTapped)
+            store.send(.view(.appleLoginButtonTapped))
         } label: {
             HStack(spacing: Spacing.spacing6) {
                 Image.Icon.Symbol.apple

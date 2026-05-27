@@ -63,7 +63,7 @@ public struct MainTabView: View {
             }
         }
         .txToast(
-            item: $store.home.home.toast,
+            item: $store.home.home.presentation.toast,
             customPadding: Constants.tabBarHeight
         )
         .txLoading(isPresented: isTabLoading)
@@ -72,8 +72,8 @@ public struct MainTabView: View {
 
 private extension MainTabView {
     var isTabLoading: Bool {
-        (store.selectedTab == .home && store.home.routes.isEmpty && store.home.home.isLoading) ||
-        (store.selectedTab == .statistics && store.stats.routes.isEmpty && store.stats.stats.isLoading)
+        (store.selectedTab == .home && store.home.routes.isEmpty && store.home.home.ui.isLoading) ||
+        (store.selectedTab == .statistics && store.stats.routes.isEmpty && store.stats.stats.ui.isLoading)
     }
 }
 
@@ -85,7 +85,7 @@ private extension MainTabView {
                 size: .m,
                 state: .standard
             ),
-            onTap: { store.send(.home(.home(.floatingButtonTapped))) }
+            onTap: { store.send(.home(.home(.view(.floatingButtonTapped)))) }
         )
         .outsideBorder(
             Color.Gray.gray300,

@@ -60,7 +60,7 @@ extension StatsCoordinator {
                 state.routes.removeLast()
                 return .none
 
-            case .goalDetail(.onDisappear):
+            case .goalDetail(.view(.onDisappear)):
                 if !state.routes.contains(.goalDetail) {
                     state.goalDetail = nil
                 }
@@ -70,7 +70,7 @@ extension StatsCoordinator {
                 state.routes.removeLast()
                 return .none
 
-            case .makeGoal(.onDisappear):
+            case .makeGoal(.view(.onDisappear)):
                 if !state.routes.contains(.makeGoal) {
                     state.makeGoal = nil
                 }

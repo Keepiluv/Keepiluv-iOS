@@ -20,31 +20,31 @@ struct HomePresentationLayer: ViewModifier {
     func body(content: Content) -> some View {
         content
             .txBottomSheet(
-                isPresented: $store.isAddGoalPresented,
+                isPresented: $store.presentation.isAddGoalPresented,
                 showDragIndicator: true,
                 sheetContent: {
                     AddGoalListView { category in
-                        store.send(.addGoalButtonTapped(category))
+                        store.send(.view(.addGoalButtonTapped(category)))
                     }
                 }
             )
             .txBottomSheet(
-                isPresented: $store.isCalendarSheetPresented,
+                isPresented: $store.presentation.isCalendarSheetPresented,
                 sheetContent: {
                     TXCalendarBottomSheet(
-                        selectedDate: $store.calendarSheetDate,
+                        selectedDate: $store.data.calendarSheetDate,
                         completeButtonText: "완료",
                         onComplete: {
-                            store.send(.monthCalendarConfirmTapped)
+                            store.send(.view(.monthCalendarConfirmTapped))
                         }
                     )
                 }
             )
             .txModal(
-                item: $store.modal,
+                item: $store.presentation.modal,
                 onAction: { action in
                     if action == .confirm {
-                        store.send(.modalConfirmTapped)
+                        store.send(.view(.modalConfirmTapped))
                     }
                 }
             )
@@ -52,16 +52,16 @@ struct HomePresentationLayer: ViewModifier {
                 transaction.disablesAnimations = false
             }
             .fullScreenCover(
-                isPresented: $store.isProofPhotoPresented,
-                onDismiss: { store.send(.proofPhotoDismissed) },
+                isPresented: $store.presentation.isProofPhotoPresented,
+                onDismiss: { store.send(.view(.proofPhotoDismissed)) },
             ) {
                 if let proofPhotoStore = store.scope(state: \.proofPhoto, action: \.proofPhoto) {
                     proofPhotoFactory.makeView(proofPhotoStore)
                 }
             }
             .cameraPermissionAlert(
-                isPresented: $store.isCameraPermissionAlertPresented,
-                onDismiss: { store.send(.cameraPermissionAlertDismissed) }
+                isPresented: $store.presentation.isCameraPermissionAlertPresented,
+                onDismiss: { store.send(.view(.cameraPermissionAlertDismissed)) }
             )
     }
 }

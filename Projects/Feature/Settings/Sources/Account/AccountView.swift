@@ -29,7 +29,7 @@ struct AccountView: View {
         .navigationBarBackButtonHidden(true)
         .txModal(item: $store.modal) { action in
             if action == .confirm {
-                store.send(.modalConfirmTapped)
+                store.send(.view(.modalConfirmTapped))
             }
         }
         .txLoading(isPresented: store.isLoading)
@@ -42,7 +42,7 @@ private extension AccountView {
     var navigationBar: some View {
         TXNavigationBar(style: .subTitle(title: "계정", type: .back)) { action in
             if action == .backTapped {
-                store.send(.subViewBackButtonTapped)
+                store.send(.view(.subViewBackButtonTapped))
             }
         }
     }
@@ -70,7 +70,7 @@ private extension AccountView {
 
     var logoutItem: some View {
         listItem(title: "로그아웃") {
-            store.send(.logoutTapped)
+            store.send(.view(.logoutTapped))
         }
     }
 
@@ -85,13 +85,13 @@ private extension AccountView {
 
     var disconnectCoupleItem: some View {
         listItem(title: "커플 끊기") {
-            store.send(.disconnectCoupleTapped)
+            store.send(.view(.disconnectCoupleTapped))
         }
     }
 
     var withdrawItem: some View {
         listItem(title: "탈퇴하기") {
-            store.send(.withdrawTapped)
+            store.send(.view(.withdrawTapped))
         }
     }
 

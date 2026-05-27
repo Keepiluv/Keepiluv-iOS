@@ -27,7 +27,7 @@ import Foundation
 @Reducer
 public struct AuthReducer {
     @Dependency(\.analyticsClient) var analyticsClient
-    
+
     @ObservableState
     public struct State: Equatable {
         public var isLoading = false
@@ -38,18 +38,29 @@ public struct AuthReducer {
     }
 
     public enum Action {
-        case onAppear
-        case appleLoginButtonTapped
-        case kakaoLoginButtonTapped
-        case googleLoginButtonTapped
-        case loginResponse(Result<AuthResult, Error>)
-        case dismissError
-        case delegate(Delegate)
+        // MARK: - View
+        public enum View {
+            case onAppear
+            case appleLoginButtonTapped
+            case kakaoLoginButtonTapped
+            case googleLoginButtonTapped
+            case dismissError
+        }
 
+        // MARK: - Response
+        public enum Response {
+            case loginResponse(Result<AuthResult, Error>)
+        }
+
+        // MARK: - Delegate
         @CasePathable
         public enum Delegate {
             case loginSucceeded(AuthResult)
         }
+
+        case view(View)
+        case response(Response)
+        case delegate(Delegate)
     }
 
     public init() {}
@@ -57,32 +68,60 @@ public struct AuthReducer {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .onAppear:
-                analyticsClient.logEvent(AuthAnalyticsEvent.loginViewed)
-                return .none
-                
-            case .appleLoginButtonTapped:
-                return Self.handleLogin(provider: .apple, state: &state)
+            case .view(let viewAction):
+                return reduceView(state: &state, action: viewAction)
 
-            case .kakaoLoginButtonTapped:
-                return Self.handleLogin(provider: .kakao, state: &state)
-
-            case .googleLoginButtonTapped:
-                return Self.handleLogin(provider: .google, state: &state)
-
-            case .loginResponse(.success(let result)):
-                return Self.handleLoginSuccess(state: &state, result: result)
-
-            case .loginResponse(.failure(let error)):
-                return Self.handleLoginFailure(state: &state, error: error)
-
-            case .dismissError:
-                state.errorMessage = nil
-                return .none
+            case .response(let responseAction):
+                return reduceResponse(state: &state, action: responseAction)
 
             case .delegate:
                 return .none
             }
+        }
+    }
+}
+
+// MARK: - View
+
+private extension AuthReducer {
+    func reduceView(
+        state: inout State,
+        action: Action.View
+    ) -> Effect<Action> {
+        switch action {
+        case .onAppear:
+            analyticsClient.logEvent(AuthAnalyticsEvent.loginViewed)
+            return .none
+
+        case .appleLoginButtonTapped:
+            return Self.handleLogin(provider: .apple, state: &state)
+
+        case .kakaoLoginButtonTapped:
+            return Self.handleLogin(provider: .kakao, state: &state)
+
+        case .googleLoginButtonTapped:
+            return Self.handleLogin(provider: .google, state: &state)
+
+        case .dismissError:
+            state.errorMessage = nil
+            return .none
+        }
+    }
+}
+
+// MARK: - Response
+
+private extension AuthReducer {
+    func reduceResponse(
+        state: inout State,
+        action: Action.Response
+    ) -> Effect<Action> {
+        switch action {
+        case .loginResponse(.success(let result)):
+            return Self.handleLoginSuccess(state: &state, result: result)
+
+        case .loginResponse(.failure(let error)):
+            return Self.handleLoginFailure(state: &state, error: error)
         }
     }
 }
@@ -110,9 +149,9 @@ private extension AuthReducer {
         return .run { send in
             do {
                 let authResult = try await authClient.signIn(provider)
-                await send(.loginResponse(.success(authResult)))
+                await send(.response(.loginResponse(.success(authResult))))
             } catch {
-                await send(.loginResponse(.failure(error)))
+                await send(.response(.loginResponse(.failure(error))))
             }
         }
     }

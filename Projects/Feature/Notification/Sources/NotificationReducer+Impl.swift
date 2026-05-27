@@ -24,7 +24,6 @@ extension NotificationReducer {
 
 // MARK: - Core Reduce Logic
 
-// swiftlint:disable:next function_body_length
 private func reduceCore(
     state: inout NotificationReducer.State,
     action: NotificationReducer.Action,
@@ -34,9 +33,46 @@ private func reduceCore(
     case .binding:
         return .none
 
+    case .view(let viewAction):
+        return reduceView(state: &state, action: viewAction, notificationClient: notificationClient)
+
+    case .response(let responseAction):
+        return reduceResponse(state: &state, action: responseAction)
+
+    case .delegate:
+        return .none
+    }
+}
+
+// MARK: - View
+
+private func reduceView(
+    state: inout NotificationReducer.State,
+    action: NotificationReducer.Action.View,
+    notificationClient: NotificationClient
+) -> Effect<NotificationReducer.Action> {
+    switch action {
     case .onAppear:
         return handleOnAppear(state: &state, notificationClient: notificationClient)
 
+    case .backButtonTapped:
+        return .send(.delegate(.navigateBack))
+
+    case .notificationTapped(let item):
+        return handleNotificationTapped(item: item, notificationClient: notificationClient)
+
+    case .loadMore:
+        return handleLoadMore(state: &state, notificationClient: notificationClient)
+    }
+}
+
+// MARK: - Response
+
+private func reduceResponse(
+    state: inout NotificationReducer.State,
+    action: NotificationReducer.Action.Response
+) -> Effect<NotificationReducer.Action> {
+    switch action {
     case .fetchListResponse(.success(let result)):
         state.isLoading = false
         state.notifications = IdentifiedArray(
@@ -49,9 +85,6 @@ private func reduceCore(
     case .fetchListResponse(.failure):
         state.isLoading = false
         return .none
-
-    case .loadMore:
-        return handleLoadMore(state: &state, notificationClient: notificationClient)
 
     case .fetchMoreResponse(.success(let result)):
         state.isLoadingMore = false
@@ -67,21 +100,12 @@ private func reduceCore(
         state.isLoadingMore = false
         return .none
 
-    case .backButtonTapped:
-        return .send(.delegate(.navigateBack))
-
-    case .notificationTapped(let item):
-        return handleNotificationTapped(item: item, notificationClient: notificationClient)
-
     case .markAsReadResponse(let item, .success):
         state.notifications.remove(id: item.id)
         return .send(.delegate(.notificationSelected(item)))
 
     case .markAsReadResponse(let item, .failure):
         return .send(.delegate(.notificationSelected(item)))
-
-    case .delegate:
-        return .none
     }
 }
 
@@ -96,11 +120,11 @@ private func handleOnAppear(
     return .run { send in
         do {
             let result = try await notificationClient.fetchList(nil, 10)
-            await send(.fetchListResponse(.success(result)))
+            await send(.response(.fetchListResponse(.success(result))))
 
             try? await notificationClient.markAllAsRead()
         } catch {
-            await send(.fetchListResponse(.failure(error)))
+            await send(.response(.fetchListResponse(.failure(error))))
         }
     }
 }
@@ -119,9 +143,9 @@ private func handleLoadMore(
     return .run { send in
         do {
             let result = try await notificationClient.fetchList(lastId, 20)
-            await send(.fetchMoreResponse(.success(result)))
+            await send(.response(.fetchMoreResponse(.success(result))))
         } catch {
-            await send(.fetchMoreResponse(.failure(error)))
+            await send(.response(.fetchMoreResponse(.failure(error))))
         }
     }
 }
@@ -137,9 +161,9 @@ private func handleNotificationTapped(
     return .run { send in
         do {
             try await notificationClient.markAsRead(item.id)
-            await send(.markAsReadResponse(item, .success(())))
+            await send(.response(.markAsReadResponse(item, .success(()))))
         } catch {
-            await send(.markAsReadResponse(item, .failure(error)))
+            await send(.response(.markAsReadResponse(item, .failure(error))))
         }
     }
 }

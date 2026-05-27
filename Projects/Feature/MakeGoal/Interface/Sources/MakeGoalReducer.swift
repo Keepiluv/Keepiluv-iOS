@@ -176,45 +176,55 @@ public struct MakeGoalReducer {
     ///
     /// ## 사용 예시
     /// ```swift
-    /// store.send(.completeButtonTapped)
+    /// store.send(.view(.completeButtonTapped))
     /// ```
     public enum Action: BindableAction {
         case binding(BindingAction<State>)
-        
-        // MARK: - LifeCycle
-        case onAppear
-        case onDisappear
 
-        // MARK: - Update State
-        case createGoalFailed
-        case updateGoalFailed
+        // MARK: - View
+        public enum View: Equatable {
+            case onAppear
+            case onDisappear
+            case emojiButtonTapped
+            case goalTitleFocusChanged(Bool)
+            case dismissKeyboard
+            case periodTabSelected(PeriodItem)
+            case periodSelected
+            case periodSheetWeeklyTapped
+            case periodSheetMonthlyTapped
+            case periodSheetMinusTapped
+            case periodSheetPlusTapped
+            case periodSheetCompleteTapped
+            case startDateTapped
+            case endDateTapped
+            case monthCalendarConfirmTapped
+            case completeButtonTapped
+            case navigationBackButtonTapped
+            case modalConfirmTapped(Int)
+        }
 
-        // MARK: - User Action
-        case emojiButtonTapped
-        case goalTitleFocusChanged(Bool)
-        case dismissKeyboard
-        case periodTabSelected(PeriodItem)
-        case periodSelected
-        case periodSheetWeeklyTapped
-        case periodSheetMonthlyTapped
-        case periodSheetMinusTapped
-        case periodSheetPlusTapped
-        case periodSheetCompleteTapped
-        case startDateTapped
-        case endDateTapped
-        case monthCalendarConfirmTapped
-        case completeButtonTapped
-        case navigationBackButtonTapped
-        case modalConfirmTapped(Int)
-        case showToast(TXToastType)
+        // MARK: - Response
+        public enum Response: Equatable {
+            case createGoalFailed
+            case updateGoalFailed
+        }
+
+        // MARK: - Presentation
+        public enum Presentation: Equatable {
+            case showToast(TXToastType)
+        }
 
         // MARK: - Delegate
         case delegate(Delegate)
-        
+
         /// MakeGoalReducer 화면에서 외부로 전달하는 이벤트입니다.
         public enum Delegate {
             case navigateBack
         }
+
+        case view(View)
+        case response(Response)
+        case presentation(Presentation)
     }
     
     /// 외부에서 주입한 Reduce로 MakeGoalReducer를 구성합니다.

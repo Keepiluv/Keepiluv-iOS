@@ -29,7 +29,7 @@ case optionSelected(Option)
 // 네트워크 응답
 case loginResponse(Result<User, Error>)
 case postsResponse(Result<[Post], Error>)
-case dataResponse(Result<Data, Error>)
+case dataResponse(Result<Swift.Data, Error>)
 
 // 성공만 필요한 경우
 case loginSucceeded(User)
@@ -47,43 +47,67 @@ case onBackground
 
 ---
 
-## Action 주석 구분
+## Action 중첩 enum 구조
 
-Action이 많아지면 가독성을 위해 MARK 주석으로 구분합니다.
+Action이 많아지면 의미별 중첩 enum으로 분리하여 reducer와 call-site의 가독성을 높입니다.
+작은 reducer는 플랫 구조를 유지할 수 있지만, 큰 reducer를 정리할 때는 아래 구조를 우선합니다.
 
 ```swift
 public enum Action: BindableAction {
-    // MARK: - Binding
     case binding(BindingAction<State>)
 
-    // MARK: - LifeCycle
-    case onAppear
+    // MARK: - View (사용자 이벤트)
+    public enum View: Equatable {
+        case onAppear
+        case backButtonTapped
+        case submitButtonTapped
+        case itemSelected(Item)
+    }
 
-    // MARK: - User Action
-    case backButtonTapped
-    case submitButtonTapped
-    case itemSelected(Item)
+    // MARK: - Internal (Reducer 내부 Effect/후속 작업)
+    public enum Internal: Equatable {
+        case fetchItems
+        case updateCache([Item])
+    }
 
-    // MARK: - Update State
-    case fetchCompleted([Item])
-    case toastDismissed
+    // MARK: - Response (비동기 응답)
+    public enum Response {
+        case fetchItemsResponse(Result<[Item], Error>)
+    }
 
-    // MARK: - Delegate
+    // MARK: - Presentation (토스트, 모달 등)
+    public enum Presentation: Equatable {
+        case showToast(TXToastType)
+    }
+
+    // MARK: - Delegate (부모에게 알림)
+    public enum Delegate: Equatable {
+        case navigateBack
+        case itemSelected(Item)
+    }
+
+    // MARK: - Child Action (필요시)
+    case child(ChildReducer.Action)
+
+    case view(View)
+    case `internal`(Internal)
+    case response(Response)
+    case presentation(Presentation)
     case delegate(Delegate)
-
-    // MARK: - Navigation (Coordinator에서 사용)
-    case routeChanged([FeatureRoute])
 }
 ```
 
-### 주석 카테고리
-- **Binding**: `BindingAction` 관련
-- **LifeCycle**: `onAppear`, `onDisappear` 등
-- **User Action**: 사용자 인터랙션 (`~Tapped`, `~Changed`, `~Selected`)
-- **Update State**: 상태 업데이트 응답 (`~Completed`, `~Dismissed`)
-- **Delegate**: 부모에게 전달하는 이벤트
-- **Navigation**: Coordinator의 route/path 변경 액션 (필요시). 이 프로젝트는 `[Route]` 배열 기반 NavigationStack 패턴을 사용합니다.
-- **Child Action**: 자식 Reducer 액션 (필요시)
+### 중첩 enum 카테고리
+- **Binding**: `BindingAction` 관련. TCA case path가 필요하므로 최상위에 둡니다.
+- **View**: SwiftUI가 직접 보내는 이벤트. 사용자 인터랙션(`~Tapped`, `~Changed`, `~Selected`)과 `onAppear`/`onDisappear` 같은 lifecycle을 포함합니다.
+- **Internal**: Reducer가 스스로 발행하는 Effect 트리거, 캐시 갱신, 상태 계산 등 후속 작업.
+- **Response**: 비동기 응답(`~Response(Result<T, Error>)`). `Error` 포함 시 `Equatable`을 강제하지 않습니다.
+- **Presentation**: 토스트·모달·시트 표시 이벤트(`showToast`, `showModal` 등).
+- **Delegate**: 부모 Reducer에게 전달하는 이벤트. 가능한 한 `Equatable`을 유지합니다.
+- **Navigation**: Coordinator의 route/path 변경 액션. 이 프로젝트는 `[Route]` 배열 기반 NavigationStack 패턴을 사용합니다.
+- **Child Action**: 자식 Reducer 액션. TCA `Scope`/`ifLet` case path가 안정적으로 동작하도록 기본은 최상위 child case를 유지합니다.
+
+자세한 reducer 분리 기준과 예외는 [Reducer 패턴](../Architecture/ReducerPattern.md)을 확인하세요.
 
 ### Delegate: `delegate(<결과>)`
 
@@ -328,7 +352,7 @@ case showError(String)
 // ✅ 좋은 예
 case loginButtonTapped
 case usernameChanged(String)
-case loginResponse(.failure(error))
+case loginResponse(Result<User, Error>.failure(error))
 ```
 
 ### ❌ 불명확한 네이밍
@@ -366,6 +390,7 @@ case authResponse
 작성한 코드가 다음 규칙을 따르는지 확인하세요:
 
 - [ ] Action은 "What happened" 형태로 작성 (사건 중심)
+- [ ] 큰 Reducer는 View/Internal/Response/Presentation/Delegate 중첩 구조를 일관되게 사용
 - [ ] 사용자 액션은 `Tapped/Changed/Selected` 접미사 사용
 - [ ] 시스템 응답은 `Response` 접미사 사용
 - [ ] Bool 프로퍼티는 `is/has/should` 접두사 사용

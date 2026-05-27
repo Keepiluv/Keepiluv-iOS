@@ -31,7 +31,7 @@ struct HomeEmptyContentSection: View {
             }
             .scrollIndicators(.hidden)
             .refreshable {
-                store.send(.fetchGoals)
+                store.send(.view(.refreshPulled))
             }
             .overlay(alignment: .bottomTrailing) {
                 emptyArrow

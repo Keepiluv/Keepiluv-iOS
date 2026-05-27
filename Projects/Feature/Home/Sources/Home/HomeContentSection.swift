@@ -41,7 +41,7 @@ struct HomeContentSection: View {
             .padding(.bottom, 103)
         }
         .refreshable {
-            store.send(.fetchGoals)
+            store.send(.view(.refreshPulled))
         }
     }
 
@@ -59,15 +59,15 @@ struct HomeContentSection: View {
     func goalCard(for item: HomeGoalItem) -> some View {
         GoalCardView(
             item: item.card,
-            onHeaderTapped: { store.send(.headerTapped(item.card)) },
+            onHeaderTapped: { store.send(.view(.headerTapped(item.card))) },
             onCheckButtonTapped: {
-                store.send(.goalCheckButtonTapped(
+                store.send(.view(.goalCheckButtonTapped(
                     id: item.id,
                     isChecked: item.card.myCard.isSelected
-                ))
+                )))
             },
-            actionLeft: { store.send(.myCardTapped(item.card)) },
-            actionRight: { store.send(.yourCardTapped(item.card)) }
+            actionLeft: { store.send(.view(.myCardTapped(item.card))) },
+            actionRight: { store.send(.view(.yourCardTapped(item.card))) }
         )
     }
 }

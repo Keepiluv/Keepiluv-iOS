@@ -28,7 +28,7 @@ struct InfoView: View {
         .background(Color.Common.white)
         .navigationBarBackButtonHidden(true)
         .onAppear {
-            store.send(.onAppear)
+            store.send(.view(.onAppear))
         }
     }
 }
@@ -39,7 +39,7 @@ private extension InfoView {
     var navigationBar: some View {
         TXNavigationBar(style: .subTitle(title: "정보", type: .back)) { action in
             if action == .backTapped {
-                store.send(.subViewBackButtonTapped)
+                store.send(.view(.subViewBackButtonTapped))
             }
         }
     }
@@ -65,7 +65,7 @@ private extension InfoView {
 
     var privacyPolicyItem: some View {
         listItem(title: "개인정보 처리방침") {
-            store.send(.privacyPolicyTapped)
+            store.send(.view(.privacyPolicyTapped))
         }
     }
 

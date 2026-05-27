@@ -25,7 +25,7 @@ struct HomeNavigationBarSection: View {
                     isRemainedAlarm: store.hasUnreadNotification
                 )
             ), onAction: { action in
-                store.send(.navigationBarAction(action))
+                store.send(.view(.navigationBarAction(action)))
             }
         )
     }

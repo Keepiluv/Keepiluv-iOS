@@ -71,11 +71,11 @@ public struct HomeView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .modifier(PerfToastPresentationHarness(toast: $store.toast))
+        .modifier(PerfToastPresentationHarness(toast: $store.presentation.toast))
         .modifier(PerfHomeCounterMarkersHarness())
         .modifier(HomePresentationLayer(store: store))
         .onAppear {
-            store.send(.onAppear)
+            store.send(.view(.onAppear))
         }
         .toolbar(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)

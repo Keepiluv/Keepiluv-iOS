@@ -101,7 +101,7 @@ extension HomeReducer {
             
             switch action {
                 // MARK: - Life Cycle
-            case .onAppear:
+            case .view(.onAppear):
                 if state.calendarDate.day == nil {
                     let now = state.nowDate
                     let date = TXCalendarDate(
@@ -109,29 +109,49 @@ extension HomeReducer {
                         month: now.month,
                         day: now.day
                     )
-                    return .send(.setCalendarDate(date))
+                    return .send(.internal(.setCalendarDate(date)))
                 }
                 state.isLoading = true
-                return .send(.fetchGoals)
+                return .send(.internal(.fetchGoals))
                 
                 // MARK: - User Action
-            case let .calendarDateSelected(item):
+            case .view(.refreshPulled):
+                return .send(.internal(.fetchGoals))
+
+            case .view(.perfToastShowTapped):
+                return .send(.presentation(.showToast(.warning(message: "perf-toast"))))
+
+            case .view(.perfToastDismissTapped):
+                state.toast = nil
+                return .none
+
+            case .view(.perfCalendarNextTapped):
+                var next = state.calendarDate
+                next.goToNextMonth()
+                return .send(.internal(.setCalendarDate(next)))
+
+            case .view(.perfCalendarPreviousTapped):
+                var previous = state.calendarDate
+                previous.goToPreviousMonth()
+                return .send(.internal(.setCalendarDate(previous)))
+
+            case let .view(.calendarDateSelected(item)):
                 guard let components = item.dateComponents,
                       let year = components.year,
                       let month = components.month,
                       let day = components.day else {
                     return .none
                 }
-                return .send(.setCalendarDate(TXCalendarDate(year: year, month: month, day: day)))
+                return .send(.internal(.setCalendarDate(TXCalendarDate(year: year, month: month, day: day))))
                 
-            case let .setCalendarSheetPresented(isPresented):
+            case let .internal(.setCalendarSheetPresented(isPresented)):
                 state.isCalendarSheetPresented = isPresented
                 if isPresented {
                     state.calendarSheetDate = state.calendarDate
                 }
                 return .none
                 
-            case let .navigationBarAction(action):
+            case let .view(.navigationBarAction(action)):
                 switch action {
                 case .refreshTapped:
                     let now = state.nowDate
@@ -142,12 +162,12 @@ extension HomeReducer {
                     )
                     if date == state.calendarDate {
                         state.isLoading = true
-                        return .send(.fetchGoals)
+                        return .send(.internal(.fetchGoals))
                     }
-                    return .send(.setCalendarDate(date))
+                    return .send(.internal(.setCalendarDate(date)))
                     
                 case .subTitleTapped:
-                    return .send(.setCalendarSheetPresented(true))
+                    return .send(.internal(.setCalendarSheetPresented(true)))
                     
                 case .alertTapped:
                     return .send(.delegate(.goToNotification))
@@ -161,11 +181,11 @@ extension HomeReducer {
                     return .none
                 }
                 
-            case .monthCalendarConfirmTapped:
+            case .view(.monthCalendarConfirmTapped):
                 state.isCalendarSheetPresented = false
-                return .send(.setCalendarDate(state.calendarSheetDate))
+                return .send(.internal(.setCalendarDate(state.calendarSheetDate)))
                 
-            case let .goalCheckButtonTapped(id, isChecked):
+            case let .view(.goalCheckButtonTapped(id, isChecked)):
                 guard let item = state.items.first(where: { $0.id == id }) else {
                     return .none
                 }
@@ -198,14 +218,14 @@ extension HomeReducer {
                     } else {
                         return .run { send in
                             let isAuthorized = await captureSessionClient.fetchIsAuthorized()
-                            await send(.authorizationCompleted(id: id, isAuthorized: isAuthorized))
+                            await send(.response(.authorizationCompleted(id: id, isAuthorized: isAuthorized)))
                         }
                     }
                 }
                 
                 return .none
                 
-            case .modalConfirmTapped:
+            case .view(.modalConfirmTapped):
                 guard let pendingGoalID = state.pendingDeleteGoalID,
                       let pendingPhotologID = state.pendingDeletePhotologID else {
                     return .none
@@ -215,22 +235,22 @@ extension HomeReducer {
                 return .run { send in
                     do {
                         try await photoLogClient.deletePhotoLog(pendingPhotologID)
-                        await send(.deletePhotoLogCompleted(goalId: pendingGoalID))
+                        await send(.response(.deletePhotoLogCompleted(goalId: pendingGoalID)))
                     } catch {
-                        await send(.deletePhotoLogFailed)
+                        await send(.response(.deletePhotoLogFailed))
                     }
                 }
                 
-            case let .yourCardTapped(card):
+            case let .view(.yourCardTapped(card)):
                 if !card.yourCard.isSelected {
                     if let item = state.items.first(where: { $0.id == card.id }),
                        case .completed = item.goal.status {
-                        return .send(.showToast(.warning(message: "끝난 목표는 인증이 불가능해요!")))
+                        return .send(.presentation(.showToast(.warning(message: "끝난 목표는 인증이 불가능해요!"))))
                     }
                     // 쿨다운 확인 (3시간 이내 재요청 방지)
                     if let remaining = PokeCooldownManager.remainingCooldown(goalId: card.id) {
                         let timeText = PokeCooldownManager.formatRemainingTime(remaining)
-                        return .send(.showToast(.warning(message: "\(timeText) 뒤에 다시 찌를 수 있어요")))
+                        return .send(.presentation(.showToast(.warning(message: "\(timeText) 뒤에 다시 찌를 수 있어요"))))
                     }
                     // 상대방 미인증 시 찌르기 API 호출
                     let goalId = card.id
@@ -239,12 +259,12 @@ extension HomeReducer {
                         PokeCooldownManager.recordPoke(goalId: goalId)
                         do {
                             try await goalClient.pokePartner(goalId)
-                            await send(.setPokeButtonDisabled(goalId: goalId, true, date: pokeDate))
-                            await send(.showToast(.poke(message: "상대방을 찔렀어요!")))
+                            await send(.internal(.setPokeButtonDisabled(goalId: goalId, true, date: pokeDate)))
+                            await send(.presentation(.showToast(.poke(message: "상대방을 찔렀어요!"))))
                         } catch {
                             PokeCooldownManager.removePoke(goalId: goalId)
-                            await send(.setPokeButtonDisabled(goalId: goalId, false, date: pokeDate))
-                            await send(.showToast(.warning(message: "찌르기에 실패했어요")))
+                            await send(.internal(.setPokeButtonDisabled(goalId: goalId, false, date: pokeDate)))
+                            await send(.presentation(.showToast(.warning(message: "찌르기에 실패했어요"))))
                         }
                     }
                     .debounce(id: PokeCancelID.poke(goalId), for: .milliseconds(300), scheduler: DispatchQueue.main)
@@ -261,26 +281,26 @@ extension HomeReducer {
                     )
                 }
                 
-            case let .myCardTapped(card):
+            case let .view(.myCardTapped(card)):
                 let verificationDate = TXCalendarUtil.apiDateString(for: state.calendarDate)
                 return .send(.delegate(.goToGoalDetail(id: card.id, owner: .mySelf, verificationDate: verificationDate)))
                 
-            case let .headerTapped(card):
+            case let .view(.headerTapped(card)):
                 return .send(.delegate(.goToStatsDetail(id: card.id)))
                 
-            case .floatingButtonTapped:
+            case .view(.floatingButtonTapped):
                 state.isAddGoalPresented = true
                 return .none
                 
-            case let .addGoalButtonTapped(category):
+            case let .view(.addGoalButtonTapped(category)):
                 state.isAddGoalPresented = false
                 analyticsClient.logEvent(HomeAnalyticsEvent.selectGoalClicked(kind: category.rawValue))
                 return .send(.delegate(.goToMakeGoal(category)))
                 
-            case .editButtonTapped:
+            case .view(.editButtonTapped):
                 return .send(.delegate(.goToEditGoalList(date: state.calendarDate)))
                 
-            case let .weekCalendarSwipe(swipe):
+            case let .view(.weekCalendarSwipe(swipe)):
                 switch swipe {
                 case .next:
                     guard let nextWeekDate = TXCalendarUtil.dateByAddingWeek(
@@ -289,7 +309,7 @@ extension HomeReducer {
                     ) else {
                         return .none
                     }
-                    return .send(.setCalendarDate(nextWeekDate))
+                    return .send(.internal(.setCalendarDate(nextWeekDate)))
                     
                 case .previous:
                     guard let previousWeekDate = TXCalendarUtil.dateByAddingWeek(
@@ -298,11 +318,11 @@ extension HomeReducer {
                     ) else {
                         return .none
                     }
-                    return .send(.setCalendarDate(previousWeekDate))
+                    return .send(.internal(.setCalendarDate(previousWeekDate)))
                 }
                 
                 // MARK: - Update State
-            case let .fetchGoalsCompleted(goalList, date):
+            case let .response(.fetchGoalsCompleted(goalList, date)):
                 let cacheKey = TXCalendarUtil.apiDateString(for: date)
                 let items = goalList.goals
                     .map(HomeGoalItem.init(goal:))
@@ -321,11 +341,11 @@ extension HomeReducer {
                 }
                 return .none
                 
-            case .fetchGoalsFailed:
+            case .response(.fetchGoalsFailed):
                 state.isLoading = false
-                return .send(.showToast(.warning(message: "목표 조회에 실패했어요")))
+                return .send(.presentation(.showToast(.warning(message: "목표 조회에 실패했어요"))))
                 
-            case let .setCalendarDate(date):
+            case let .internal(.setCalendarDate(date)):
                 guard date != state.calendarDate else { return .none }
 
                 let now = state.nowDate
@@ -351,9 +371,9 @@ extension HomeReducer {
                 }
                 
                 state.isLoading = true
-                return .send(.fetchGoals)
+                return .send(.internal(.fetchGoals))
                 
-            case .fetchGoals:
+            case .internal(.fetchGoals):
                 let date = state.calendarDate
                 let cacheKey = TXCalendarUtil.apiDateString(for: date)
                 if let cachedItems = state.goalsCache[cacheKey] {
@@ -367,22 +387,22 @@ extension HomeReducer {
                 return .run { send in
                     // 읽지 않은 알림 여부 체크
                     if let hasUnread = try? await notificationClient.fetchUnread() {
-                        await send(.fetchUnreadResponse(hasUnread))
+                        await send(.response(.fetchUnreadResponse(hasUnread)))
                     }
                     
                     do {
                         let goalList = try await goalClient.fetchGoals(cacheKey)
-                        await send(.fetchGoalsCompleted(goalList, date: date))
+                        await send(.response(.fetchGoalsCompleted(goalList, date: date)))
                     } catch {
-                        await send(.fetchGoalsFailed)
+                        await send(.response(.fetchGoalsFailed))
                     }
                 }
                 
-            case let .showToast(toast):
+            case let .presentation(.showToast(toast)):
                 state.toast = toast
                 return .none
                 
-            case let .setPokeButtonDisabled(goalId, isDisabled, date):
+            case let .internal(.setPokeButtonDisabled(goalId, isDisabled, date)):
                 if date == state.calendarDate {
                     updatePokeButtonDisabled(in: &state.items, goalId: goalId, isDisabled: isDisabled)
                 }
@@ -394,7 +414,7 @@ extension HomeReducer {
                 state.goalsCache[cacheKey] = cachedItems
                 return .none
                 
-            case let .authorizationCompleted(id, isAuthorized):
+            case let .response(.authorizationCompleted(id, isAuthorized)):
                 if !isAuthorized {
                     state.isCameraPermissionAlertPresented = true
                     return .none
@@ -406,7 +426,7 @@ extension HomeReducer {
                 state.isProofPhotoPresented = true
                 return .none
                 
-            case .cameraPermissionAlertDismissed:
+            case .view(.cameraPermissionAlertDismissed):
                 state.isCameraPermissionAlertPresented = false
                 return .none
                 
@@ -440,14 +460,14 @@ extension HomeReducer {
                 refreshPokeCooldownStates(state: &state)
                 return .none
                 
-            case .proofPhotoDismissed:
+            case .view(.proofPhotoDismissed):
                 state.proofPhoto = nil
                 return .none
                 
             case .proofPhoto:
                 return .none
                 
-            case let .deletePhotoLogCompleted(goalId):
+            case let .response(.deletePhotoLogCompleted(goalId)):
                 guard let index = state.items.firstIndex(where: { $0.id == goalId }) else {
                     return .none
                 }
@@ -471,12 +491,12 @@ extension HomeReducer {
                 )
                 state.items[index].updateGoal(updatedGoal)
                 refreshPokeCooldownStates(state: &state)
-                return .send(.showToast(.delete(message: "인증이 해제되었어요")))
+                return .send(.presentation(.showToast(.delete(message: "인증이 해제되었어요"))))
                 
-            case .deletePhotoLogFailed:
-                return .send(.showToast(.warning(message: "해제에 실패했어요")))
+            case .response(.deletePhotoLogFailed):
+                return .send(.presentation(.showToast(.warning(message: "해제에 실패했어요"))))
 
-            case let .fetchUnreadResponse(hasUnread):
+            case let .response(.fetchUnreadResponse(hasUnread)):
                 state.hasUnreadNotification = hasUnread
                 return .none
                 

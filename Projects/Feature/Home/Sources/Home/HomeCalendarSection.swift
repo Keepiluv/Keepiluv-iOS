@@ -24,10 +24,10 @@ struct HomeCalendarSection: View {
                 dateStyle: .init(lastDateTextColor: Color.Gray.gray500)
             ),
             onSelect: { item in
-                store.send(.calendarDateSelected(item))
+                store.send(.view(.calendarDateSelected(item)))
             },
             onSwipe: { swipe in
-                store.send(.weekCalendarSwipe(swipe))
+                store.send(.view(.weekCalendarSwipe(swipe)))
             }
         )
         .frame(maxWidth: .infinity, maxHeight: 76)

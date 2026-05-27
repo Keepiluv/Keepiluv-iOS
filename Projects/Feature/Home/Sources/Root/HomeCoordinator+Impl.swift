@@ -72,7 +72,7 @@ extension HomeCoordinator {
                 state.makeGoal = .init(mode: .edit(goalData))
                 return .none
                 
-            case .statsDetail(.onDisappear):
+            case .statsDetail(.view(.onDisappear)):
                 if !state.routes.contains(.statsDetail) {
                     state.statsDetail = nil
                 }
@@ -85,7 +85,7 @@ extension HomeCoordinator {
                 popLastRoute(&state.routes)
                 return .none
                 
-            case .goalDetail(.onDisappear):
+            case .goalDetail(.view(.onDisappear)):
                 state.goalDetail = nil
                 return .none
                 
@@ -93,13 +93,13 @@ extension HomeCoordinator {
                 popLastRoute(&state.routes)
                 return .none
                 
-            case .editGoalList(.onDisappear):
+            case .editGoalList(.view(.onDisappear)):
                 if !state.routes.contains(.editGoalList) {
                     state.editGoalList = nil
                 }
                 return .none
                 
-            case .makeGoal(.onDisappear):
+            case .makeGoal(.view(.onDisappear)):
                 state.makeGoal = nil
                 return .none
                 
