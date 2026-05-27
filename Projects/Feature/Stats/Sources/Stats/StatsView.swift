@@ -10,6 +10,7 @@ import SwiftUI
 import ComposableArchitecture
 import FeatureStatsInterface
 import SharedDesignSystem
+import SharedPerfTestingSupport
 
 struct StatsView: View {
     @Bindable public var store: StoreOf<StatsReducer>
@@ -81,10 +82,12 @@ private extension StatsView {
                             store.send(.statsCardTapped(goalId: goalId))
                         }
                     )
+                    .perfCell(slug: "stats", stableId: item.goalId)
                 }
             }
             .padding(.top, store.isOngoing ? 12 : 20)
             .padding([.horizontal, .bottom], 20)
+            .perfFeed("stats")
         }
         .background(Color.Gray.gray50)
     }

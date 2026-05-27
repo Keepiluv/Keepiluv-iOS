@@ -24,6 +24,7 @@ let project = Project.makeModule(
                     .core(interface: .captureSession),
                     .domain(interface: .photoLog),
                     .shared(implements: .designSystem),
+                    .shared(implements: .perfTestingSupport),
                     .shared(implements: .util),
                     .external(dependency: .ComposableArchitecture)
                 ]
@@ -46,25 +47,28 @@ let project = Project.makeModule(
             )
         ),
         
-            .feature(
-                example: .goalDetail,
-                config: .init(
-                    infoPlist: .extendingDefault(
-                        with: Project.Environment.InfoPlist.launchScreen.merging(
-                            [
-                                "NSCameraUsageDescription": "UseCamera"
-                            ],
-                            uniquingKeysWith: { current, _ in current }
-                        )
-                    ),
-                    dependencies: [
-                        .shared(implements: .designSystem),
-                        .feature(implements: .goalDetail),
-                        .feature(implements: .proofPhoto),
-                        .core(implements: .captureSession),
-                        .external(dependency: .ComposableArchitecture)
+        .feature(
+            example: .goalDetail,
+            config: .init(
+                infoPlist: .extendingDefault(
+                    with: Project.Environment.InfoPlist.launchScreen.merging(
+                        [
+                            "NSCameraUsageDescription": "UseCamera"
+                        ],
+                        uniquingKeysWith: { current, _ in current }
+                    )
+                ),
+                dependencies: [
+                    .shared(implements: .designSystem),
+                    .feature(implements: .goalDetail),
+                    .feature(implements: .proofPhoto),
+                    .core(implements: .captureSession),
+                    .domain(interface: .goal),
+                    .domain(interface: .photoLog),
+                    .external(dependency: .ComposableArchitecture)
                 ]
             )
-        )
+        ),
+        .feature(exampleUITests: .goalDetail)
     ]
 )

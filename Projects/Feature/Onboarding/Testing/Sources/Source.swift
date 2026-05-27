@@ -5,4 +5,7 @@
 //  Created by Jihun on 12/29/25.
 //
 
-/// Remove Or Edit Or Edit
+/// Stable perf seed names for the Onboarding example app.
+public enum OnboardingPerfSeed {
+    public static let `default` = "default"
+}

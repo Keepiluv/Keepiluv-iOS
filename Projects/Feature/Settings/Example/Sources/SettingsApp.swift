@@ -11,10 +11,15 @@ import DomainOnboardingInterface
 import FeatureSettings
 import FeatureSettingsInterface
 import SharedDesignSystem
+import SharedPerfTestingSupport
 import SwiftUI
 
 @main
 struct SettingsApp: App {
+    init() {
+        UITestMode.configureApplication()
+    }
+
     var body: some Scene {
         WindowGroup {
             SettingsView(
@@ -32,6 +37,8 @@ struct SettingsApp: App {
                     }
                 )
             )
+            .perfRoot("settings")
+            .perfReadyMarker("settings")
         }
     }
 }

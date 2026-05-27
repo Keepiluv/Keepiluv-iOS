@@ -14,6 +14,7 @@ import FeatureNotificationInterface
 import FeatureMakeGoalInterface
 import FeatureSettingsInterface
 import FeatureStatsInterface
+import SharedPerfTestingSupport
 
 /// Home Feature의 NavigationStack을 제공하는 Root View입니다.
 ///
@@ -51,26 +52,28 @@ public struct HomeCoordinatorView: View {
                 .navigationDestination(for: HomeRoute.self) { route in
                     switch route {
                     case .detail:
-                        IfLetStore(store.scope(state: \.goalDetail, action: \.goalDetail)) { store in
-                            goalDetailFactory.makeView(store)
+                        if let goalDetailStore = store.scope(state: \.goalDetail, action: \.goalDetail) {
+                            goalDetailFactory.makeView(goalDetailStore)
                                 .toolbar(.hidden, for: .tabBar)
+                                .perfReadyMarker("home-to-goal-detail")
                         }
 
                     case .statsDetail:
-                        IfLetStore(store.scope(state: \.statsDetail, action: \.statsDetail)) { store in
-                            statsDetailFactory.makeView(store)
+                        if let statsDetailStore = store.scope(state: \.statsDetail, action: \.statsDetail) {
+                            statsDetailFactory.makeView(statsDetailStore)
                                 .toolbar(.hidden, for: .tabBar)
+                                .perfReadyMarker("home-to-stats-detail")
                         }
 
                     case .editGoalList:
-                        IfLetStore(store.scope(state: \.editGoalList, action: \.editGoalList)) { store in
-                            EditGoalListView(store: store)
+                        if let editGoalListStore = store.scope(state: \.editGoalList, action: \.editGoalList) {
+                            EditGoalListView(store: editGoalListStore)
                                 .toolbar(.hidden, for: .tabBar)
                         }
 
                     case .makeGoal:
-                        IfLetStore(store.scope(state: \.makeGoal, action: \.makeGoal)) { store in
-                            makeGoalFactory.makeView(store)
+                        if let makeGoalStore = store.scope(state: \.makeGoal, action: \.makeGoal) {
+                            makeGoalFactory.makeView(makeGoalStore)
                                 .toolbar(.hidden, for: .tabBar)
                         }
 

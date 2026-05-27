@@ -40,6 +40,7 @@ let project = Project.makeModule(
                     .core(implements: .captureSession)
                 ]
             )
-        )
+        ),
+        .feature(exampleUITests: .mainTab)
     ]
 )

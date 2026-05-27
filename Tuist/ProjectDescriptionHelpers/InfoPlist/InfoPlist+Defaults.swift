@@ -36,4 +36,20 @@ public extension InfoPlist {
             return self
         }
     }
+
+    func mergingExampleDisplayName(_ displayName: String) -> InfoPlist {
+        switch self {
+        case .default:
+            return .extendingDefault(with: ["CFBundleDisplayName": .string(displayName)])
+
+        case .extendingDefault(let dict):
+            let merged = dict.merging(
+                ["CFBundleDisplayName": .string(displayName)]
+            ) { current, _ in current }
+            return .extendingDefault(with: merged)
+
+        default:
+            return self
+        }
+    }
 }

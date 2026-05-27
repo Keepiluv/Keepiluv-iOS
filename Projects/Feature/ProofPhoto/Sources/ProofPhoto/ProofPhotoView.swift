@@ -11,6 +11,7 @@ import SwiftUI
 import ComposableArchitecture
 import FeatureProofPhotoInterface
 import SharedDesignSystem
+import SharedPerfTestingSupport
 import SharedUtil
 
 /// 인증샷 화면을 렌더링하는 View입니다.
@@ -70,6 +71,11 @@ public struct ProofPhotoView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .observeKeyboardFrame($keyboardFrame)
         .background(Color.Gray.gray500)
+        .perfStateMarker(
+            slug: "proof-photo",
+            key: "comment-text",
+            value: store.commentText
+        )
         .onAppear {
             store.send(.onAppear)
         }
@@ -127,24 +133,27 @@ private extension ProofPhotoView {
     
     @ViewBuilder
     var photoPreview: some View {
-        if store.hasImage,
-           let imageData = store.imageData,
-           let image = UIImage(data: imageData) {
-            previewContainer {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
+        Group {
+            if store.hasImage,
+               let imageData = store.imageData,
+               let image = UIImage(data: imageData) {
+                previewContainer {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                }
+            } else if let session = store.captureSession {
+                previewContainer {
+                    CameraPreview(session: session)
+                }
+            } else {
+                Rectangle()
+                    .frame(maxWidth: .infinity)
+                    .aspectRatio(1, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 76))
             }
-        } else if let session = store.captureSession {
-            previewContainer {
-                CameraPreview(session: session)
-            }
-        } else {
-            Rectangle()
-                .frame(maxWidth: .infinity)
-                .aspectRatio(1, contentMode: .fit)
-                .clipShape(RoundedRectangle(cornerRadius: 76))
         }
+        .accessibilityIdentifier("feature.proof-photo.preview")
     }
 
     var previewTopControls: some View {
@@ -349,6 +358,7 @@ private extension ProofPhotoView {
                 store.send(.focusChanged(isFocused))
             }
         )
+        .accessibilityIdentifier("feature.proof-photo.comment-circle")
     }
 }
 

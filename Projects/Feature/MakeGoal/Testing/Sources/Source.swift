@@ -5,4 +5,7 @@
 //  Created by Jihun on 02/22/26.
 //
 
-/// Remove Or Edit
+/// Stable perf seed names for the MakeGoal example app.
+public enum MakeGoalPerfSeed {
+    public static let `default` = "default"
+}

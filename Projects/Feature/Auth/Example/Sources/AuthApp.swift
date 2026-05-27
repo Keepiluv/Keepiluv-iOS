@@ -7,10 +7,15 @@
 
 import ComposableArchitecture
 import FeatureAuth
+import SharedPerfTestingSupport
 import SwiftUI
 
 @main
 struct AuthApp: App {
+    init() {
+        UITestMode.configureApplication()
+    }
+
     var body: some Scene {
         WindowGroup {
             AuthView(
@@ -19,6 +24,8 @@ struct AuthApp: App {
                     reducer: { AuthReducer() }
                 )
             )
+            .perfRoot("auth")
+            .perfReadyMarker("auth")
         }
     }
 }

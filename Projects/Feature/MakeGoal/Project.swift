@@ -60,6 +60,7 @@ let project = Project.makeModule(
                     .external(dependency: .ComposableArchitecture)
                 ]
             )
-        )
+        ),
+        .feature(exampleUITests: .makeGoal)
     ]
 )

@@ -6,12 +6,19 @@
 //
 
 import SwiftUI
+import SharedPerfTestingSupport
 
 @main
 struct MainTabExampleApp: App {
+    init() {
+        UITestMode.configureApplication()
+    }
+
     var body: some Scene {
         WindowGroup {
             MainTabExampleView()
+                .perfRoot("main-tab")
+                .perfReadyMarker("main-tab")
         }
     }
 }

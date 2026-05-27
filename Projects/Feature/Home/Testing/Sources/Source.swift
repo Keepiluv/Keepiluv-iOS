@@ -5,4 +5,7 @@
 //  Created by Jihun on 01/26/26.
 //
 
-/// Remove Or Edit
+/// Stable perf seed names for the Home example app.
+public enum HomePerfSeed {
+    public static let `default` = "default"
+}

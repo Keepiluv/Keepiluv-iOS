@@ -8,6 +8,7 @@
 import SwiftUI
 
 import SharedDesignSystem
+import SharedPerfTestingSupport
 
 struct ReactionBarView: View {
     let selectedEmoji: ReactionEmoji?
@@ -66,6 +67,7 @@ private extension ReactionBarView {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(selectedEmoji == emoji ? Color.Gray.gray300 : Color.clear)
+                .perfControl(slug: "goal-detail", element: "reaction-\(emoji.rawValue)")
                 
                 if emoji != ReactionEmoji.allCases.last {
                     Rectangle()

@@ -9,10 +9,15 @@ import ComposableArchitecture
 import FeatureNotification
 import FeatureNotificationInterface
 import SharedDesignSystem
+import SharedPerfTestingSupport
 import SwiftUI
 
 @main
 struct NotificationApp: App {
+    init() {
+        UITestMode.configureApplication()
+    }
+
     var body: some Scene {
         WindowGroup {
             NotificationView(
@@ -25,6 +30,8 @@ struct NotificationApp: App {
                     }
                 )
             )
+            .perfRoot("notification")
+            .perfReadyMarker("notification")
         }
     }
 }
@@ -32,6 +39,8 @@ struct NotificationApp: App {
 // MARK: - Mock Data
 
 extension NotificationApp {
+    static let referenceDate = Date(timeIntervalSince1970: 1_772_496_000)
+
     static let mockNotifications: IdentifiedArrayOf<NotificationItem> = [
         NotificationItem(
             id: 1,
@@ -40,7 +49,7 @@ extension NotificationApp {
             message: "닉네임길어도될까님과 연결됐어요!",
             deepLink: nil,
             isRead: false,
-            createdAt: Date()
+            createdAt: referenceDate
         ),
         NotificationItem(
             id: 2,
@@ -49,7 +58,7 @@ extension NotificationApp {
             message: "닉네임길어도될까님의 오늘 하루가 등록됐어요. 확인해 볼까요?",
             deepLink: nil,
             isRead: false,
-            createdAt: Date()
+            createdAt: referenceDate
         ),
         NotificationItem(
             id: 3,
@@ -58,7 +67,7 @@ extension NotificationApp {
             message: "닉네임길어도될까님이 찔렀어요! 오늘 하루도 파이팅~",
             deepLink: nil,
             isRead: false,
-            createdAt: Date()
+            createdAt: referenceDate
         ),
         NotificationItem(
             id: 4,
@@ -67,7 +76,7 @@ extension NotificationApp {
             message: "닉네임길어도될까님이 끝냄 인증샷을 올렸네요! 보러 가봐요!",
             deepLink: nil,
             isRead: false,
-            createdAt: Date()
+            createdAt: referenceDate
         ),
         NotificationItem(
             id: 5,
@@ -76,7 +85,7 @@ extension NotificationApp {
             message: "닉네임길어도될까님이 내게 반응을 남겼어요. 보러 가봐요!",
             deepLink: nil,
             isRead: true,
-            createdAt: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
+            createdAt: Calendar.current.date(byAdding: .day, value: -1, to: referenceDate) ?? referenceDate
         ),
         NotificationItem(
             id: 6,
@@ -85,7 +94,7 @@ extension NotificationApp {
             message: "축하해요! 오늘도 열심히 산 우리에게 박수~",
             deepLink: nil,
             isRead: true,
-            createdAt: Calendar.current.date(byAdding: .day, value: -2, to: Date()) ?? Date()
+            createdAt: Calendar.current.date(byAdding: .day, value: -2, to: referenceDate) ?? referenceDate
         ),
         NotificationItem(
             id: 7,
@@ -94,7 +103,7 @@ extension NotificationApp {
             message: "축하해요! 오늘도 열심히 산 우리에게 박수~",
             deepLink: nil,
             isRead: true,
-            createdAt: Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date()
+            createdAt: Calendar.current.date(byAdding: .day, value: -3, to: referenceDate) ?? referenceDate
         ),
         NotificationItem(
             id: 8,
@@ -103,7 +112,7 @@ extension NotificationApp {
             message: "축하해요! 오늘도 열심히 산 우리에게 박수~",
             deepLink: nil,
             isRead: true,
-            createdAt: Calendar.current.date(byAdding: .day, value: -5, to: Date()) ?? Date()
+            createdAt: Calendar.current.date(byAdding: .day, value: -5, to: referenceDate) ?? referenceDate
         ),
         NotificationItem(
             id: 9,
@@ -112,7 +121,7 @@ extension NotificationApp {
             message: "축하해요! 오늘도 열심히 산 우리에게 박수~",
             deepLink: nil,
             isRead: true,
-            createdAt: Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+            createdAt: Calendar.current.date(byAdding: .day, value: -7, to: referenceDate) ?? referenceDate
         ),
         NotificationItem(
             id: 10,
@@ -121,7 +130,7 @@ extension NotificationApp {
             message: "축하해요! 오늘도 열심히 산 우리에게 박수~",
             deepLink: nil,
             isRead: true,
-            createdAt: Calendar.current.date(byAdding: .day, value: -10, to: Date()) ?? Date()
+            createdAt: Calendar.current.date(byAdding: .day, value: -10, to: referenceDate) ?? referenceDate
         ),
         // 14일 초과 - 필터링되어 표시되지 않음
         NotificationItem(
@@ -131,7 +140,7 @@ extension NotificationApp {
             message: "이 알림은 15일 전이라 표시되지 않아요",
             deepLink: nil,
             isRead: true,
-            createdAt: Calendar.current.date(byAdding: .day, value: -15, to: Date()) ?? Date()
+            createdAt: Calendar.current.date(byAdding: .day, value: -15, to: referenceDate) ?? referenceDate
         ),
         NotificationItem(
             id: 12,
@@ -140,7 +149,7 @@ extension NotificationApp {
             message: "이 알림은 20일 전이라 표시되지 않아요",
             deepLink: nil,
             isRead: true,
-            createdAt: Calendar.current.date(byAdding: .day, value: -20, to: Date()) ?? Date()
+            createdAt: Calendar.current.date(byAdding: .day, value: -20, to: referenceDate) ?? referenceDate
         )
     ]
 }

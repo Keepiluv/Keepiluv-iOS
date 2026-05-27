@@ -196,4 +196,12 @@ public extension TargetDependency {
     static func shared(interface module: Module.Shared) -> Self {
         return .project(target: Module.Shared.name + module.rawValue + "Interface", path: .shared(implementation: module))
     }
+
+    /// Perf UITest 타겟에서만 사용하는 XCTest 지원 모듈입니다.
+    static var sharedPerfTestingSupportUITests: Self {
+        return .project(
+            target: Module.Shared.name + Module.Shared.perfTestingSupport.rawValue + "UITests",
+            path: .shared(implementation: .perfTestingSupport)
+        )
+    }
 }

@@ -32,6 +32,7 @@ let project = Project.makeModule(
                     .domain(interface: .stats),
                     .core(interface: .analytics),
                     .shared(implements: .designSystem),
+                    .shared(implements: .perfTestingSupport),
                     .external(dependency: .ComposableArchitecture)
                 ]
             )
@@ -72,6 +73,7 @@ let project = Project.makeModule(
                     .external(dependency: .ComposableArchitecture)
                 ]
             )
-        )
+        ),
+        .feature(exampleUITests: .stats)
     ]
 )

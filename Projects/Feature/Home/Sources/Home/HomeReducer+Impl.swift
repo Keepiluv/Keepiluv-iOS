@@ -327,7 +327,7 @@ extension HomeReducer {
                 
             case let .setCalendarDate(date):
                 guard date != state.calendarDate else { return .none }
-                
+
                 let now = state.nowDate
                 let today = TXCalendarDate(
                     year: now.year,

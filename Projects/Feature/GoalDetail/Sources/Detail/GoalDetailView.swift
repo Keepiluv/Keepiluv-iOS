@@ -12,6 +12,7 @@ import ComposableArchitecture
 import FeatureGoalDetailInterface
 import FeatureProofPhotoInterface
 import SharedDesignSystem
+import SharedPerfTestingSupport
 
 import Kingfisher
 
@@ -100,8 +101,9 @@ public struct GoalDetailView: View {
             isPresented: $store.isPresentedProofPhoto,
             onDismiss: { store.send(.proofPhotoDismissed) },
             content: {
-                IfLetStore(store.scope(state: \.proofPhoto, action: \.proofPhoto)) { store in
-                    proofPhotoFactory.makeView(store)
+                if let proofPhotoStore = store.scope(state: \.proofPhoto, action: \.proofPhoto) {
+                    proofPhotoFactory.makeView(proofPhotoStore)
+                        .perfReadyMarker("goal-detail-to-proof-photo")
                 }
             }
         )
@@ -369,6 +371,7 @@ private extension GoalDetailView {
                 store.send(.bottomButtonTapped)
             }
         )
+        .perfControl(slug: "goal-detail", element: "primary-cta")
     }
     
     @ViewBuilder

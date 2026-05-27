@@ -112,6 +112,7 @@ public extension Module {
         case util = "Util"
         case thirdPartyLib = "ThirdPartyLib"
         case designSystem = "DesignSystem"
+        case perfTestingSupport = "PerfTestingSupport"
         
         /// Shared 타겟 이름의 기본 prefix입니다.
         public static let name: String = "Shared"
