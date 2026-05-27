@@ -10,6 +10,62 @@ import FeatureHomeInterface
 import SharedDesignSystem
 import SharedPerfTestingSupport
 
+#if PERF_TESTING
+/// Pass 4-S2 Home feed self-run scroll 전용 harness입니다.
+/// Production content section에서 ScrollViewReader / Task 상태를 분리합니다.
+struct HomeSelfRunFeedScrollHarness<Content: View>: View {
+    let store: StoreOf<HomeReducer>
+    private let content: Content
+
+    /// Pass 4-S2: 초기 layout settling 중 body가 여러 번 invalidation되어도 self-run scroll Task가
+    /// scene appearance당 한 번만 실행되도록 보호합니다.
+    @State private var selfRunScrollStarted: Bool = false
+    /// Pass 4-S2: scrollTo sequence가 끝나면 `"true"`로 바뀌며, trace 분석에서 post-scroll window를
+    /// 분리할 수 있도록 `perfStateMarker`로 노출합니다.
+    @State private var selfRunScrollDone: String = "false"
+
+    init(
+        store: StoreOf<HomeReducer>,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.store = store
+        self.content = content()
+    }
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            content
+                .perfStateMarker(
+                    slug: "home",
+                    key: "swiftui-selfrun-scroll",
+                    value: selfRunScrollDone
+                )
+                .onAppear { startSelfRunScrollIfNeeded(proxy: proxy) }
+        }
+    }
+
+    private func startSelfRunScrollIfNeeded(proxy: ScrollViewProxy) {
+        guard !selfRunScrollStarted else { return }
+        selfRunScrollStarted = true
+        let allIds = store.items.map(\.id)
+        let stridedTargets = stride(from: 5, to: allIds.count, by: 5)
+            .compactMap { allIds.indices.contains($0) ? allIds[$0] : nil }
+        let preRollNanos: UInt64 = 1_000_000_000
+        let stepIntervalNanos: UInt64 = 300_000_000
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: preRollNanos)
+            for id in stridedTargets {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    proxy.scrollTo(id, anchor: .top)
+                }
+                try? await Task.sleep(nanoseconds: stepIntervalNanos)
+            }
+            selfRunScrollDone = "true"
+        }
+    }
+}
+#endif
+
 /// Pass 3 probe scenario(toast / calendar month toggle)에서만 쓰는 PERF 전용 control입니다.
 /// `store.calendarDate` 읽기를 별도 sub-view에 가둬 probe scenario에서도 parent `HomeView.body`
 /// read-set을 오염시키지 않게 합니다.
