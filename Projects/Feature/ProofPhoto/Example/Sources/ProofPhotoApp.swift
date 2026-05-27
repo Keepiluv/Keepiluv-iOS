@@ -58,8 +58,8 @@ private enum ProofPhotoFixture {
         let renderer = UIGraphicsImageRenderer(size: size)
         let image = renderer.image { context in
             let cg = context.cgContext
-            for y in stride(from: 0, to: Int(size.height), by: 4) {
-                let progress = CGFloat(y) / size.height
+            for yPosition in stride(from: 0, to: Int(size.height), by: 4) {
+                let progress = CGFloat(yPosition) / size.height
                 let color = UIColor(
                     red: 0.20 + progress * 0.55,
                     green: 0.40,
@@ -67,7 +67,7 @@ private enum ProofPhotoFixture {
                     alpha: 1.0
                 )
                 cg.setFillColor(color.cgColor)
-                cg.fill(CGRect(x: 0, y: y, width: Int(size.width), height: 4))
+                cg.fill(CGRect(x: 0, y: yPosition, width: Int(size.width), height: 4))
             }
             cg.setStrokeColor(UIColor.white.withAlphaComponent(0.35).cgColor)
             cg.setLineWidth(1)
