@@ -110,7 +110,7 @@ public extension Target {
         newConfig.product = .app
         newConfig.bundleId = Project.Environment.BundleId.bundlePrefix + ".example." + featureExampleSlug(module)
         newConfig.destinations = .iOS
-        newConfig.resources = ["Resources/**"]
+        newConfig.resources = ["Example/Resources/**"]
         newConfig.productName = exampleName
         newConfig.dependencies.append(.shared(implements: .perfTestingSupport))
 

@@ -32,13 +32,17 @@ import XCTest
 ///
 /// ## Scenarios
 ///
-/// - `testRendering_proofPhotoPreviewWithFixtureImage` — preview render
-///   stable + 6s idle window (captures any TimelineView-driven cursor
-///   work inside the comment overlay and any image-render side effects).
-/// - `testRendering_proofPhotoCommentTyping` — tap comment circle to
-///   focus + type 5 ASCII characters one by one. Each character mutates
-///   `store.commentText`, re-renders the comment circle, and the cursor
-///   `TimelineView` runs while focused.
+/// - `testRendering_proofPhotoPreviewWithFixtureImage` — Pass 3 baseline,
+///   1024×1024 procedural fixture, preview render + 6s idle window.
+/// - `testRendering_proofPhotoCommentTyping` — Pass 3 baseline,
+///   1024×1024 fixture, 5 ASCII keystroke window.
+/// - `testRendering_proofPhotoPreviewWithLargeFixtureImage` — Pass 4 large
+///   fixture (bundled 4032×3024 JPEG), preview render + 6s idle.
+/// - `testRendering_proofPhotoCommentTypingWithLargeFixtureImage` — Pass 4
+///   large fixture, 5 ASCII keystroke window.
+/// - `testRendering_proofPhotoReselectFixtureImage` — Pass 4 large fixture,
+///   dispatch a second large fixture via the production
+///   `.galleryPhotoLoaded` action through the test harness button.
 final class ProofPhotoExampleRenderingTests: XCTestCase {
 
     /// Drives preview render + 6s idle. Use Instruments to compare
@@ -113,5 +117,127 @@ final class ProofPhotoExampleRenderingTests: XCTestCase {
         )
 
         Thread.sleep(forTimeInterval: 2.0)
+    }
+
+    // MARK: - Pass 4 large-fixture scenarios
+
+    /// Pass 4 preview render with 4032×3024 bundled JPEG (~7.5 MiB). Waits
+    /// for `image-ingested.fixture-large` so xctrace attach happens after
+    /// disk-read + initial ingestion is complete (fixture load cost stays
+    /// out of the trace window per Pass 4 plan §A invalidation rule).
+    func testRendering_proofPhotoPreviewWithLargeFixtureImage() {
+        let app = XCUIApplication.launchForPerf(
+            seed: "proof-photo-prefilled-large",
+            scenario: .rendering,
+            disableAnimations: false
+        )
+        waitForFeatureReady("proof-photo", timeout: 30)
+
+        awaitIngested(app, source: "fixture-large", timeout: 30)
+        awaitPreviewReady(app, timeout: 10)
+
+        Thread.sleep(forTimeInterval: 6.0)
+    }
+
+    /// Pass 4 comment typing with 4032×3024 fixture rendered. Tests whether
+    /// keystroke-induced body re-eval re-decodes the preview image (plan §P4-2
+    /// entry-condition check).
+    func testRendering_proofPhotoCommentTypingWithLargeFixtureImage() {
+        let app = XCUIApplication.launchForPerf(
+            seed: "proof-photo-prefilled-large",
+            scenario: .rendering,
+            disableAnimations: false
+        )
+        waitForFeatureReady("proof-photo", timeout: 30)
+
+        awaitIngested(app, source: "fixture-large", timeout: 30)
+        awaitPreviewReady(app, timeout: 10)
+
+        let commentCircle = app.descendants(matching: .any)
+            .matching(identifier: "feature.proof-photo.comment-circle")
+            .firstMatch
+        XCTAssertTrue(
+            commentCircle.waitForExistence(timeout: 10),
+            "feature.proof-photo.comment-circle not visible"
+        )
+        commentCircle.tap()
+
+        for character in "abcde" {
+            app.typeText(String(character))
+        }
+
+        let typedMarker = app.descendants(matching: .any)
+            .matching(identifier: "feature.proof-photo.marker.comment-text.abcde")
+            .firstMatch
+        XCTAssertTrue(
+            typedMarker.waitForExistence(timeout: 10),
+            "store.commentText never became 'abcde' — typing did not reach the field (likely IME / keyboard input mode). Scenario is not baseline-ready until this passes on the target device."
+        )
+
+        Thread.sleep(forTimeInterval: 2.0)
+    }
+
+    /// Pass 4 reselect. Dispatches a second large fixture via the production
+    /// `.galleryPhotoLoaded` action (through the example harness button) so
+    /// the trace captures the real pre-upload image-replacement render path.
+    /// Verifies the reselect.1 marker AND the second image's
+    /// image-ingested marker per plan §E.
+    func testRendering_proofPhotoReselectFixtureImage() {
+        let app = XCUIApplication.launchForPerf(
+            seed: "proof-photo-prefilled-large",
+            scenario: .rendering,
+            disableAnimations: false
+        )
+        waitForFeatureReady("proof-photo", timeout: 30)
+
+        awaitIngested(app, source: "fixture-large", timeout: 30)
+        awaitPreviewReady(app, timeout: 10)
+
+        let reselectButton = app.descendants(matching: .any)
+            .matching(identifier: "feature.proof-photo.test.reselect-button")
+            .firstMatch
+        XCTAssertTrue(
+            reselectButton.waitForExistence(timeout: 10),
+            "reselect harness button not present — seed/harness wiring broken"
+        )
+        reselectButton.tap()
+
+        awaitIngested(app, source: "fixture-large-second", timeout: 10)
+
+        let reselectMarker = app.descendants(matching: .any)
+            .matching(identifier: "feature.proof-photo.marker.reselect.1")
+            .firstMatch
+        XCTAssertTrue(
+            reselectMarker.waitForExistence(timeout: 5),
+            "reselect counter never became 1 — production .galleryPhotoLoaded dispatch failed"
+        )
+
+        Thread.sleep(forTimeInterval: 4.0)
+    }
+
+    // MARK: - Helpers
+
+    private func awaitIngested(
+        _ app: XCUIApplication,
+        source: String,
+        timeout: TimeInterval
+    ) {
+        let marker = app.descendants(matching: .any)
+            .matching(identifier: "feature.proof-photo.marker.image-ingested.\(source)")
+            .firstMatch
+        XCTAssertTrue(
+            marker.waitForExistence(timeout: timeout),
+            "image-ingested.\(source) marker not present within \(Int(timeout))s — fixture loading failed or seed wiring broken"
+        )
+    }
+
+    private func awaitPreviewReady(_ app: XCUIApplication, timeout: TimeInterval) {
+        let marker = app.descendants(matching: .any)
+            .matching(identifier: "feature.proof-photo.marker.preview-ready.true")
+            .firstMatch
+        XCTAssertTrue(
+            marker.waitForExistence(timeout: timeout),
+            "preview-ready.true marker not present — image branch of photoPreview did not render"
+        )
     }
 }

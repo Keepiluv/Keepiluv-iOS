@@ -36,6 +36,39 @@ public enum UITestMode {
         arguments.contains("-UITEST_WAIT_READY")
     }
 
+    /// Pass 4-S retry — SwiftUI Template self-run feasibility flag.
+    /// When set, Example apps may dispatch reducer/binding actions from inside
+    /// `launch-mode` to mimic interaction (e.g. comment typing) so that
+    /// `xcrun xctrace --template SwiftUI --launch` can capture interactive
+    /// SwiftUI rows without needing an XCUITest driver (attach-mode produces
+    /// 0 rows on this device/OS). Example-only; production code must not branch
+    /// on this.
+    public static var isSwiftUISelfRunTyping: Bool {
+        arguments.contains("-UITEST_SWIFTUI_SELF_RUN_TYPING")
+    }
+
+    /// Pass 4-S2 — Home feed self-running scroll. When set, the Home Example
+    /// host's `LazyVStack` ScrollView is wrapped in a `ScrollViewReader` and
+    /// a Task drives `proxy.scrollTo(...)` across a stride of `home-heavy`
+    /// item ids so SwiftUI Template launch-mode can capture interactive
+    /// scroll attribution. Example/perf-only; production code must not
+    /// branch on this.
+    public static var isSwiftUISelfRunFeedScroll: Bool {
+        arguments.contains("-UITEST_SWIFTUI_SELF_RUN_FEED_SCROLL")
+    }
+
+    /// Pass 4-S3 — Stats feed self-running scroll. Analogous to
+    /// `isSwiftUISelfRunFeedScroll` (Pass 4-S2) but for the Stats
+    /// `StatsCardView` LazyVStack under the `stats-heavy` seed. When set,
+    /// `StatsView.cardList` wraps its `ScrollView` in a `ScrollViewReader`
+    /// and a Task drives `proxy.scrollTo(...)` across a stride of stats
+    /// item `goalId`s so SwiftUI Template launch-mode can capture
+    /// interactive scroll attribution for the Stats list. Example/perf-only;
+    /// production code must not branch on this.
+    public static var isSwiftUISelfRunStatsScroll: Bool {
+        arguments.contains("-UITEST_SWIFTUI_SELF_RUN_STATS_SCROLL")
+    }
+
     public static func configureApplication() {
         guard isEnabled, disablesAnimations else { return }
         UIView.setAnimationsEnabled(false)
