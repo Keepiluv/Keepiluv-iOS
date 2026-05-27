@@ -55,7 +55,7 @@ private func reduceCore(
     case .binding:
         return .none
 
-    case .onAppear:
+    case .view(.onAppear):
         @Dependency(\.authClient) var authClient
         @Dependency(\.onboardingClient) var onboardingClient
 
@@ -63,54 +63,57 @@ private func reduceCore(
         return .merge(
             .run { send in
                 let storeVersion = await AppVersionProvider.fetchStoreVersion()
-                await send(.storeVersionResponse(storeVersion))
+                await send(.response(.storeVersionResponse(storeVersion)))
             },
             .run { send in
                 do {
                     let profile = try await authClient.fetchMyProfile()
-                    await send(.fetchMyProfileResponse(.success(profile.name)))
+                    await send(.response(.fetchMyProfileResponse(.success(profile.name))))
                 } catch {
-                    await send(.fetchMyProfileResponse(.failure(error)))
+                    await send(.response(.fetchMyProfileResponse(.failure(error))))
                 }
             },
             .run { send in
                 do {
                     let coupleCode = try await onboardingClient.fetchInviteCode()
-                    await send(.fetchCoupleCodeResponse(.success(coupleCode)))
+                    await send(.response(.fetchCoupleCodeResponse(.success(coupleCode))))
                 } catch {
-                    await send(.fetchCoupleCodeResponse(.failure(error)))
+                    await send(.response(.fetchCoupleCodeResponse(.failure(error))))
                 }
             }
         )
 
-    case .storeVersionResponse(let version):
+    case .response(.storeVersionResponse(let version)):
         state.storeVersion = version ?? "-"
         return .none
 
-    case .backButtonTapped:
+    case .view(.backButtonTapped):
         return .send(.delegate(.navigateBack))
 
-    case .subViewBackButtonTapped:
+    case .view(.subViewBackButtonTapped):
         return .send(.delegate(.navigateBackFromSubView))
 
-    case .editButtonTapped:
+    case .view(.editButtonTapped):
         state.isEditing = true
         return .none
 
-    case .clearButtonTapped:
+    case .view(.clearButtonTapped):
         state.nickname = ""
         return .none
 
-    case .nicknameEditingEnded:
+    case .view(.nicknameEditingEnded):
+        return .send(.internal(.nicknameEditingEnded))
+
+    case .internal(.nicknameEditingEnded):
         return handleNicknameEditingEnded(state: &state)
 
-    case .updateNicknameResponse(.success):
+    case .response(.updateNicknameResponse(.success)):
         state.isLoading = false
         state.originalNickname = state.nickname
         state.isEditing = false
         return .none
 
-    case .updateNicknameResponse(.failure(let error)):
+    case .response(.updateNicknameResponse(.failure(let error))):
         state.isLoading = false
         state.nickname = state.originalNickname
         state.isEditing = false
@@ -120,7 +123,7 @@ private func reduceCore(
         }
         return .none
 
-    case .languageSettingTapped:
+    case .view(.languageSettingTapped):
         state.modal = .selectList(
             title: "언어 설정",
             subtitle: "이미 앱 내에 저장된 언어는 변경되지 않아요",
@@ -131,7 +134,10 @@ private func reduceCore(
         )
         return .none
 
-    case let .languageConfirmed(index):
+    case let .view(.languageConfirmed(index)):
+        return .send(.internal(.languageConfirmed(index)))
+
+    case let .internal(.languageConfirmed(index)):
         guard SettingsReducer.State.languageOptions.indices.contains(index) else {
             return .none
         }
@@ -139,13 +145,13 @@ private func reduceCore(
         // TODO: 언어 설정 저장 로직 구현
         return .none
 
-    case .accountTapped:
+    case .view(.accountTapped):
         return .send(.delegate(.navigateToAccount))
 
-    case .infoTapped:
+    case .view(.infoTapped):
         return .send(.delegate(.navigateToInfo))
 
-    case .logoutTapped:
+    case .view(.logoutTapped):
         guard !state.isLoading else { return .none }
         @Dependency(\.authClient) var authClient
         @Dependency(\.pushClient) var pushClient
@@ -160,13 +166,13 @@ private func reduceCore(
 
             do {
                 try await authClient.signOut()
-                await send(.logoutResponse(.success(())))
+                await send(.response(.logoutResponse(.success(()))))
             } catch {
-                await send(.logoutResponse(.failure(error)))
+                await send(.response(.logoutResponse(.failure(error))))
             }
         }
 
-    case .disconnectCoupleTapped:
+    case .view(.disconnectCoupleTapped):
         state.modalPurpose = .disconnectCouple
         state.modal = .info(
             image: .Icon.Illustration.modalWarning,
@@ -182,7 +188,7 @@ private func reduceCore(
         )
         return .none
 
-    case .withdrawTapped:
+    case .view(.withdrawTapped):
         state.modalPurpose = .withdraw
         state.modal = .info(
             image: .Icon.Illustration.modalWarning,
@@ -196,7 +202,7 @@ private func reduceCore(
         )
         return .none
 
-    case .modalConfirmTapped:
+    case .view(.modalConfirmTapped):
         guard !state.isLoading else { return .none }
         @Dependency(\.authClient) var authClient
 
@@ -206,9 +212,9 @@ private func reduceCore(
             return .run { send in
                 do {
                     try await authClient.withdraw()
-                    await send(.withdrawResponse(.success(())))
+                    await send(.response(.withdrawResponse(.success(()))))
                 } catch {
-                    await send(.withdrawResponse(.failure(error)))
+                    await send(.response(.withdrawResponse(.failure(error))))
                 }
             }
         case .withdraw:
@@ -216,9 +222,9 @@ private func reduceCore(
             return .run { send in
                 do {
                     try await authClient.withdraw()
-                    await send(.withdrawResponse(.success(())))
+                    await send(.response(.withdrawResponse(.success(()))))
                 } catch {
-                    await send(.withdrawResponse(.failure(error)))
+                    await send(.response(.withdrawResponse(.failure(error))))
                 }
             }
         default:
@@ -226,67 +232,67 @@ private func reduceCore(
         }
         return .none
 
-    case .privacyPolicyTapped:
+    case .view(.privacyPolicyTapped):
         if let url = URL(string: "https://incongruous-sweatshirt-b32.notion.site/Keepliuv-3024eb2e10638051824ef9ac7f9a522f") {
             return .send(.delegate(.navigateToWebView(url: url, title: "개인정보 처리방침")))
         }
         return .none
 
-    case .notificationSettingTapped:
+    case .view(.notificationSettingTapped):
         return .send(.delegate(.navigateToNotificationSettings))
 
-    case .fetchMyProfileResponse(.success(let name)):
+    case .response(.fetchMyProfileResponse(.success(let name))):
         state.nickname = name
         state.originalNickname = name
         return .none
 
-    case .fetchMyProfileResponse(.failure(let error)):
+    case .response(.fetchMyProfileResponse(.failure(let error))):
         if let networkError = error as? NetworkError,
            networkError == .authorizationError {
             return .send(.delegate(.sessionExpired))
         }
         return .none
 
-    case .fetchCoupleCodeResponse(.success(let coupleCode)):
+    case .response(.fetchCoupleCodeResponse(.success(let coupleCode))):
         state.coupleCode = coupleCode
         return .none
 
-    case .fetchCoupleCodeResponse(.failure(let error)):
+    case .response(.fetchCoupleCodeResponse(.failure(let error))):
         if let networkError = error as? NetworkError,
            networkError == .authorizationError {
             return .send(.delegate(.sessionExpired))
         }
         return .none
 
-    case .logoutResponse(.success):
+    case .response(.logoutResponse(.success)):
         state.isLoading = false
         return .send(.delegate(.logoutCompleted))
 
-    case .logoutResponse(.failure(let error)):
+    case .response(.logoutResponse(.failure(let error))):
         state.isLoading = false
         if let networkError = error as? NetworkError,
            networkError == .authorizationError {
             return .send(.delegate(.sessionExpired))
         }
-        return .send(.showToast(.warning(message: "로그아웃에 실패했어요")))
+        return .send(.presentation(.showToast(.warning(message: "로그아웃에 실패했어요"))))
 
-    case .withdrawResponse(.success):
+    case .response(.withdrawResponse(.success)):
         state.isLoading = false
         return .send(.delegate(.withdrawCompleted))
 
-    case .withdrawResponse(.failure(let error)):
+    case .response(.withdrawResponse(.failure(let error))):
         state.isLoading = false
         if let networkError = error as? NetworkError,
            networkError == .authorizationError {
             return .send(.delegate(.sessionExpired))
         }
-        return .send(.showToast(.warning(message: "회원 탈퇴에 실패했어요")))
+        return .send(.presentation(.showToast(.warning(message: "회원 탈퇴에 실패했어요"))))
 
-    case let .showToast(toast):
+    case let .presentation(.showToast(toast)):
         state.toast = toast
         return .none
 
-    case .inquiryTapped:
+    case .view(.inquiryTapped):
         @Dependency(\.openURL) var openURL
         guard let url = URL(string: "http://pf.kakao.com/_znAzX/chat") else {
             return .none
@@ -300,13 +306,13 @@ private func reduceCore(
 
     // MARK: - Notification Settings
 
-    case .notificationSettingsOnAppear:
+    case .view(.notificationSettingsOnAppear):
         @Dependency(\.notificationClient) var notificationClient
 
         let checkPermissionEffect: Effect<SettingsReducer.Action> = .run { send in
             let settings = await UNUserNotificationCenter.current().notificationSettings()
             let isEnabled = settings.authorizationStatus == .authorized
-            await send(.checkSystemNotificationResponse(isEnabled))
+            await send(.response(.checkSystemNotificationResponse(isEnabled)))
         }
 
         guard !state.isNotificationSettingsLoading else {
@@ -319,21 +325,21 @@ private func reduceCore(
             .run { send in
                 do {
                     let notificationSettings = try await notificationClient.fetchSettings()
-                    await send(.fetchNotificationSettingsResponse(.success(notificationSettings)))
+                    await send(.response(.fetchNotificationSettingsResponse(.success(notificationSettings))))
                 } catch {
-                    await send(.fetchNotificationSettingsResponse(.failure(error)))
+                    await send(.response(.fetchNotificationSettingsResponse(.failure(error))))
                 }
             }
         )
 
-    case .fetchNotificationSettingsResponse(.success(let settings)):
+    case .response(.fetchNotificationSettingsResponse(.success(let settings))):
         state.isNotificationSettingsLoading = false
         state.isPokePushEnabled = settings.isPushEnabled
         state.isMarketingPushEnabled = settings.isMarketingEnabled
         state.isNightMarketingPushEnabled = settings.isNightEnabled
         return .none
 
-    case .fetchNotificationSettingsResponse(.failure(let error)):
+    case .response(.fetchNotificationSettingsResponse(.failure(let error))):
         state.isNotificationSettingsLoading = false
         if let networkError = error as? NetworkError,
            networkError == .authorizationError {
@@ -341,65 +347,65 @@ private func reduceCore(
         }
         return .none
 
-    case .pokePushToggled(let enabled):
+    case .view(.pokePushToggled(let enabled)):
         @Dependency(\.notificationClient) var notificationClient
         // 낙관적 업데이트
         state.isPokePushEnabled = enabled
         return .run { send in
             do {
                 let settings = try await notificationClient.updatePokeSetting(enabled)
-                await send(.updateNotificationSettingResponse(.success(settings)))
+                await send(.response(.updateNotificationSettingResponse(.success(settings))))
             } catch {
-                await send(.updateNotificationSettingResponse(.failure(error)))
+                await send(.response(.updateNotificationSettingResponse(.failure(error))))
             }
         }.cancellable(id: "pokePushToggle", cancelInFlight: true)
 
-    case .marketingPushToggled(let enabled):
+    case .view(.marketingPushToggled(let enabled)):
         @Dependency(\.notificationClient) var notificationClient
         // 낙관적 업데이트
         state.isMarketingPushEnabled = enabled
         return .run { send in
             do {
                 let settings = try await notificationClient.updateMarketingSetting(enabled)
-                await send(.updateNotificationSettingResponse(.success(settings)))
+                await send(.response(.updateNotificationSettingResponse(.success(settings))))
             } catch {
-                await send(.updateNotificationSettingResponse(.failure(error)))
+                await send(.response(.updateNotificationSettingResponse(.failure(error))))
             }
         }.cancellable(id: "marketingPushToggle", cancelInFlight: true)
 
-    case .nightPushToggled(let enabled):
+    case .view(.nightPushToggled(let enabled)):
         @Dependency(\.notificationClient) var notificationClient
         // 낙관적 업데이트
         state.isNightMarketingPushEnabled = enabled
         return .run { send in
             do {
                 let settings = try await notificationClient.updateNightSetting(enabled)
-                await send(.updateNotificationSettingResponse(.success(settings)))
+                await send(.response(.updateNotificationSettingResponse(.success(settings))))
             } catch {
-                await send(.updateNotificationSettingResponse(.failure(error)))
+                await send(.response(.updateNotificationSettingResponse(.failure(error))))
             }
         }.cancellable(id: "nightPushToggle", cancelInFlight: true)
 
-    case .updateNotificationSettingResponse(.success(let settings)):
+    case .response(.updateNotificationSettingResponse(.success(let settings))):
         // 서버 응답으로 상태 동기화
         state.isPokePushEnabled = settings.isPushEnabled
         state.isMarketingPushEnabled = settings.isMarketingEnabled
         state.isNightMarketingPushEnabled = settings.isNightEnabled
         return .none
 
-    case .updateNotificationSettingResponse(.failure(let error)):
+    case .response(.updateNotificationSettingResponse(.failure(let error))):
         // 실패 시 서버에서 다시 가져오기
         if let networkError = error as? NetworkError,
            networkError == .authorizationError {
             return .send(.delegate(.sessionExpired))
         }
-        return .send(.notificationSettingsOnAppear)
+        return .send(.view(.notificationSettingsOnAppear))
 
-    case let .checkSystemNotificationResponse(isEnabled):
+    case let .response(.checkSystemNotificationResponse(isEnabled)):
         state.isSystemNotificationEnabled = isEnabled
         return .none
 
-    case .enableNotificationBannerTapped:
+    case .view(.enableNotificationBannerTapped):
         return .run { _ in
             await MainActor.run {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -440,9 +446,9 @@ private func handleNicknameEditingEnded(
 
         do {
             try await onboardingClient.updateProfile(nickname)
-            await send(.updateNicknameResponse(.success(())))
+            await send(.response(.updateNicknameResponse(.success(()))))
         } catch {
-            await send(.updateNicknameResponse(.failure(error)))
+            await send(.response(.updateNicknameResponse(.failure(error))))
         }
     }
 }

@@ -31,33 +31,33 @@ extension StatsReducer {
         let reducer = Reduce<State, Action> { state, action in
             switch action {
                 // MARK: - LifeCycle
-            case .onAppear:
+            case .view(.onAppear):
                 analyticsClient.logEvent(StatsAnalyticsEvent.viewed)
-                return .send(.fetchStats)
+                return .send(.internal(.fetchStats))
                 
                 // MARK: - UserAction
-            case let .topTabBarSelected(item):
+            case let .view(.topTabBarSelected(item)):
                 state.isOngoing = item == .ongoing
-                return .send(.fetchStats)
+                return .send(.internal(.fetchStats))
                 
-            case .previousMonthTapped:
+            case .view(.previousMonthTapped):
                 state.currentMonth.goToPreviousMonth()
-                return .send(.fetchStats)
+                return .send(.internal(.fetchStats))
                 
-            case .nextMonthTapped:
+            case .view(.nextMonthTapped):
                 state.currentMonth.goToNextMonth()
-                return .send(.fetchStats)
+                return .send(.internal(.fetchStats))
                 
-            case let .statsCardTapped(goalId):
+            case let .view(.statsCardTapped(goalId)):
                 return .send(.delegate(.goToStatsDetail(goalId: goalId)))
                 
                 // MARK: - Update State
-            case let .showToast(toast):
+            case let .presentation(.showToast(toast)):
                 state.toast = toast
                 return .none
                 
                 // MARK: - Network
-            case .fetchStats:
+            case .internal(.fetchStats):
                 let isOngoing = state.isOngoing
                 let month = state.currentMonth.formattedYearDashMonth
                 
@@ -72,13 +72,13 @@ extension StatsReducer {
                 return .run { send in
                     do {
                         let stats = try await statsClient.fetchStats(month, isOngoing)
-                        await send(.fetchedStats(stats: stats, month: month))
+                        await send(.response(.fetchedStats(stats: stats, month: month)))
                     } catch {
-                        await send(.fetchStatsFailed)
+                        await send(.response(.fetchStatsFailed))
                     }
                 }
                 
-            case let .fetchedStats(stats, month):
+            case let .response(.fetchedStats(stats, month)):
                 state.isLoading = false
                 let items = stats.stats.map {
                     let goalCount = $0.monthlyCount ?? $0.totalCount ?? 0
@@ -121,9 +121,9 @@ extension StatsReducer {
                 
                 return .none
 
-            case .fetchStatsFailed:
+            case .response(.fetchStatsFailed):
                 state.isLoading = false
-                return .send(.showToast(.warning(message: "통계 조회에 실패했어요")))
+                return .send(.presentation(.showToast(.warning(message: "통계 조회에 실패했어요"))))
                 
             case .delegate:
                 return .none

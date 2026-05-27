@@ -71,41 +71,52 @@ public struct ProofPhotoReducer {
     /// ProofPhoto 화면에서 발생하는 액션입니다.
     public enum Action: BindableAction {
         case binding(BindingAction<State>)
-        
-        // MARK: - LifeCycle
-        case onAppear
-        
-        // MARK: - Action
-        case closeButtonTapped
-        case captureButtonTapped
-        case switchButtonTapped
-        case flashButtonTapped
-        case returnButtonTapped
-        case focusChanged(Bool)
-        case uploadButtonTapped
-        case dimmedBackgroundTapped
-        
-        // MARK: - Update State
-        case commentTextChanged(String)
-        case setupCaptureSessionCompleted(session: AVCaptureSession)
-        case captureCompleted(imageData: Data)
-        case captureFailed
-        case galleryPhotoLoaded(imageData: Data)
-        case cameraSwitched
-        case showToast(TXToastType)
-        case uploadFailed
+
+        // MARK: - View
+        public enum View: Equatable {
+            case onAppear
+            case closeButtonTapped
+            case captureButtonTapped
+            case switchButtonTapped
+            case flashButtonTapped
+            case returnButtonTapped
+            case focusChanged(Bool)
+            case uploadButtonTapped
+            case dimmedBackgroundTapped
+            case commentTextChanged(String)
+            case galleryPhotoLoaded(imageData: Foundation.Data)
+        }
+
+        // MARK: - Response
+        public enum Response {
+            case setupCaptureSessionCompleted(session: AVCaptureSession)
+            case captureCompleted(imageData: Foundation.Data)
+            case captureFailed
+            case galleryPhotoLoaded(imageData: Foundation.Data)
+            case cameraSwitched
+            case uploadFailed
+        }
+
+        // MARK: - Presentation
+        public enum Presentation: Equatable {
+            case showToast(TXToastType)
+        }
 
         // MARK: - Delegate
         case delegate(Delegate)
-        
+
         /// ProofPhoto 화면에서 외부로 전달하는 이벤트입니다.
         public enum Delegate {
             case closeProofPhoto
             case completedUploadPhoto(
                 myPhotoLog: GoalDetail.CompletedGoal.PhotoLog,
-                editedImageData: Data?
+                editedImageData: Foundation.Data?
             )
         }
+
+        case view(View)
+        case response(Response)
+        case presentation(Presentation)
     }
 
     /// 외부에서 주입된 Reduce로 리듀서를 구성합니다.

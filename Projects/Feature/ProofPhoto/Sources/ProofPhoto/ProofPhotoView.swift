@@ -87,7 +87,7 @@ public struct ProofPhotoView: View {
             value: store.previewImage != nil ? "true" : "false"
         )
         .onAppear {
-            store.send(.onAppear)
+            store.send(.view(.onAppear))
         }
         .txToast(item: $store.toast, customPadding: 75)
         .txLoading(item: store.isUploading ? "업로드 중..." : nil)
@@ -121,7 +121,7 @@ private extension ProofPhotoView {
             Spacer()
             
             Button {
-                store.send(.closeButtonTapped)
+                store.send(.view(.closeButtonTapped))
             } label: {
                 Image.Icon.Symbol.closeM
                     .resizable()
@@ -169,7 +169,7 @@ private extension ProofPhotoView {
     var previewTopControls: some View {
         HStack {
             Button {
-                store.send(.flashButtonTapped)
+                store.send(.view(.flashButtonTapped))
             } label: {
                 flashIcon
                     .renderingMode(.template)
@@ -221,7 +221,7 @@ private extension ProofPhotoView {
                         backgroundColor: Color.Gray.gray400
                     )
                 ),
-                onTap: { store.send(.switchButtonTapped) }
+                onTap: { store.send(.view(.switchButtonTapped)) }
             )
         }
     }
@@ -229,7 +229,7 @@ private extension ProofPhotoView {
     var uploadControls: some View {
         HStack(spacing: Spacing.spacing6) {
             Button {
-                store.send(.returnButtonTapped)
+                store.send(.view(.returnButtonTapped))
             } label: {
                 Image.Icon.Symbol.icReturn
                     .resizable()
@@ -245,7 +245,7 @@ private extension ProofPhotoView {
                     size: .m,
                     state: .standard
                 ),
-                onTap: { store.send(.uploadButtonTapped) }
+                onTap: { store.send(.view(.uploadButtonTapped)) }
             )
             
             Color.clear
@@ -271,7 +271,7 @@ private extension ProofPhotoView {
     
     var captureButton: some View {
         Button {
-            store.send(.captureButtonTapped)
+            store.send(.view(.captureButtonTapped))
         } label: {
             Circle()
                 .fill(.white)
@@ -298,7 +298,7 @@ private extension ProofPhotoView {
             .transition(.opacity)
             .animation(.easeInOut, value: store.isCommentFocused)
             .onTapGesture {
-                store.send(.dimmedBackgroundTapped)
+                store.send(.view(.dimmedBackgroundTapped))
             }
     }
 }
@@ -365,7 +365,7 @@ private extension ProofPhotoView {
             keyboardInset: keyboardInset,
             isFocused: $store.isCommentFocused,
             onFocused: { isFocused in
-                store.send(.focusChanged(isFocused))
+                store.send(.view(.focusChanged(isFocused)))
             }
         )
         .accessibilityIdentifier("feature.proof-photo.comment-circle")

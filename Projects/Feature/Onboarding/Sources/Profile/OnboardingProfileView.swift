@@ -89,7 +89,7 @@ private extension OnboardingProfileView {
                 size: .l,
                 state: store.isNicknameValid ? .standard : .disabled
             ),
-            onTap: { store.send(.completeButtonTapped) }
+            onTap: { store.send(.view(.completeButtonTapped)) }
         )
     }
 }

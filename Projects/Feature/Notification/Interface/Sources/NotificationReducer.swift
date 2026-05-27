@@ -42,26 +42,30 @@ public struct NotificationReducer {
     public enum Action: BindableAction {
         case binding(BindingAction<State>)
 
-        // MARK: - User Action
-        case backButtonTapped
-        case notificationTapped(NotificationItem)
-        case loadMore
+        // MARK: - View
+        public enum View: Equatable {
+            case onAppear
+            case backButtonTapped
+            case notificationTapped(NotificationItem)
+            case loadMore
+        }
 
-        // MARK: - Lifecycle
-        case onAppear
-
-        // MARK: - Internal
-        case fetchListResponse(Result<NotificationListResult, Error>)
-        case fetchMoreResponse(Result<NotificationListResult, Error>)
-        case markAsReadResponse(NotificationItem, Result<Void, Error>)
+        // MARK: - Response
+        public enum Response {
+            case fetchListResponse(Result<NotificationListResult, Error>)
+            case fetchMoreResponse(Result<NotificationListResult, Error>)
+            case markAsReadResponse(NotificationItem, Result<Void, Error>)
+        }
 
         // MARK: - Delegate
-        case delegate(Delegate)
-
         public enum Delegate: Equatable {
             case navigateBack
             case notificationSelected(NotificationItem)
         }
+
+        case view(View)
+        case response(Response)
+        case delegate(Delegate)
     }
 
     public init(reducer: Reduce<State, Action>) {

@@ -37,7 +37,7 @@ struct StatsView: View {
                statsEmptyView
             }
         }
-        .onAppear { store.send(.onAppear) }
+        .onAppear { store.send(.view(.onAppear)) }
         .txToast(item: $store.toast)
         .toolbar(.hidden, for: .tabBar)
     }
@@ -54,7 +54,7 @@ private extension StatsView {
             style: .line(StatsTopTabItem.allCases),
             selectedItem: store.isOngoing ? .ongoing : .completed,
             onSelect: { item in
-                store.send(.topTabBarSelected(item))
+                store.send(.view(.topTabBarSelected(item)))
             }
         )
         .background(Color.Common.white)
@@ -66,8 +66,8 @@ private extension StatsView {
             title: store.monthTitle,
             onTitleTap: { },
             isNextDisabled: store.isNextMonthDisabled,
-            onPrevious: { store.send(.previousMonthTapped) },
-            onNext: { store.send(.nextMonthTapped) }
+            onPrevious: { store.send(.view(.previousMonthTapped)) },
+            onNext: { store.send(.view(.nextMonthTapped)) }
         )
     }
     
@@ -94,7 +94,7 @@ private extension StatsView {
                         item: item,
                         isOngoing: store.isOngoing,
                         onTap: { goalId in
-                            store.send(.statsCardTapped(goalId: goalId))
+                            store.send(.view(.statsCardTapped(goalId: goalId)))
                         }
                     )
                     .perfCell(slug: "stats", stableId: item.goalId)

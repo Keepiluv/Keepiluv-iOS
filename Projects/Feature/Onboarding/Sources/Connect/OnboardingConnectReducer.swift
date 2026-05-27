@@ -42,23 +42,24 @@ public struct OnboardingConnectReducer {
         // MARK: - Binding
         case binding(BindingAction<State>)
 
-        // MARK: - User Action
-        case directConnectCardTapped
-        case sendInvitationButtonTapped
-        case logoutButtonTapped
-        case restoreCoupleButtonTapped
+        // MARK: - View (사용자 이벤트)
+        public enum View: Equatable {
+            case directConnectCardTapped
+            case sendInvitationButtonTapped
+            case logoutButtonTapped
+            case restoreCoupleButtonTapped
+            case shareSheetDismissed
+            case restoreCoupleSheetDismissed
+        }
 
-        // MARK: - Update State
-        case shareSheetDismissed
-        case restoreCoupleSheetDismissed
-
-        // MARK: - Delegate
-        case delegate(Delegate)
-
+        // MARK: - Delegate (부모에게 알림)
         public enum Delegate: Equatable {
             case navigateToCodeInput
             case logoutRequested
         }
+
+        case view(View)
+        case delegate(Delegate)
     }
 
     public init() {}
@@ -70,31 +71,45 @@ public struct OnboardingConnectReducer {
             case .binding:
                 return .none
 
-            case .directConnectCardTapped:
-                return .send(.delegate(.navigateToCodeInput))
-
-            case .sendInvitationButtonTapped:
-                state.isShareSheetPresented = true
-                return .none
-
-            case .logoutButtonTapped:
-                return .send(.delegate(.logoutRequested))
-
-            case .restoreCoupleButtonTapped:
-                state.isRestoreCoupleSheetPresented = true
-                return .none
-
-            case .shareSheetDismissed:
-                state.isShareSheetPresented = false
-                return .none
-
-            case .restoreCoupleSheetDismissed:
-                state.isRestoreCoupleSheetPresented = false
-                return .none
+            case .view(let viewAction):
+                return reduceView(state: &state, action: viewAction)
 
             case .delegate:
                 return .none
             }
+        }
+    }
+}
+
+// MARK: - View
+
+private extension OnboardingConnectReducer {
+    func reduceView(
+        state: inout State,
+        action: Action.View
+    ) -> Effect<Action> {
+        switch action {
+        case .directConnectCardTapped:
+            return .send(.delegate(.navigateToCodeInput))
+
+        case .sendInvitationButtonTapped:
+            state.isShareSheetPresented = true
+            return .none
+
+        case .logoutButtonTapped:
+            return .send(.delegate(.logoutRequested))
+
+        case .restoreCoupleButtonTapped:
+            state.isRestoreCoupleSheetPresented = true
+            return .none
+
+        case .shareSheetDismissed:
+            state.isShareSheetPresented = false
+            return .none
+
+        case .restoreCoupleSheetDismissed:
+            state.isRestoreCoupleSheetPresented = false
+            return .none
         }
     }
 }

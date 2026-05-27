@@ -12,7 +12,7 @@ import UIKit
 
 /// Maps a `-UITEST_SEED` value to the initial fixture used by P4-0
 /// rendering scenarios. Loading happens before the trace window via the
-/// production `.galleryPhotoLoaded` action so generation/disk-read cost
+/// production `.view(.galleryPhotoLoaded)` action so generation/disk-read cost
 /// is not measured inside the trace.
 private enum ProofPhotoFixture {
     case procedural1024
@@ -160,7 +160,7 @@ private struct ExampleHost: View {
             }
     }
 
-    /// Dispatches the initial fixture via the production `.galleryPhotoLoaded`
+    /// Dispatches the initial fixture via the production `.view(.galleryPhotoLoaded)`
     /// action. Same code path a real gallery selection takes. Runs before the
     /// xctrace window opens because the driver waits for
     /// `feature.proof-photo.marker.image-ingested.<source>` to appear.
@@ -170,7 +170,7 @@ private struct ExampleHost: View {
             return
         }
         let data = fixture.data()
-        store.send(.galleryPhotoLoaded(imageData: data))
+        store.send(.view(.galleryPhotoLoaded(imageData: data)))
         ingestedSource = fixture.source
     }
 
@@ -195,7 +195,7 @@ private struct ExampleHost: View {
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: preRunDelayNanos)
             for text in keystrokes {
-                store.send(.commentTextChanged(text))
+                store.send(.view(.commentTextChanged(text)))
                 try? await Task.sleep(nanoseconds: keystrokeIntervalNanos)
             }
             swiftUISelfRunDone = "true"
@@ -204,7 +204,7 @@ private struct ExampleHost: View {
 
     /// Hidden test-only harness. Exposes a tappable Color.clear region with
     /// an accessibility identifier. Tap dispatches the production
-    /// `.galleryPhotoLoaded(imageData:)` action with a second fixture so the
+    /// `.view(.galleryPhotoLoaded(imageData:))` action with a second fixture so the
     /// reselect scenario measures the real image-replacement path, not a
     /// synthetic state mutation.
     @ViewBuilder
@@ -215,7 +215,7 @@ private struct ExampleHost: View {
                 .contentShape(Rectangle())
                 .onTapGesture {
                     let fixture = ProofPhotoFixture.bundledLargeSecond
-                    store.send(.galleryPhotoLoaded(imageData: fixture.data()))
+                    store.send(.view(.galleryPhotoLoaded(imageData: fixture.data())))
                     ingestedSource = fixture.source
                 }
                 .accessibilityIdentifier("feature.proof-photo.test.reselect-button")

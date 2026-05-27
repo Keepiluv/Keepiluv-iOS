@@ -41,7 +41,7 @@ struct StatsDetailView: View {
                 TXDropdown(
                     items: GoalDropList.allCases,
                     onSelect: { item in
-                        store.send(.dropDownSelected(item))
+                        store.send(.view(.dropDownSelected(item)))
                     }
                 )
                 .offset(x: -12, y: 65)
@@ -49,18 +49,18 @@ struct StatsDetailView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
-            store.send(.onAppear)
+            store.send(.view(.onAppear))
         }
         .onDisappear {
-            store.send(.onDisappear)
+            store.send(.view(.onDisappear))
         }
         .onTapGesture {
             guard store.isDropdownPresented else { return }
-            store.send(.backgroundTapped)
+            store.send(.view(.backgroundTapped))
         }
         .txModal(item: $store.modal) { action in
             if action == .confirm {
-                store.send(.modalConfirmTapped)
+                store.send(.view(.modalConfirmTapped))
             }
         }
         .txToast(item: $store.toast)
@@ -82,7 +82,7 @@ private extension StatsDetailView {
                 )
             ),
             onAction: { action in
-                store.send(.navigationBarTapped(action))
+                store.send(.view(.navigationBarTapped(action)))
             }
         )
     }
@@ -92,8 +92,8 @@ private extension StatsDetailView {
             title: store.currentMonthTitle,
             isPreviousDisabled: store.previousMonthDisabled,
             isNextDisabled: store.nextMonthDisabled,
-            onPrevious: { store.send(.previousMonthTapped) },
-            onNext: { store.send(.nextMonthTapped) }
+            onPrevious: { store.send(.view(.previousMonthTapped)) },
+            onNext: { store.send(.view(.nextMonthTapped)) }
         )
     }
     
@@ -124,11 +124,11 @@ private extension StatsDetailView {
             ),
             onSelect: { item in
                 if item.status == .completed {
-                    store.send(.calendarCellTapped(item))
+                    store.send(.view(.calendarCellTapped(item)))
                 }
             },
             onSwipe: { swipe in
-                store.send(.calendarSwiped(swipe))
+                store.send(.view(.calendarSwiped(swipe)))
             }
         )
             .padding(.top, 24)

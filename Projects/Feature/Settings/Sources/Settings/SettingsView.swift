@@ -45,21 +45,21 @@ public struct SettingsView: View {
         }
         .onChange(of: isTextFieldFocused) { _, newValue in
             if !newValue && store.isEditing {
-                store.send(.nicknameEditingEnded)
+                store.send(.view(.nicknameEditingEnded))
             }
         }
         .txModal(item: $store.modal) { action in
             switch action {
             case let .confirmWithIndex(index):
-                store.send(.languageConfirmed(index))
+                store.send(.view(.languageConfirmed(index)))
             case .confirm:
-                store.send(.modalConfirmTapped)
+                store.send(.view(.modalConfirmTapped))
             default:
                 break
             }
         }
         .onAppear {
-            store.send(.onAppear)
+            store.send(.view(.onAppear))
         }
         .toolbar(.hidden, for: .navigationBar)
     }
@@ -76,7 +76,7 @@ private extension SettingsView {
         TXNavigationBar(style: .subTitle(title: "설정", type: .back)) { action in
             switch action {
             case .backTapped:
-                store.send(.backButtonTapped)
+                store.send(.view(.backButtonTapped))
 
             default:
                 break
@@ -114,7 +114,7 @@ private extension SettingsView {
                 .foregroundStyle(Color.Gray.gray500)
 
             Button {
-                store.send(.editButtonTapped)
+                store.send(.view(.editButtonTapped))
             } label: {
                 Image.Icon.Symbol.edit
                     .resizable()
@@ -187,7 +187,7 @@ private extension SettingsView {
             trailing: { languageTrailing }
         ) {
             dismissKeyboard()
-            store.send(.languageSettingTapped)
+            store.send(.view(.languageSettingTapped))
         }
     }
 
@@ -196,7 +196,7 @@ private extension SettingsView {
             icon: Image.Icon.Symbol.profile,
             title: "계정"
         ) {
-            store.send(.accountTapped)
+            store.send(.view(.accountTapped))
         }
     }
 
@@ -205,7 +205,7 @@ private extension SettingsView {
             icon: Image.Icon.Symbol.info,
             title: "정보"
         ) {
-            store.send(.infoTapped)
+            store.send(.view(.infoTapped))
         }
     }
 
@@ -215,7 +215,7 @@ private extension SettingsView {
             title: "문의하기",
             trailing: { inquiryTrailing }
         ) {
-            store.send(.inquiryTapped)
+            store.send(.view(.inquiryTapped))
         }
     }
     
@@ -224,7 +224,7 @@ private extension SettingsView {
             icon: Image.Icon.Symbol.alert,
             title: "알림 설정"
         ) {
-            store.send(.notificationSettingTapped)
+            store.send(.view(.notificationSettingTapped))
         }
     }
 

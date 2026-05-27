@@ -47,6 +47,24 @@ public struct StatsReducer {
         public var ongoingItemsCache: [String: [StatsCardItem]] = [:]
         
         public var toast: TXToastType?
+
+        public struct UIState: Equatable {
+            public var isLoading: Bool
+            public var isOngoing: Bool
+
+            public init(isLoading: Bool = false, isOngoing: Bool = true) {
+                self.isLoading = isLoading
+                self.isOngoing = isOngoing
+            }
+        }
+
+        public var ui: UIState {
+            get { UIState(isLoading: isLoading, isOngoing: isOngoing) }
+            set {
+                isLoading = newValue.isLoading
+                isOngoing = newValue.isOngoing
+            }
+        }
         
         /// 기본 상태를 생성합니다.
         ///
@@ -60,31 +78,44 @@ public struct StatsReducer {
     /// 통계 메인 화면에서 발생 가능한 액션입니다.
     public enum Action: BindableAction {
         case binding(BindingAction<State>)
-        
-        // MARK: - LifeCycle
-        case onAppear
-        
-        // MARK: - User Action
-        case topTabBarSelected(StatsTopTabItem)
-        case statsCardTapped(goalId: Int64)
-        case previousMonthTapped
-        case nextMonthTapped
-        
-        // MARK: - Network
-        case fetchStats
-        case fetchedStats(stats: Stats, month: String)
-        case fetchStatsFailed
-        
-        // MARK: - Update State
-        case showToast(TXToastType)
-        
+
+        // MARK: - View
+        public enum View: Equatable {
+            case onAppear
+            case topTabBarSelected(StatsTopTabItem)
+            case statsCardTapped(goalId: Int64)
+            case previousMonthTapped
+            case nextMonthTapped
+        }
+
+        // MARK: - Internal
+        public enum Internal: Equatable {
+            case fetchStats
+        }
+
+        // MARK: - Response
+        public enum Response: Equatable {
+            case fetchedStats(stats: Stats, month: String)
+            case fetchStatsFailed
+        }
+
+        // MARK: - Presentation
+        public enum Presentation: Equatable {
+            case showToast(TXToastType)
+        }
+
         // MARK: - Delegate
         case delegate(Delegate)
-        
+
         /// StatsReducer가 상위 Coordinator로 전달하는 이벤트입니다.
         public enum Delegate {
             case goToStatsDetail(goalId: Int64)
         }
+
+        case view(View)
+        case `internal`(Internal)
+        case response(Response)
+        case presentation(Presentation)
     }
     
     /// 외부에서 주입된 Reduce로 StatsReducer를 구성합니다.

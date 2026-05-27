@@ -25,7 +25,7 @@ public struct OnboardingConnectView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.Common.white)
         .sheet(isPresented: $store.isShareSheetPresented) {
-            store.send(.shareSheetDismissed)
+            store.send(.view(.shareSheetDismissed))
         } content: {
             ShareSheet(activityItems: [store.shareContent])
                 .presentationDetents([.medium, .large])
@@ -84,7 +84,7 @@ private extension OnboardingConnectView {
     var topAppBar: some View {
         HStack {
             Button {
-                store.send(.logoutButtonTapped)
+                store.send(.view(.logoutButtonTapped))
             } label: {
                 Image.Icon.Symbol.logout
                     .resizable()
@@ -131,7 +131,7 @@ private extension OnboardingConnectView {
 
     var sendInvitationButton: some View {
         Button {
-            store.send(.sendInvitationButtonTapped)
+            store.send(.view(.sendInvitationButtonTapped))
         } label: {
             Text("초대장 보내기")
                 .typography(.t2_16b)
@@ -146,7 +146,7 @@ private extension OnboardingConnectView {
 
     var directConnectCard: some View {
         Button {
-            store.send(.directConnectCardTapped)
+            store.send(.view(.directConnectCardTapped))
         } label: {
             HStack(spacing: 3) {
                 VStack(alignment: .leading, spacing: 3) {
@@ -195,7 +195,7 @@ private extension OnboardingConnectView {
 
     var restoreCoupleButton: some View {
         Button {
-            store.send(.restoreCoupleButtonTapped)
+            store.send(.view(.restoreCoupleButtonTapped))
         } label: {
             HStack(spacing: 0) {
                 Text("해지한 커플 복구하려면?")

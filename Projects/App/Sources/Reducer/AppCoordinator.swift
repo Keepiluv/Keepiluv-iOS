@@ -184,7 +184,7 @@ struct AppCoordinator {
                     // pending 딥링크가 있으면 처리
                     if let pendingDeepLink = state.pendingNotificationDeepLink {
                         state.pendingNotificationDeepLink = nil
-                        effects.append(.send(.route(.mainTab(.notificationDeepLinkReceived(pendingDeepLink)))))
+                        effects.append(.send(.route(.mainTab(.view(.notificationDeepLinkReceived(pendingDeepLink))))))
                     }
                     
                     return .merge(effects)
@@ -231,7 +231,7 @@ struct AppCoordinator {
                 }
                 
                 state.pendingNotificationDeepLink = nil
-                return .send(.route(.mainTab(.notificationDeepLinkReceived(deepLink))))
+                return .send(.route(.mainTab(.view(.notificationDeepLinkReceived(deepLink)))))
 
             case let .route(.auth(.delegate(.loginSucceeded(authResult)))):
                 crashlytics.setUserIdentifier("\(authResult.userId)")
@@ -280,7 +280,7 @@ struct AppCoordinator {
                 
                 if let pendingDeepLink = state.pendingNotificationDeepLink {
                     state.pendingNotificationDeepLink = nil
-                    effects.append(.send(.route(.mainTab(.notificationDeepLinkReceived(pendingDeepLink)))))
+                    effects.append(.send(.route(.mainTab(.view(.notificationDeepLinkReceived(pendingDeepLink))))))
                 }
                 
                 return .merge(effects)

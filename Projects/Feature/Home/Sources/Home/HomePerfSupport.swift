@@ -79,7 +79,7 @@ struct HomePerfActionHarness: View {
     var body: some View {
         HStack(spacing: 0) {
             Button {
-                store.send(.showToast(.warning(message: "perf-toast")))
+                store.send(.view(.perfToastShowTapped))
             } label: {
                 Text(verbatim: "T")
                     .frame(width: 44, height: 44)
@@ -87,7 +87,7 @@ struct HomePerfActionHarness: View {
             .accessibilityIdentifier("feature.home.perf.toast-show")
 
             Button {
-                store.toast = nil
+                store.send(.view(.perfToastDismissTapped))
             } label: {
                 Text(verbatim: "X")
                     .frame(width: 44, height: 44)
@@ -95,9 +95,7 @@ struct HomePerfActionHarness: View {
             .accessibilityIdentifier("feature.home.perf.toast-dismiss")
 
             Button {
-                var next = store.calendarDate
-                next.goToNextMonth()
-                store.send(.setCalendarDate(next))
+                store.send(.view(.perfCalendarNextTapped))
             } label: {
                 Text(verbatim: "▶")
                     .frame(width: 44, height: 44)
@@ -105,9 +103,7 @@ struct HomePerfActionHarness: View {
             .accessibilityIdentifier("feature.home.perf.calendar-next")
 
             Button {
-                var prev = store.calendarDate
-                prev.goToPreviousMonth()
-                store.send(.setCalendarDate(prev))
+                store.send(.view(.perfCalendarPreviousTapped))
             } label: {
                 Text(verbatim: "◀")
                     .frame(width: 44, height: 44)

@@ -90,16 +90,16 @@ public struct GoalDetailView: View {
         .toolbar(.hidden, for: .navigationBar)
         .observeKeyboardFrame($keyboardFrame)
         .onAppear {
-            store.send(.onAppear)
+            store.send(.view(.onAppear))
         }
         .onDisappear {
             didPlayMyEmojiAppearAnimation = false
             myEmojiFlyingReactionEmitter.clear()
-            store.send(.onDisappear)
+            store.send(.view(.onDisappear))
         }
         .fullScreenCover(
             isPresented: $store.isPresentedProofPhoto,
-            onDismiss: { store.send(.proofPhotoDismissed) },
+            onDismiss: { store.send(.view(.proofPhotoDismissed)) },
             content: {
                 if let proofPhotoStore = store.scope(state: \.proofPhoto, action: \.proofPhoto) {
                     proofPhotoFactory.makeView(proofPhotoStore)
@@ -109,7 +109,7 @@ public struct GoalDetailView: View {
         )
         .cameraPermissionAlert(
             isPresented: $store.isCameraPermissionAlertPresented,
-            onDismiss: { store.send(.cameraPermissionAlertDismissed) }
+            onDismiss: { store.send(.view(.cameraPermissionAlertDismissed)) }
         )
         .overlay(alignment: .bottom) {
             myEmojiFlyingReactionOverlay
@@ -132,7 +132,7 @@ private extension GoalDetailView {
                 )
             ),
             onAction: { action in
-                store.send(.navigationBarTapped(action))
+                store.send(.view(.navigationBarTapped(action)))
             }
         )
         .overlay(dimmedView)
@@ -171,7 +171,7 @@ private extension GoalDetailView {
                 .onEnded { _ in
                     withAnimation(.spring(response: 0.2, dampingFraction: 0.94)) {
                         resetDragState()
-                        store.send(.cardSwiped)
+                        store.send(.view(.cardSwiped))
                     }
                 }
         )
@@ -234,7 +234,7 @@ private extension GoalDetailView {
         ReactionBarView(
             selectedEmoji: store.selectedReactionEmoji,
             onSelect: { emoji in
-                store.send(.reactionEmojiTapped(emoji))
+                store.send(.view(.reactionEmojiTapped(emoji)))
             }
         )
     }
@@ -368,7 +368,7 @@ private extension GoalDetailView {
                 state: .standard
             ),
             onTap: {
-                store.send(.bottomButtonTapped)
+                store.send(.view(.bottomButtonTapped))
             }
         )
         .perfControl(slug: "goal-detail", element: "primary-cta")
@@ -383,7 +383,7 @@ private extension GoalDetailView {
             keyboardInset: keyboardInset,
             isFocused: $store.isCommentFocused,
             onFocused: { isFocused in
-                store.send(.focusChanged(isFocused))
+                store.send(.view(.focusChanged(isFocused)))
             }
         )
         .animation(.easeOut(duration: 0.25), value: keyboardInset)
@@ -397,7 +397,7 @@ private extension GoalDetailView {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .ignoresSafeArea()
             .onTapGesture {
-                store.send(.dimmedBackgroundTapped)
+                store.send(.view(.dimmedBackgroundTapped))
             }
     }
 

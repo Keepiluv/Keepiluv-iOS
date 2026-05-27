@@ -22,7 +22,7 @@ struct HomeHeaderRow: View {
             Spacer()
 
             Button {
-                store.send(.editButtonTapped)
+                store.send(.view(.editButtonTapped))
             } label: {
                 Text("편집")
                     .typography(.b1_14b)

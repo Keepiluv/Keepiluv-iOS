@@ -66,7 +66,7 @@ public struct HomeCoordinator {
     ///
     /// ## 사용 예시
     /// ```swift
-    /// store.send(.home(.onAppear))
+    /// store.send(.home(.view(.onAppear)))
     /// ```
     public enum Action: BindableAction {
         case binding(BindingAction<State>)

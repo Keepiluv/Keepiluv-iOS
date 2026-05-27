@@ -117,49 +117,55 @@ public struct SettingsReducer {
     public enum Action: BindableAction {
         case binding(BindingAction<State>)
 
-        // MARK: - User Action
-        case backButtonTapped
-        case subViewBackButtonTapped
-        case editButtonTapped
-        case clearButtonTapped
-        case languageSettingTapped
-        case accountTapped
-        case infoTapped
-        case inquiryTapped
-        case notificationSettingTapped
-        case privacyPolicyTapped
-
-        // MARK: - Lifecycle
-        case onAppear
+        // MARK: - View
+        public enum View: Equatable {
+            case onAppear
+            case backButtonTapped
+            case subViewBackButtonTapped
+            case editButtonTapped
+            case clearButtonTapped
+            case nicknameEditingEnded
+            case languageSettingTapped
+            case languageConfirmed(Int)
+            case accountTapped
+            case infoTapped
+            case inquiryTapped
+            case notificationSettingTapped
+            case privacyPolicyTapped
+            case logoutTapped
+            case disconnectCoupleTapped
+            case withdrawTapped
+            case modalConfirmTapped
+            case notificationSettingsOnAppear
+            case pokePushToggled(Bool)
+            case marketingPushToggled(Bool)
+            case nightPushToggled(Bool)
+            case enableNotificationBannerTapped
+        }
 
         // MARK: - Internal
-        case nicknameEditingEnded
-        case languageConfirmed(Int)
-        case storeVersionResponse(String?)
+        public enum Internal: Equatable {
+            case nicknameEditingEnded
+            case languageConfirmed(Int)
+        }
 
-        // MARK: - Account Actions
-        case logoutTapped
-        case disconnectCoupleTapped
-        case withdrawTapped
-        case modalConfirmTapped
+        // MARK: - Response
+        public enum Response {
+            case storeVersionResponse(String?)
+            case updateNicknameResponse(Result<Void, Error>)
+            case fetchMyProfileResponse(Result<String, Error>)
+            case fetchCoupleCodeResponse(Result<String, Error>)
+            case logoutResponse(Result<Void, Error>)
+            case withdrawResponse(Result<Void, Error>)
+            case fetchNotificationSettingsResponse(Result<NotificationSettings, Error>)
+            case updateNotificationSettingResponse(Result<NotificationSettings, Error>)
+            case checkSystemNotificationResponse(Bool)
+        }
 
-        // MARK: - API Response
-        case updateNicknameResponse(Result<Void, Error>)
-        case fetchMyProfileResponse(Result<String, Error>)
-        case fetchCoupleCodeResponse(Result<String, Error>)
-        case logoutResponse(Result<Void, Error>)
-        case withdrawResponse(Result<Void, Error>)
-        case showToast(TXToastType)
-
-        // MARK: - Notification Settings
-        case notificationSettingsOnAppear
-        case pokePushToggled(Bool)
-        case marketingPushToggled(Bool)
-        case nightPushToggled(Bool)
-        case fetchNotificationSettingsResponse(Result<NotificationSettings, Error>)
-        case updateNotificationSettingResponse(Result<NotificationSettings, Error>)
-        case enableNotificationBannerTapped
-        case checkSystemNotificationResponse(Bool)
+        // MARK: - Presentation
+        public enum Presentation: Equatable {
+            case showToast(TXToastType)
+        }
 
         // MARK: - Delegate
         case delegate(Delegate)
@@ -175,6 +181,11 @@ public struct SettingsReducer {
             case withdrawCompleted
             case sessionExpired
         }
+
+        case view(View)
+        case `internal`(Internal)
+        case response(Response)
+        case presentation(Presentation)
     }
 
     /// 외부에서 주입된 Reduce로 리듀서를 구성합니다.
