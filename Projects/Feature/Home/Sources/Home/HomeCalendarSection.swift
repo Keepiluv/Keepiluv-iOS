@@ -32,6 +32,9 @@ struct HomeCalendarSection: View {
         )
         .frame(maxWidth: .infinity, maxHeight: 76)
         .perfControl(slug: "home", element: "calendar")
+        .transaction { transaction in
+            transaction.animation = nil
+        }
 
         if UITestMode.isProbeScenario {
             calendarView.perfStateMarker(
