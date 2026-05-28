@@ -120,10 +120,11 @@ extension GoalDetailReducer {
                     let timeText = PokeCooldownManager.formatRemainingTime(remaining)
                     return .send(.presentation(.showToast(.warning(message: "\(timeText) 뒤에 다시 찌를 수 있어요"))))
                 }
+                let date = state.verificationDate
                 return .run { send in
                     PokeCooldownManager.recordPoke(goalId: goalId)
                     do {
-                        try await goalClient.pokePartner(goalId)
+                        try await goalClient.pokePartner(goalId, PokeRequestDTO(date: date))
                         analyticsClient.logEvent(GoalDetailAnalyticsEvent.pokeSent)
                         await send(.presentation(.showToast(.poke(message: "상대방을 찔렀어요!"))))
                     } catch {

@@ -258,7 +258,7 @@ extension HomeReducer {
                     return .run { send in
                         PokeCooldownManager.recordPoke(goalId: goalId)
                         do {
-                            try await goalClient.pokePartner(goalId)
+                            try await goalClient.pokePartner(goalId, PokeRequestDTO(date: pokeDate.formattedAPIDateString()))
                             await send(.internal(.setPokeButtonDisabled(goalId: goalId, true, date: pokeDate)))
                             await send(.presentation(.showToast(.poke(message: "상대방을 찔렀어요!"))))
                         } catch {
