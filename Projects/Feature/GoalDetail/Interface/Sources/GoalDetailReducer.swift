@@ -158,7 +158,7 @@ public struct GoalDetailReducer {
             case authorizationCompleted(isAuthorized: Bool)
             case fethedGoalDetailItem(GoalDetail)
             case fetchGoalDetailFailed
-            case updateCurrentCardReaction(String?)
+            case updateCurrentCardReaction(photoLogId: Int64, reaction: String?)
             case reactionUpdateFailed(previousReaction: String?)
         }
 
