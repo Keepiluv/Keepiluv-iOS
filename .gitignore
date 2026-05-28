@@ -180,5 +180,8 @@ src/SupportingFiles/Booket/GoogleService-Info.plist
 # Performance traces and local probe workspace (large, generated)
 .perf/
 
+# CodeGraph local index (generated, per-working-tree SQLite data)
+.codegraph/
+
 # Claude Code scheduled-task runtime lock (per-machine, not shared)
 .claude/scheduled_tasks.lock

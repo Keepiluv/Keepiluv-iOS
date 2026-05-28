@@ -107,6 +107,26 @@ If a referenced doc is missing, ask before assuming its contents.
 
 ---
 
+## Repository intelligence
+
+When CodeGraph is available, use it for broad repository exploration, symbol
+relationship discovery, and impact analysis before falling back to wide
+`rg`/file-reading sweeps.
+
+Use this workflow:
+
+- For architecture or unfamiliar-area questions, start with CodeGraph
+  `context`, `query`, `impact`, `callers`, or `callees`.
+- For exact literal searches, narrow symbol lookups, and final evidence, use
+  `rg` and direct file reads.
+- If CodeGraph reports stale or pending files, verify those files directly
+  before relying on the indexed result.
+- Do not commit `.codegraph/`; it is a generated local SQLite index. Regenerate
+  it with `codegraph init -i` when missing, and use `codegraph sync` only when
+  working outside an active MCP watcher or after a branch switch / batch edit.
+
+---
+
 ## Architecture guardrails
 
 ### Feature structure
