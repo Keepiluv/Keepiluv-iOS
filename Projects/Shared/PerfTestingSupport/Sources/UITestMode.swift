@@ -57,6 +57,13 @@ public enum UITestMode {
         arguments.contains("-UITEST_SWIFTUI_SELF_RUN_STATS_SCROLL")
     }
 
+    /// MainTab Calendar bottomsheet self-running presentation을 켤지 나타냅니다.
+    /// xctrace launch-mode가 Calendar bottomsheet presentation window를 직접 캡처하도록 돕는
+    /// Example/perf 전용 flag입니다.
+    public static var isSwiftUISelfRunCalendarBottomSheet: Bool {
+        arguments.contains("-UITEST_SWIFTUI_SELF_RUN_CALENDAR_BOTTOM_SHEET")
+    }
+
     /// 현재 launch argument에 따라 앱 전역 UITest 설정을 적용합니다.
     /// 지금은 `-UITEST_DISABLE_ANIMATIONS`가 있을 때 UIKit animation을 비활성화합니다.
     ///
