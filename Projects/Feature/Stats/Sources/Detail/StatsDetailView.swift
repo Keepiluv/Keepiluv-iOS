@@ -133,7 +133,7 @@ private extension StatsDetailView {
         )
             .padding(.top, 24)
             .padding(.bottom, 32)
-            .background(Color.Common.white)
+            .background(Color.Common.white, in: RoundedRectangle(cornerRadius: 16))
             .insideBorder(
                 Color.Gray.gray500,
                 shape: RoundedRectangle(cornerRadius: 16),
