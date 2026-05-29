@@ -37,7 +37,8 @@ let project = Project.makeModule(
                 ),
                 dependencies: [
                     .feature,
-                    .core(implements: .captureSession)
+                    .core(implements: .captureSession),
+                    .shared(implements: .designSystem)
                 ]
             )
         ),

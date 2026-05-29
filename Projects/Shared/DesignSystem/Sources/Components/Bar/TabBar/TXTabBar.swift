@@ -53,6 +53,7 @@ private extension TXTabBar {
             .padding(.top, Constants.topPadding)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("tx.tab-bar.item.\(item.accessibilityIdentifier)")
     }
 }
 
@@ -68,5 +69,20 @@ private extension TXTabBar {
         static let borderColor: Color = Color.Gray.gray100
         static let labelColor: Color = Color.Gray.gray500
         static let labelFont: TypographyToken = .c2_11b
+    }
+}
+
+private extension TXTabItem {
+    var accessibilityIdentifier: String {
+        switch self {
+        case .home:
+            return "home"
+
+        case .statistics:
+            return "statistics"
+
+        case .couple:
+            return "couple"
+        }
     }
 }

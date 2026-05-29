@@ -81,12 +81,14 @@ public struct TXCalendarMonthNavigation: View {
         HStack(spacing: config.itemSpacing) {
             navigationButton(
                 icon: .Icon.Symbol.arrow1MLeft,
+                accessibilityIdentifier: "tx.calendar.month-navigation.previous-button",
                 isDisabled: isPreviousDisabled,
                 action: onPrevious
             )
             titleView
             navigationButton(
                 icon: .Icon.Symbol.arrow1MRight,
+                accessibilityIdentifier: "tx.calendar.month-navigation.next-button",
                 isDisabled: isNextDisabled,
                 action: onNext
             )
@@ -107,6 +109,7 @@ private extension TXCalendarMonthNavigation {
                 titleLabel
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("tx.calendar.month-navigation.title-button")
         } else {
             titleLabel
         }
@@ -123,6 +126,7 @@ private extension TXCalendarMonthNavigation {
 private extension TXCalendarMonthNavigation {
     func navigationButton(
         icon: Image,
+        accessibilityIdentifier: String,
         isDisabled: Bool,
         action: @escaping () -> Void
     ) -> some View {
@@ -136,5 +140,6 @@ private extension TXCalendarMonthNavigation {
         .buttonStyle(.plain)
         .disabled(isDisabled)
         .frame(width: config.buttonSize, height: config.buttonSize)
+        .accessibilityIdentifier(accessibilityIdentifier)
     }
 }
