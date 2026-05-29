@@ -21,6 +21,10 @@ private enum PokeCancelID: Hashable {
     case poke(Int64)
 }
 
+private enum ReactionUpdateCancelID: Hashable {
+    case update(Int64)
+}
+
 private enum PokeCooldownManager {
     private static let userDefaultsKey = "pokeCooldownTimestamps"
     private static let cooldownInterval: TimeInterval = 3 * 60 * 60
@@ -79,6 +83,7 @@ extension GoalDetailReducer {
         @Dependency(\.goalClient) var goalClient
         @Dependency(\.photoLogClient) var photoLogClient
         @Dependency(\.analyticsClient) var analyticsClient
+        @Dependency(\.continuousClock) var clock
         
         let timeFormatter = RelativeTimeFormatter()
         
@@ -153,21 +158,30 @@ extension GoalDetailReducer {
                 guard let photoLogId = state.currentCard?.photologId else { return .none }
                 let previousReaction = state.currentCard?.reaction
                 state.selectedReactionEmoji = reactionEmoji
-                return .concatenate(
-                    .send(.response(.updateCurrentCardReaction(reactionEmoji.rawValue))),
-                    .run { send in
-                        do {
-                            let request = PhotoLogUpdateReactionRequestDTO(reaction: reactionEmoji.rawValue)
-                            _ = try await photoLogClient.updateReaction(photoLogId, request)
-                            analyticsClient
-                                .logEvent(
-                                    GoalDetailAnalyticsEvent.emojiReactionSent(emoji: reactionEmoji.rawValue)
+                return .run { [clock] send in
+                    try await clock.sleep(for: .milliseconds(300))
+                    do {
+                        let request = PhotoLogUpdateReactionRequestDTO(reaction: reactionEmoji.rawValue)
+                        _ = try await photoLogClient.updateReaction(photoLogId, request)
+                        analyticsClient
+                            .logEvent(
+                                GoalDetailAnalyticsEvent.emojiReactionSent(emoji: reactionEmoji.rawValue)
+                            )
+                        await send(
+                            .response(
+                                .updateCurrentCardReaction(
+                                    photoLogId: photoLogId,
+                                    reaction: reactionEmoji.rawValue
                                 )
-                        } catch {
-                            await send(.response(.reactionUpdateFailed(previousReaction: previousReaction)))
-                        }
+                            )
+                        )
+                    } catch is CancellationError {
+                        return
+                    } catch {
+                        await send(.response(.reactionUpdateFailed(previousReaction: previousReaction)))
                     }
-                )
+                }
+                .cancellable(id: ReactionUpdateCancelID.update(photoLogId), cancelInFlight: true)
                 
             case .view(.cardSwiped):
                 state.currentUser = state.currentUser == .mySelf ? .you : .mySelf
@@ -204,15 +218,13 @@ extension GoalDetailReducer {
             case .response(.fetchGoalDetailFailed):
                 return .send(.presentation(.showToast(.warning(message: "목표 상세 조회에 실패했어요"))))
                 
-            case let .response(.updateCurrentCardReaction(reaction)):
-                guard state.currentUser == .you else { return .none }
+            case let .response(.updateCurrentCardReaction(photoLogId: photoLogId, reaction: reaction)):
                 guard let item = state.item else { return .none }
-                let targetGoalId = state.currentGoalId
                 var updatedCompletedGoals = item.completedGoals
                 
                 guard let index = updatedCompletedGoals.firstIndex(where: { goal in
                     guard let goal else { return false }
-                    return goal.myPhotoLog?.goalId == targetGoalId || goal.yourPhotoLog?.goalId == targetGoalId
+                    return goal.yourPhotoLog?.photologId == photoLogId
                 }) else { return .none }
                 guard let currentGoal = updatedCompletedGoals[index] else { return .none }
                 
@@ -231,7 +243,9 @@ extension GoalDetailReducer {
                 return .none
                 
             case let .response(.reactionUpdateFailed(previousReaction)):
-                state.selectedReactionEmoji = previousReaction.flatMap(ReactionEmoji.init(from:))
+                if state.currentUser == .you {
+                    state.selectedReactionEmoji = previousReaction.flatMap(ReactionEmoji.init(from:))
+                }
                 return .send(.presentation(.showToast(.warning(message: "리액션 전송에 실패했어요"))))
 
             case let .presentation(.showToast(toast)):
