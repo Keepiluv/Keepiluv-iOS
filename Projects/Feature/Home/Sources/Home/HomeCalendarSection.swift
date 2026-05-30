@@ -32,9 +32,6 @@ struct HomeCalendarSection: View {
         )
         .frame(maxWidth: .infinity, maxHeight: 76)
         .perfControl(slug: "home", element: "calendar")
-        .transaction { transaction in
-            transaction.animation = nil
-        }
 
         if UITestMode.isProbeScenario {
             calendarView.perfStateMarker(
@@ -42,6 +39,9 @@ struct HomeCalendarSection: View {
                 key: "calendar-month",
                 value: "\(store.calendarDate.year)-\(store.calendarDate.month)"
             )
+            .transaction { transaction in
+                transaction.animation = nil
+            }
         } else {
             calendarView
         }
