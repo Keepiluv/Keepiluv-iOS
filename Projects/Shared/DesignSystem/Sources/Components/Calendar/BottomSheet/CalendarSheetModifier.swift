@@ -23,7 +23,7 @@ enum CalendarSheetConstants {
     static let dragVelocityThreshold: CGFloat = 500
     static let springResponse: Double = 0.35
     static let springDamping: Double = 0.86
-    static let hiddenOffsetFallback: CGFloat = 1000
+    static let hiddenOffsetFallback: CGFloat = 1_000
 }
 
 // MARK: - Calendar Sheet Modifier
@@ -94,7 +94,11 @@ struct CalendarSheetModifier<ButtonContent: View>: ViewModifier {
         .padding(.bottom, safeAreaBottom)
         .background(Color.Common.white)
         .clipShape(.rect(cornerRadii: topCornerRadii))
-        .transaction { $0.animation = nil }
+        .transaction { transaction in
+            if dragOffset != 0 {
+                transaction.animation = nil
+            }
+        }
     }
 
     @ViewBuilder
@@ -107,6 +111,7 @@ struct CalendarSheetModifier<ButtonContent: View>: ViewModifier {
                 onComplete: onComplete,
                 isDateEnabled: isDateEnabled
             )
+
         case let .custom(content):
             TXCalendarBottomSheet(
                 selectedDate: $selectedDate,

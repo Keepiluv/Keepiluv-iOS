@@ -74,22 +74,31 @@ private struct TXBottomSheetModifier<SheetContent: View>: ViewModifier {
                 isPresented: $isCoverPresented,
                 onDismiss: {
                     resetSheetState()
+                },
+                content: {
+                    ZStack(alignment: .bottom) {
+                        sheetView
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .ignoresSafeArea(.container, edges: .bottom)
+                    .onAppear { presentAnimated() }
+                    .presentationBackground { dimmedBackground }
                 }
-            ) {
-                ZStack(alignment: .bottom) {
-                    sheetView
+            )
+            .transaction { transaction in
+                if shouldDisableCoverTransactionAnimation {
+                    transaction.disablesAnimations = true
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .ignoresSafeArea(.container, edges: .bottom)
-                .onAppear { presentAnimated() }
-                .presentationBackground { dimmedBackground }
             }
-            .transaction { $0.disablesAnimations = true }
     }
 }
 
 // MARK: - SubViews {
 private extension TXBottomSheetModifier {
+    var shouldDisableCoverTransactionAnimation: Bool {
+        isDismissing || isCoverPresented != isPresented
+    }
+
     var sheetView: some View {
         VStack(spacing: 0) {
             dragContainer
