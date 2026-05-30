@@ -33,6 +33,28 @@ public struct TXCalendar: View {
     
     /// 캘린더 레이아웃 설정입니다.
     public struct Configuration {
+        /// 월간 캘린더 페이징 설정입니다.
+        public struct MonthlyPagingConfiguration {
+            let isEnabled: Bool
+            let pageSpacing: CGFloat
+            let minimumRowCount: Int?
+            let pageWeeks: ((TXCalendarDate) -> [[TXCalendarDateItem]])?
+
+            public static let disabled = Self()
+
+            public init(
+                isEnabled: Bool = false,
+                pageSpacing: CGFloat = 0,
+                minimumRowCount: Int? = nil,
+                pageWeeks: ((TXCalendarDate) -> [[TXCalendarDateItem]])? = nil
+            ) {
+                self.isEnabled = isEnabled
+                self.pageSpacing = pageSpacing
+                self.minimumRowCount = minimumRowCount
+                self.pageWeeks = pageWeeks
+            }
+        }
+
         let weeklyHorizontalPadding: CGFloat
         let monthlyHorizontalPadding: CGFloat
         let verticalPadding: CGFloat
@@ -46,6 +68,7 @@ public struct TXCalendar: View {
         let backgroundColor: Color
         let dateStyle: TXCalendarDateStyle
         let dateCellBackground: ((TXCalendarDateItem) -> AnyView?)?
+        let monthlyPaging: MonthlyPagingConfiguration
         
         /// 캘린더 레이아웃 설정을 생성합니다.
         public init(
@@ -61,7 +84,8 @@ public struct TXCalendar: View {
             weekdayColor: Color = Color.Gray.gray300,
             backgroundColor: Color = Color.Common.white,
             dateStyle: TXCalendarDateStyle = .init(),
-            dateCellBackground: ((TXCalendarDateItem) -> AnyView?)? = nil
+            dateCellBackground: ((TXCalendarDateItem) -> AnyView?)? = nil,
+            monthlyPaging: MonthlyPagingConfiguration = .disabled
         ) {
             self.weeklyHorizontalPadding = weeklyHorizontalPadding
             self.monthlyHorizontalPadding = monthlyHorizontalPadding
@@ -76,23 +100,32 @@ public struct TXCalendar: View {
             self.backgroundColor = backgroundColor
             self.dateStyle = dateStyle
             self.dateCellBackground = dateCellBackground
+            self.monthlyPaging = monthlyPaging
         }
     }
     
     public static let defaultWeekdays = ["일", "월", "화", "수", "목", "금", "토"]
     
-    private let mode: DisplayMode
-    private let weekdays: [String]
-    private let weeks: [[TXCalendarDateItem]]
-    private let currentDate: Binding<TXCalendarDate>?
-    private let canMovePrevious: Bool
-    private let canMoveNext: Bool
-    private let config: Configuration
-    private let onSelect: (TXCalendarDateItem) -> Void
-    private let onSwipe: ((SwipeGesture) -> Void)?
-    @GestureState private var weeklyDragTranslation: CGFloat = 0
-    @State private var weeklyPagingOffset: CGFloat = 0
-    @State private var isWeeklyPaging = false
+    let mode: DisplayMode
+    let weekdays: [String]
+    let weeks: [[TXCalendarDateItem]]
+    let currentDate: Binding<TXCalendarDate>?
+    let canMovePrevious: Bool
+    let canMoveNext: Bool
+    let config: Configuration
+    let onSelect: (TXCalendarDateItem) -> Void
+    let onSwipe: ((SwipeGesture) -> Void)?
+    // Split TXCalendar paging helpers live in same module extension files.
+    // swiftlint:disable private_swiftui_state
+    @State var weeklyDragTranslation: CGFloat = 0
+    @State var weeklyPagingOffset: CGFloat = 0
+    @State var weeklyPagingReferenceDate: TXCalendarDate?
+    @State var isWeeklyPaging = false
+    @State var monthlyDragTranslation: CGFloat = 0
+    @State var monthlyPagingOffset: CGFloat = 0
+    @State var monthlyPagingBaseDate: TXCalendarDate?
+    @State var isMonthlyPaging = false
+    // swiftlint:enable private_swiftui_state
     
     /// 캘린더 컴포넌트를 생성합니다.
     public init(
@@ -104,7 +137,6 @@ public struct TXCalendar: View {
         config: Configuration = .init(),
         onSelect: @escaping (TXCalendarDateItem) -> Void = { _ in },
         onSwipe: ((SwipeGesture) -> Void)? = nil
-
     ) {
         self.mode = mode
         self.weeks = weeks
@@ -154,9 +186,23 @@ public struct TXCalendar: View {
                 width: proxy.size.width,
                 spacing: spacing
             )
-            .highPriorityGesture(calendarSwipeGesture(pageWidth: pageWidth))
+            .transaction { transaction in
+                if isWeeklyPaging || isMonthlyPaging {
+                    transaction.disablesAnimations = false
+                    transaction.animation = Self.pagingAnimation
+                }
+            }
+            .highPriorityGesture(
+                calendarSwipeGesture(
+                    pageWidth: pageWidth,
+                    dayColumnSpacing: spacing
+                )
+            )
         }
         .frame(height: contentHeight)
+        .onChange(of: weeks) { _, _ in
+            clearStaleWeeklyPagingReferenceDate()
+        }
     }
 }
 
@@ -172,8 +218,15 @@ private extension TXCalendar {
                 )
 
             case .monthly:
-                monthlyWeekdayRow(spacing: spacing)
-                monthGrid(spacing: spacing)
+                if isMonthlyVisualPagingEnabled {
+                    monthlyPageContent(
+                        width: max(0, width - (horizontalPadding * 2)),
+                        spacing: spacing
+                    )
+                } else {
+                    monthlyWeekdayRow(spacing: spacing)
+                    monthGrid(weeks: weeks, spacing: spacing)
+                }
             }
         }
         .padding(.vertical, config.verticalPadding)
@@ -183,7 +236,8 @@ private extension TXCalendar {
     }
 
     func weeklyPageContent(width: CGFloat, spacing: CGFloat) -> some View {
-        HStack(spacing: 0) {
+        let pageSpacing = weeklyPageSpacing(dayColumnSpacing: spacing)
+        return HStack(spacing: pageSpacing) {
             weeklyPage(items: weeklyPageItems(weekOffset: -1), spacing: spacing)
                 .frame(width: width)
             weeklyPage(items: weeklyPageItems(weekOffset: 0), spacing: spacing)
@@ -191,13 +245,36 @@ private extension TXCalendar {
             weeklyPage(items: weeklyPageItems(weekOffset: 1), spacing: spacing)
                 .frame(width: width)
         }
-        .offset(x: -width + weeklyPagingOffset + weeklyDragTranslation)
+        .offset(x: -(width + pageSpacing) + weeklyPagingOffset + weeklyDragTranslation)
         .frame(
             width: width,
             height: config.weekdayHeight + headerSpacing + config.dateStyle.size + config.weeklyBottomPadding,
             alignment: .leading
         )
         .clipped()
+    }
+
+    func monthlyPageContent(width: CGFloat, spacing: CGFloat) -> some View {
+        let pageSpacing = monthlyPageSpacing(dayColumnSpacing: spacing)
+        return HStack(spacing: pageSpacing) {
+            monthlyPage(weeks: monthlyPageWeeks(monthOffset: -1), spacing: spacing)
+                .frame(width: width, height: monthlyPageHeight, alignment: .top)
+            monthlyPage(weeks: monthlyPageWeeks(monthOffset: 0), spacing: spacing)
+                .frame(width: width, height: monthlyPageHeight, alignment: .top)
+            monthlyPage(weeks: monthlyPageWeeks(monthOffset: 1), spacing: spacing)
+                .frame(width: width, height: monthlyPageHeight, alignment: .top)
+        }
+        .offset(x: -(width + pageSpacing) + monthlyPagingOffset + monthlyDragTranslation)
+        .frame(width: width, height: monthlyPageHeight, alignment: .leading)
+        .clipped()
+    }
+
+    func monthlyPage(weeks: [[TXCalendarDateItem]], spacing: CGFloat) -> some View {
+        VStack(spacing: headerSpacing) {
+            monthlyWeekdayRow(spacing: spacing)
+            monthGrid(weeks: weeks, spacing: spacing)
+        }
+        .frame(height: monthlyPageHeight, alignment: .top)
     }
 
     func weeklyPage(items: [TXCalendarDateItem], spacing: CGFloat) -> some View {
@@ -237,7 +314,7 @@ private extension TXCalendar {
         }
     }
 
-    func monthGrid(spacing: CGFloat) -> some View {
+    func monthGrid(weeks: [[TXCalendarDateItem]], spacing: CGFloat) -> some View {
         Grid(
             horizontalSpacing: spacing,
             verticalSpacing: config.monthlyRowSpacing
@@ -265,220 +342,5 @@ private extension TXCalendar {
             )
         }
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Helpers
-private extension TXCalendar {
-    var headerSpacing: CGFloat {
-        switch mode {
-        case .weekly: config.weeklyHeaderSpacing
-        case .monthly: config.monthlyHeaderSpacing
-        }
-    }
-
-    var horizontalPadding: CGFloat {
-        switch mode {
-        case .weekly: config.weeklyHorizontalPadding
-        case .monthly: config.monthlyHorizontalPadding
-        }
-    }
-
-    var contentHeight: CGFloat {
-        let headerSectionHeight = config.weekdayHeight + headerSpacing
-        let verticalPadding: CGFloat = config.verticalPadding * 2
-
-        switch mode {
-        case .weekly: return headerSectionHeight + config.dateStyle.size + config.weeklyBottomPadding + verticalPadding
-        case .monthly: return headerSectionHeight + monthGridHeight + verticalPadding
-        }
-    }
-
-    var monthGridHeight: CGFloat {
-        guard !weeks.isEmpty else { return 0 }
-
-        let rowCount = CGFloat(weeks.count)
-        let rowSpacing = config.monthlyRowSpacing * CGFloat(weeks.count - 1)
-        return (config.dateStyle.size * rowCount) + rowSpacing
-    }
-
-    var weekDateItems: [TXCalendarDateItem] {
-        weeks.first ?? []
-    }
-
-    var weeklyReferenceDate: TXCalendarDate? {
-        if let currentDate, currentDate.wrappedValue.day != nil {
-            return currentDate.wrappedValue
-        }
-        
-        let selectedItem = weekDateItems.first { item in
-            switch item.status {
-            case .selectedFilled, .selectedLine:
-                return item.dateComponents != nil
-            case .completed, .default, .lastDate:
-                return false
-            }
-        }
-
-        if let selectedItem,
-           let components = selectedItem.dateComponents {
-            return TXCalendarDate(components: components)
-        }
-
-        guard let components = weekDateItems.compactMap(\.dateComponents).first else {
-            return nil
-        }
-        return TXCalendarDate(components: components)
-    }
-
-}
-
-// MARK: - Private Methods
-private extension TXCalendar {
-    func calendarSwipeGesture(pageWidth: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 16)
-            .updating($weeklyDragTranslation) { value, state, _ in
-                guard mode == .weekly else { return }
-
-                let horizontalDistance = value.translation.width
-                let verticalDistance = value.translation.height
-                guard abs(horizontalDistance) > abs(verticalDistance) else { return }
-
-                state = boundedWeeklyDragTranslation(horizontalDistance, pageWidth: pageWidth)
-            }
-            .onEnded { value in
-                let horizontalDistance = value.translation.width
-                let verticalDistance = value.translation.height
-                guard abs(horizontalDistance) > abs(verticalDistance) else { return }
-
-                let swipe: SwipeGesture = horizontalDistance > 0 ? .previous : .next
-                handleSwipe(swipe, pageWidth: pageWidth)
-            }
-    }
-
-    func handleSwipe(_ swipe: SwipeGesture, pageWidth: CGFloat) {
-        switch swipe {
-        case .previous:
-            guard canMovePrevious else {
-                resetWeeklyPagingOffset()
-                return
-            }
-        case .next:
-            guard canMoveNext else {
-                resetWeeklyPagingOffset()
-                return
-            }
-        }
-
-        guard mode == .weekly else {
-            applySwipe(swipe)
-            return
-        }
-        guard !isWeeklyPaging else { return }
-
-        let targetOffset: CGFloat
-        switch swipe {
-        case .previous: targetOffset = pageWidth
-        case .next: targetOffset = -pageWidth
-        }
-        isWeeklyPaging = true
-        withAnimation(.easeInOut(duration: 0.22)) {
-            weeklyPagingOffset = targetOffset
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-            applySwipe(swipe)
-            resetWeeklyPagingOffset()
-        }
-    }
-
-    func applySwipe(_ swipe: SwipeGesture) {
-        if let onSwipe {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                onSwipe(swipe)
-            }
-        } else {
-            applySwipeToCurrentDate(swipe)
-        }
-    }
-
-    func resetWeeklyPagingOffset() {
-        withTransaction(Transaction(animation: nil)) {
-            weeklyPagingOffset = 0
-            isWeeklyPaging = false
-        }
-    }
-
-    func boundedWeeklyDragTranslation(_ translation: CGFloat, pageWidth: CGFloat) -> CGFloat {
-        if translation > 0, !canMovePrevious {
-            return 0
-        }
-        if translation < 0, !canMoveNext {
-            return 0
-        }
-        return min(max(translation, -pageWidth), pageWidth)
-    }
-
-    func weeklyPageItems(weekOffset: Int) -> [TXCalendarDateItem] {
-        guard weekOffset != 0 else {
-            return weekDateItems
-        }
-        guard let referenceDate = weeklyReferenceDate else {
-            return weekDateItems
-        }
-        let items = TXCalendarDataGenerator.generateWeekData(
-            for: referenceDate,
-            weekOffset: weekOffset
-        ).first ?? []
-        return items.map { item in
-            switch item.status {
-            case .selectedLine, .selectedFilled:
-                return TXCalendarDateItem(
-                    id: item.id,
-                    text: item.text,
-                    status: .default,
-                    dateComponents: item.dateComponents
-                )
-            case .completed, .default, .lastDate:
-                return item
-            }
-        }
-    }
-
-    func applySwipeToCurrentDate(_ swipe: SwipeGesture) {
-        guard let currentDate else { return }
-
-        var updatedDate = currentDate.wrappedValue
-        switch mode {
-        case .weekly:
-            let offset: Int
-            switch swipe {
-            case .previous: offset = -1
-            case .next: offset = 1
-            }
-            guard let date = TXCalendarUtil.dateByAddingWeek(from: updatedDate, by: offset) else { return }
-            updatedDate = date
-
-        case .monthly:
-            switch swipe {
-            case .previous: updatedDate.goToPreviousMonth()
-            case .next: updatedDate.goToNextMonth()
-            }
-        }
-
-        currentDate.wrappedValue = updatedDate
-    }
-
-    func weeklyHeaderTitle(index: Int, item: TXCalendarDateItem) -> String {
-        guard let components = item.dateComponents,
-              let year = components.year,
-              let month = components.month,
-              let day = components.day else {
-            return ""
-        }
-        let today = Calendar(identifier: .gregorian).dateComponents([.year, .month, .day], from: Date())
-        let isToday = today.year == year && today.month == month && today.day == day
-        
-        return isToday ? "오늘" : weekdays[index]
     }
 }
