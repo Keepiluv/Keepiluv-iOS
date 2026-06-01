@@ -274,7 +274,8 @@ private extension GoalDetailView {
                 imageData: imageData,
                 imageURL: imageURL,
                 comment: comment,
-                showsMyEmoji: showsMyEmoji
+                showsMyEmoji: showsMyEmoji,
+                isFront: isFront
             )
             .opacity(isFront ? 1 : 0)
         }
@@ -286,10 +287,12 @@ private extension GoalDetailView {
         imageData: Data?,
         imageURL: String?,
         comment: String,
-        showsMyEmoji: Bool
+        showsMyEmoji: Bool,
+        isFront: Bool
     ) -> some View {
         if isCompleted {
             completedImageCard(
+                isFront: isFront,
                 imageData: imageData,
                 imageURL: imageURL,
                 comment: comment,
@@ -325,6 +328,7 @@ private extension GoalDetailView {
 
     @ViewBuilder
     func completedImageCard(
+        isFront: Bool,
         imageData: Data?,
         imageURL: String?,
         comment: String,
@@ -332,14 +336,22 @@ private extension GoalDetailView {
     ) -> some View {
         if let imageData,
            let editedImage = UIImage(data: imageData) {
-            completedImageCardContainer(comment: comment, showsMyEmoji: showsMyEmoji) {
+            completedImageCardContainer(
+                comment: comment,
+                showsMyEmoji: showsMyEmoji,
+                isFront: isFront
+            ) {
                 Image(uiImage: editedImage)
                     .resizable()
                     .scaledToFill()
             }
         } else if let imageURL,
                   let url = URL(string: imageURL) {
-            completedImageCardContainer(comment: comment, showsMyEmoji: showsMyEmoji) {
+            completedImageCardContainer(
+                comment: comment,
+                showsMyEmoji: showsMyEmoji,
+                isFront: isFront
+            ) {
                 KFImage(url)
                     .resizable()
                     .scaledToFill()
@@ -406,6 +418,7 @@ private extension GoalDetailView {
     func completedImageCardContainer<Content: View>(
         comment: String,
         showsMyEmoji: Bool,
+        isFront: Bool,
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         let shape = RoundedRectangle(cornerRadius: 20)
@@ -421,7 +434,7 @@ private extension GoalDetailView {
             .overlay(dimmedView)
             .clipShape(shape)
             .overlay(alignment: .bottom) {
-                if !comment.isEmpty {
+                if isFront, !comment.isEmpty {
                     commentCircle(comment: comment)
                         .padding(.bottom, 26)
                 }
