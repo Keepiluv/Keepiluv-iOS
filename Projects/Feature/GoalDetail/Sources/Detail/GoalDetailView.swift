@@ -149,6 +149,7 @@ private extension GoalDetailView {
         .gesture(
             DragGesture()
                 .onChanged { value in
+                    guard !store.isEditing else { return }
                     let translation = value.translation
                     let width = resistedDragWidth(
                         for: translation.width,
@@ -169,6 +170,7 @@ private extension GoalDetailView {
                     isCrossingDuringDrag = shouldCrossCards(for: width)
                 }
                 .onEnded { _ in
+                    guard !store.isEditing else { return }
                     withAnimation(.spring(response: 0.2, dampingFraction: 0.94)) {
                         resetDragState()
                         store.send(.view(.cardSwiped))
