@@ -23,7 +23,7 @@ struct TXTabBar: View {
                     tabItemView(item: item)
                 }
             }
-            .frame(height: Constants.tabBarHeight)
+            .frame(height: TXTabBarLayout.height)
             .background(Constants.backgroundColor)
             .insideRectEdgeBorder(
                 width: Constants.borderWidth,
@@ -60,7 +60,6 @@ private extension TXTabBar {
 // MARK: - Constants
 private extension TXTabBar {
     enum Constants {
-        static let tabBarHeight: CGFloat = 58
         static let iconSize: CGFloat = 24
         static let iconLabelSpacing: CGFloat = 4
         static let topPadding: CGFloat = 12
