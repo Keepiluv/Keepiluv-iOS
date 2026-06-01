@@ -12,7 +12,6 @@ public struct TXCommentCircle: View {
     @Binding private var commentText: String
     @FocusState private var isFocused: Bool
     private let isEditable: Bool
-    private let keyboardInset: CGFloat
     private let externalFocus: Binding<Bool>?
     public var onFocused: ((Bool) -> Void)?
     
@@ -28,13 +27,11 @@ public struct TXCommentCircle: View {
     public init(
         commentText: Binding<String>,
         isEditable: Bool,
-        keyboardInset: CGFloat,
         isFocused: Binding<Bool>? = nil,
         onFocused: ((Bool) -> Void)? = nil
     ) {
         self._commentText = commentText
         self.isEditable = isEditable
-        self.keyboardInset = keyboardInset
         self.externalFocus = isFocused
         self.onFocused = onFocused
     }
@@ -53,12 +50,6 @@ public struct TXCommentCircle: View {
         .onChange(of: commentText) {
             if commentText.count > Constants.maxCount {
                 commentText = String(commentText.prefix(Constants.maxCount))
-            }
-        }
-        .safeAreaInset(edge: .bottom) {
-            if isFocused {
-                Color.clear
-                    .frame(height: keyboardInset)
             }
         }
         .onChange(of: isFocused) {
@@ -189,7 +180,6 @@ private struct PositionedCircleShape: Shape {
     @Previewable @State var text: String = ""
     TXCommentCircle(
         commentText: $text,
-        isEditable: true,
-        keyboardInset: .zero
+        isEditable: true
     )
 }

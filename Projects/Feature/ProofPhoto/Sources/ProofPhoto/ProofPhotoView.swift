@@ -347,7 +347,7 @@ private extension ProofPhotoView {
             }
             .padding(.bottom, 28)
             .frame(width: rectFrame.width, height: rectFrame.height, alignment: .bottom)
-            .offset(x: posX, y: posY)
+            .offset(x: posX, y: posY - keyboardInset)
             .animation(.easeOut(duration: 0.25), value: keyboardInset)
         }
     }
@@ -362,7 +362,6 @@ private extension ProofPhotoView {
         TXCommentCircle(
             commentText: $store.commentText,
             isEditable: true,
-            keyboardInset: keyboardInset,
             isFocused: $store.isCommentFocused,
             onFocused: { isFocused in
                 store.send(.view(.focusChanged(isFocused)))
