@@ -157,6 +157,8 @@ private extension GoalDetailView {
     
     var cardView: some View {
         ZStack {
+            cardFrameReader
+
             myCard
                 .zIndex(effectiveIsFrontMyCard ? 1 : 0)
             
@@ -194,6 +196,12 @@ private extension GoalDetailView {
                     }
                 }
         )
+    }
+
+    var cardFrameReader: some View {
+        Color.clear
+            .frame(width: Constants.cardSize, height: Constants.cardSize)
+            .readSize { rectFrame = $0 }
     }
     
     @ViewBuilder
@@ -401,7 +409,7 @@ private extension GoalDetailView {
     }
 
     var shouldShowCommentOverlay: Bool {
-        guard store.isCompleted, rectFrame != .zero else { return false }
+        guard effectiveFrontCardIsCompleted, rectFrame != .zero else { return false }
         return store.isEditing || !currentFrontComment.isEmpty
     }
 
@@ -422,6 +430,7 @@ private extension GoalDetailView {
             commentCircle(comment: currentFrontComment)
                 .padding(.bottom, 26)
                 .frame(width: rectFrame.width, height: rectFrame.height, alignment: .bottom)
+                .rotationEffect(frontCardRotation)
                 .offset(x: posX, y: posY - keyboardInset)
                 .animation(.easeOut(duration: 0.25), value: keyboardInset)
         }
@@ -447,7 +456,6 @@ private extension GoalDetailView {
         
         return Color.clear
             .frame(width: Constants.cardSize, height: Constants.cardSize)
-            .readSize { rectFrame = $0 }
             .overlay {
                 content()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -532,6 +540,14 @@ private extension GoalDetailView {
 
     var keyboardInset: CGFloat {
         max(0, rectFrame.maxY - keyboardFrame.minY)
+    }
+
+    var frontCardRotation: Angle {
+        effectiveIsFrontMyCard ? .degrees(0) : .degrees(-8)
+    }
+
+    var effectiveFrontCardIsCompleted: Bool {
+        effectiveIsFrontMyCard ? store.myCardIsCompleted : store.partnerCardIsCompleted
     }
 
     func repeatedCardOffset(for width: CGFloat) -> CGFloat {
