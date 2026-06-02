@@ -188,8 +188,22 @@ private extension GoalDetailView {
                     cardOffset = repeatedCardOffset(for: width)
                     isCrossingDuringDrag = shouldCrossCards(for: width)
                 }
-                .onEnded { _ in
+                .onEnded { value in
                     guard !store.isEditing else { return }
+                    
+                    let translation = value.translation
+                    let width = resistedDragWidth(
+                        for: translation.width,
+                        velocity: value.velocity.width
+                    )
+                    
+                    guard abs(width) >= abs(translation.height) else {
+                        withAnimation(.spring(response: 0.2, dampingFraction: 0.94)) {
+                            resetDragState()
+                        }
+                        return
+                    }
+
                     withAnimation(.spring(response: 0.2, dampingFraction: 0.94)) {
                         resetDragState()
                         store.send(.view(.cardSwiped))
