@@ -121,7 +121,7 @@ private extension GoalDetailView {
             if store.item != nil {
                 cardView
                     .padding(.horizontal, 27)
-                    .padding(.top, isSEDevice ? 47 : 103)
+                    .padding(.top, Constants.cardTopPadding)
 
                 if store.isCompleted {
                     completedBottomContent
@@ -157,6 +157,8 @@ private extension GoalDetailView {
     
     var cardView: some View {
         ZStack {
+            cardFrameReader
+
             myCard
                 .zIndex(effectiveIsFrontMyCard ? 1 : 0)
             
@@ -194,6 +196,12 @@ private extension GoalDetailView {
                     }
                 }
         )
+    }
+
+    var cardFrameReader: some View {
+        Color.clear
+            .frame(width: Constants.cardSize, height: Constants.cardSize)
+            .readSize { rectFrame = $0 }
     }
     
     @ViewBuilder
@@ -235,7 +243,7 @@ private extension GoalDetailView {
         
         if store.isShowReactionBar {
             reactionBar
-                .padding(.top, isSEDevice ? 23 : 73)
+                .padding(.top, Constants.emojiTopPadding)
                 .padding(.horizontal, 20)
         }
     }
@@ -266,7 +274,7 @@ private extension GoalDetailView {
                 shape: shape,
                 lineWidth: 1.6
             )
-            .frame(width: 336, height: 336)
+            .frame(width: Constants.cardSize, height: Constants.cardSize)
             .clipShape(shape)
     }
     
@@ -401,7 +409,7 @@ private extension GoalDetailView {
     }
 
     var shouldShowCommentOverlay: Bool {
-        guard store.isCompleted, rectFrame != .zero else { return false }
+        guard effectiveFrontCardIsCompleted, rectFrame != .zero else { return false }
         return store.isEditing || !currentFrontComment.isEmpty
     }
 
@@ -422,6 +430,7 @@ private extension GoalDetailView {
             commentCircle(comment: currentFrontComment)
                 .padding(.bottom, 26)
                 .frame(width: rectFrame.width, height: rectFrame.height, alignment: .bottom)
+                .rotationEffect(frontCardRotation)
                 .offset(x: posX, y: posY - keyboardInset)
                 .animation(.easeOut(duration: 0.25), value: keyboardInset)
         }
@@ -446,8 +455,7 @@ private extension GoalDetailView {
         let shape = RoundedRectangle(cornerRadius: 20)
         
         return Color.clear
-            .frame(width: 336, height: 336)
-            .readSize { rectFrame = $0 }
+            .frame(width: Constants.cardSize, height: Constants.cardSize)
             .overlay {
                 content()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -534,6 +542,14 @@ private extension GoalDetailView {
         max(0, rectFrame.maxY - keyboardFrame.minY)
     }
 
+    var frontCardRotation: Angle {
+        effectiveIsFrontMyCard ? .degrees(0) : .degrees(-8)
+    }
+
+    var effectiveFrontCardIsCompleted: Bool {
+        effectiveIsFrontMyCard ? store.myCardIsCompleted : store.partnerCardIsCompleted
+    }
+
     func repeatedCardOffset(for width: CGFloat) -> CGFloat {
         let maxOffset = Constants.maxCardOffset
         let direction: CGFloat = width >= 0 ? 1 : -1
@@ -565,19 +581,21 @@ private extension GoalDetailView {
         cardOffset = .zero
         isCrossingDuringDrag = false
     }
-    
-    // 다른곳에서도 쓸 때 Util로 빼기
-    private var isSEDevice: Bool {
-        UIScreen.main.bounds.height <= 667
-    }
 }
 
 // MARK: - Constants
 private extension GoalDetailView {
     enum Constants {
+        static var isSEDevice: Bool {
+            UIScreen.main.bounds.height <= 667
+        }
+        
         static let maxCardOffset: CGFloat = 100
         static let dragVelocityThreshold: CGFloat = 1200
         static let minimumDragResistance: CGFloat = 0.35
+        static var cardTopPadding: CGFloat { isSEDevice ? 34 : 89 }
+        static var cardSize: CGFloat { isSEDevice ? 321 : 336 }
+        static var emojiTopPadding: CGFloat { isSEDevice ? 19 : 69 }
     }
 }
 
