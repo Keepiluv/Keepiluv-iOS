@@ -24,6 +24,7 @@ import SwiftUI
 /// ```
 public struct TXButton: View {
     let shape: TXButtonShape
+    let allowsActionWhenDisabled: Bool
     let onTap: () -> Void
     
     /// 버튼을 생성합니다.
@@ -41,9 +42,11 @@ public struct TXButton: View {
     /// ```
     public init(
         shape: TXButtonShape,
+        allowsActionWhenDisabled: Bool = false,
         onTap: @escaping () -> Void
     ) {
         self.shape = shape
+        self.allowsActionWhenDisabled = allowsActionWhenDisabled
         self.onTap = onTap
     }
     
@@ -65,6 +68,7 @@ public struct TXButton: View {
         case .round:
             TXRoundButton(
                 shape: shape,
+                allowsActionWhenDisabled: allowsActionWhenDisabled,
                 onTap: onTap
             )
             

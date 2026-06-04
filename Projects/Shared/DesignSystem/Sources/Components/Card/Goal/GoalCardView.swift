@@ -169,6 +169,7 @@ private extension GoalCardView {
                         size: .s,
                         state: isButtonDisabled ? .disabled : .standard
                     ),
+                    allowsActionWhenDisabled: true,
                     onTap: { buttonAction?() }
                 )
                 .padding(.bottom, 14)

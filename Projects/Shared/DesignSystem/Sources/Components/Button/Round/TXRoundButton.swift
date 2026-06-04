@@ -9,12 +9,20 @@ import SwiftUI
 
 struct TXRoundButton: View {
     let shape: TXButtonShape
+    let allowsActionWhenDisabled: Bool
     let onTap: () -> Void
     
     public var body: some View {
         if case let .round(style, size, state) = shape {
             Button {
-                onTap()
+                switch state {
+                case .disabled:
+                    if allowsActionWhenDisabled {
+                        onTap()
+                    }
+                case .standard:
+                    onTap()
+                }
             } label: {
                 ZStack {
                     Capsule()
