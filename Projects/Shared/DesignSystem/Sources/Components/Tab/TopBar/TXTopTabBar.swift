@@ -43,7 +43,6 @@ struct TXTopTabBar<Item: TXItem>: View {
                 } label: {
                     tabItem(item: item, isSelected: selectedItem == item)
                 }
-                .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)
             }
         }
