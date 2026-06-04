@@ -177,7 +177,9 @@ private extension MakeGoalView {
                 Spacer()
                 
                 if store.showPeriodCount {
-                    dropDownButton { store.send(.view(.periodSelected)) }
+                    dropDownButton(text: store.periodCountText) {
+                        store.send(.view(.periodSelected))
+                    }
                 }
             }
         }
@@ -190,7 +192,9 @@ private extension MakeGoalView {
             
             Spacer()
             
-            dropDownButton { store.send(.view(.startDateTapped)) }
+            dropDownButton(text: store.startDateText) {
+                store.send(.view(.startDateTapped))
+            }
         }
         .frame(height: 32)
         .padding(.vertical, 16)
@@ -214,7 +218,9 @@ private extension MakeGoalView {
             
             Spacer()
             
-            dropDownButton { store.send(.view(.endDateTapped)) }
+            dropDownButton(text: store.endDateText) {
+                store.send(.view(.endDateTapped))
+            }
         }
         .padding(.vertical, 21.5)
     }
@@ -236,9 +242,12 @@ private extension MakeGoalView {
             .padding(.vertical, -1)
     }
     
-    func dropDownButton(_ action: @escaping () -> Void) -> some View {
+    func dropDownButton(
+        text: String,
+        action: @escaping () -> Void
+    ) -> some View {
         HStack(spacing: 0) {
-            Text(store.startDateText)
+            Text(text)
                 .typography(.b2_14r)
                 .foregroundStyle(Color.Gray.gray500)
             Image.Icon.Symbol.arrow2Down
