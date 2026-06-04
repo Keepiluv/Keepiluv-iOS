@@ -445,7 +445,7 @@ private extension GoalDetailView {
                 .padding(.bottom, 26)
                 .frame(width: rectFrame.width, height: rectFrame.height, alignment: .bottom)
                 .rotationEffect(frontCardRotation)
-                .offset(x: posX, y: posY - keyboardInset)
+                .offset(x: posX + cardOffset, y: posY - keyboardInset)
                 .animation(.easeOut(duration: 0.25), value: keyboardInset)
         }
     }
