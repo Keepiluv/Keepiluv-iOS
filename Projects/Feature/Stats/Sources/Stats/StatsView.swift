@@ -19,11 +19,6 @@ struct StatsView: View {
         VStack(spacing: 0) {
             navigationBar
             topTabBar
-            if store.isOngoing {
-                monthNavigation
-                    .padding(.top, 16)
-                    .background(Color.Gray.gray50)
-            }
             
             if let items = store.items, !items.isEmpty {
                 cardList
@@ -88,6 +83,12 @@ private extension StatsView {
 
     private var scrollCardList: some View {
         ScrollView {
+            if store.isOngoing {
+                monthNavigation
+                    .padding(.top, 16)
+                    .background(Color.Gray.gray50)
+            }
+            
             LazyVStack(spacing: 16) {
                 ForEach(store.items ?? [], id: \.self.goalId) { item in
                     StatsCardView(
