@@ -180,7 +180,7 @@ private extension GoalCardView {
                     .padding(.bottom, 10)
             }
         }
-        .frame(maxHeight: .infinity)
+        .frame(maxHeight: .infinity, alignment: .center)
     }
     
     func emojiImage(emoji: Image) -> some View {
