@@ -122,7 +122,7 @@ private extension MakeGoalView {
                             backgroundColor: Color.Common.white
                         )
                     ),
-                    onTap: { }
+                    onTap: { store.send(.view(.emojiButtonTapped)) }
                 )
                 .insideBorder(
                     Color.Gray.gray500,
@@ -177,7 +177,6 @@ private extension MakeGoalView {
                 Spacer()
                 
                 if store.showPeriodCount {
-                    valueText(store.periodCountText)
                     dropDownButton { store.send(.view(.periodSelected)) }
                 }
             }
@@ -191,7 +190,6 @@ private extension MakeGoalView {
             
             Spacer()
             
-            valueText(store.startDateText)
             dropDownButton { store.send(.view(.startDateTapped)) }
         }
         .frame(height: 32)
@@ -216,7 +214,6 @@ private extension MakeGoalView {
             
             Spacer()
             
-            valueText(store.endDateText)
             dropDownButton { store.send(.view(.endDateTapped)) }
         }
         .padding(.vertical, 21.5)
@@ -240,10 +237,14 @@ private extension MakeGoalView {
     }
     
     func dropDownButton(_ action: @escaping () -> Void) -> some View {
-        Button {
-            action()
-        } label: {
+        HStack(spacing: 0) {
+            Text(store.startDateText)
+                .typography(.b2_14r)
+                .foregroundStyle(Color.Gray.gray500)
             Image.Icon.Symbol.arrow2Down
+        }
+        .onTapGesture {
+            action()
         }
     }
     
