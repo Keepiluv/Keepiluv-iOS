@@ -64,7 +64,7 @@ public struct MainTabView: View {
         }
         .txToast(
             item: $store.home.home.presentation.toast,
-            customPadding: Constants.tabBarHeight
+            customPadding: TXTabBarLayout.height
         )
         .txLoading(isPresented: isTabLoading)
     }
@@ -94,13 +94,7 @@ private extension MainTabView {
         )
         .shadow(color: .black.opacity(0.16), radius: 20, x: 2, y: 1)
         .padding(.trailing, 16)
-        .padding(.bottom, 12 + Constants.tabBarHeight)
-    }
-}
-
-private extension MainTabView {
-    enum Constants {
-        static let tabBarHeight: CGFloat = 58
+        .padding(.bottom, 12 + TXTabBarLayout.height)
     }
 }
 

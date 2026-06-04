@@ -101,7 +101,8 @@ private extension StatsView {
                 }
             }
             .padding(.top, store.isOngoing ? 12 : 20)
-            .padding([.horizontal, .bottom], 20)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 85 + TXTabBarLayout.height)
             .perfFeed("stats")
         }
         .background(Color.Gray.gray50)
