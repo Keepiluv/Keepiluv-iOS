@@ -62,31 +62,23 @@ public struct GoalDetailView: View {
     }
     
     public var body: some View {
-        VStack(spacing: 0) {
-            navigationBar
-                .zIndex(1)
-            
-            if store.item != nil {
-                cardView
-                    .padding(.horizontal, 27)
-                    .padding(.top, isSEDevice ? 47 : 103)
-                
-                if store.isCompleted {
-                    completedBottomContent
-                } else if store.currentCompletedGoal?.status != .completed {
-                    bottomButton
-                        .padding(.top, 105)
-                        .overlay(alignment: .bottomLeading) {
-                            pokeImage
-                                .offset(x: 79, y: -45)
-                        }
+        GeometryReader { _ in
+            ZStack {
+                mainContent
+
+                if store.isEditing && store.isCommentFocused {
+                    dimmedView
+                        .ignoresSafeArea()
+                }
+
+                if shouldShowCommentOverlay {
+                    floatingCommentOverlay
                 }
             }
-            
-            Spacer()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .ignoresSafeArea(.keyboard)
-        .background(dimmedView)
+        .background(Color.Common.white)
         .toolbar(.hidden, for: .navigationBar)
         .observeKeyboardFrame($keyboardFrame)
         .onAppear {
@@ -121,6 +113,32 @@ public struct GoalDetailView: View {
 
 // MARK: - SubViews
 private extension GoalDetailView {
+    var mainContent: some View {
+        VStack(spacing: 0) {
+            navigationBar
+                .zIndex(1)
+
+            if store.item != nil {
+                cardView
+                    .padding(.horizontal, 27)
+                    .padding(.top, isSEDevice ? 47 : 103)
+
+                if store.isCompleted {
+                    completedBottomContent
+                } else if store.currentCompletedGoal?.status != .completed {
+                    bottomButton
+                        .padding(.top, 105)
+                        .overlay(alignment: .bottomLeading) {
+                            pokeImage
+                                .offset(x: 79, y: -45)
+                        }
+                }
+            }
+
+            Spacer()
+        }
+    }
+
     var navigationBar: some View {
         TXNavigationBar(
             style: .subContent(
@@ -135,7 +153,6 @@ private extension GoalDetailView {
                 store.send(.view(.navigationBarTapped(action)))
             }
         )
-        .overlay(dimmedView)
     }
     
     var cardView: some View {
@@ -149,6 +166,7 @@ private extension GoalDetailView {
         .gesture(
             DragGesture()
                 .onChanged { value in
+                    guard !store.isEditing else { return }
                     let translation = value.translation
                     let width = resistedDragWidth(
                         for: translation.width,
@@ -169,6 +187,7 @@ private extension GoalDetailView {
                     isCrossingDuringDrag = shouldCrossCards(for: width)
                 }
                 .onEnded { _ in
+                    guard !store.isEditing else { return }
                     withAnimation(.spring(response: 0.2, dampingFraction: 0.94)) {
                         resetDragState()
                         store.send(.view(.cardSwiped))
@@ -184,7 +203,6 @@ private extension GoalDetailView {
             isCompleted: store.myCardIsCompleted,
             imageData: store.pendingEditedImageData,
             imageURL: store.myCard?.imageUrl,
-            comment: store.myCard?.comment ?? "",
             showsMyEmoji: effectiveIsFrontMyCard && store.selectedReactionEmoji != nil
         )
         .offset(x: cardOffset * (effectiveIsFrontMyCard ? 1 : -1))
@@ -197,7 +215,6 @@ private extension GoalDetailView {
             isCompleted: store.partnerCardIsCompleted,
             imageData: nil,
             imageURL: store.partnerCard?.imageUrl,
-            comment: store.partnerCard?.comment ?? "",
             showsMyEmoji: false
         )
         .offset(x: cardOffset * (effectiveIsFrontMyCard ? -1 : 1))
@@ -250,7 +267,6 @@ private extension GoalDetailView {
                 lineWidth: 1.6
             )
             .frame(width: 336, height: 336)
-            .overlay(dimmedView)
             .clipShape(shape)
     }
     
@@ -260,7 +276,6 @@ private extension GoalDetailView {
         isCompleted: Bool,
         imageData: Data?,
         imageURL: String?,
-        comment: String,
         showsMyEmoji: Bool
     ) -> some View {
         ZStack {
@@ -271,7 +286,6 @@ private extension GoalDetailView {
                 isCompleted: isCompleted,
                 imageData: imageData,
                 imageURL: imageURL,
-                comment: comment,
                 showsMyEmoji: showsMyEmoji
             )
             .opacity(isFront ? 1 : 0)
@@ -283,14 +297,12 @@ private extension GoalDetailView {
         isCompleted: Bool,
         imageData: Data?,
         imageURL: String?,
-        comment: String,
         showsMyEmoji: Bool
     ) -> some View {
         if isCompleted {
             completedImageCard(
                 imageData: imageData,
                 imageURL: imageURL,
-                comment: comment,
                 showsMyEmoji: showsMyEmoji
             )
         } else {
@@ -318,26 +330,28 @@ private extension GoalDetailView {
                 shape: shape,
                 lineWidth: 1.6
             )
-            .overlay(dimmedView)
     }
 
     @ViewBuilder
     func completedImageCard(
         imageData: Data?,
         imageURL: String?,
-        comment: String,
         showsMyEmoji: Bool
     ) -> some View {
         if let imageData,
            let editedImage = UIImage(data: imageData) {
-            completedImageCardContainer(comment: comment, showsMyEmoji: showsMyEmoji) {
+            completedImageCardContainer(
+                showsMyEmoji: showsMyEmoji
+            ) {
                 Image(uiImage: editedImage)
                     .resizable()
                     .scaledToFill()
             }
         } else if let imageURL,
                   let url = URL(string: imageURL) {
-            completedImageCardContainer(comment: comment, showsMyEmoji: showsMyEmoji) {
+            completedImageCardContainer(
+                showsMyEmoji: showsMyEmoji
+            ) {
                 KFImage(url)
                     .resizable()
                     .scaledToFill()
@@ -373,22 +387,46 @@ private extension GoalDetailView {
         )
         .perfControl(slug: "goal-detail", element: "primary-cta")
     }
-    
+
     @ViewBuilder
     func commentCircle(comment: String) -> some View {
-        let keyboardInset = max(0, rectFrame.maxY - keyboardFrame.minY)
         TXCommentCircle(
             commentText: store.isEditing ? $store.commentText : .constant(comment),
             isEditable: store.isEditing,
-            keyboardInset: keyboardInset,
             isFocused: $store.isCommentFocused,
             onFocused: { isFocused in
                 store.send(.view(.focusChanged(isFocused)))
             }
         )
-        .animation(.easeOut(duration: 0.25), value: keyboardInset)
     }
-    
+
+    var shouldShowCommentOverlay: Bool {
+        guard store.isCompleted, rectFrame != .zero else { return false }
+        return store.isEditing || !currentFrontComment.isEmpty
+    }
+
+    var currentFrontComment: String {
+        if effectiveIsFrontMyCard {
+            return store.myCard?.comment ?? ""
+        } else {
+            return store.partnerCard?.comment ?? ""
+        }
+    }
+
+    var floatingCommentOverlay: some View {
+        GeometryReader { rootGeo in
+            let rootFrame = rootGeo.frame(in: .global)
+            let posX = rectFrame.minX - rootFrame.minX
+            let posY = rectFrame.minY - rootFrame.minY
+
+            commentCircle(comment: currentFrontComment)
+                .padding(.bottom, 26)
+                .frame(width: rectFrame.width, height: rectFrame.height, alignment: .bottom)
+                .offset(x: posX, y: posY - keyboardInset)
+                .animation(.easeOut(duration: 0.25), value: keyboardInset)
+        }
+    }
+
     var dimmedView: some View {
         Color.Dimmed.dimmed70
             .opacity(store.isEditing && store.isCommentFocused ? 1 : 0)
@@ -402,7 +440,6 @@ private extension GoalDetailView {
     }
 
     func completedImageCardContainer<Content: View>(
-        comment: String,
         showsMyEmoji: Bool,
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
@@ -416,14 +453,7 @@ private extension GoalDetailView {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
             }
-            .overlay(dimmedView)
             .clipShape(shape)
-            .overlay(alignment: .bottom) {
-                if !comment.isEmpty {
-                    commentCircle(comment: comment)
-                        .padding(.bottom, 26)
-                }
-            }
             .insideBorder(
                 Color.Gray.gray500,
                 shape: shape,
@@ -498,6 +528,10 @@ private extension GoalDetailView {
 private extension GoalDetailView {
     var effectiveIsFrontMyCard: Bool {
         isCrossingDuringDrag ? !store.isFrontMyCard : store.isFrontMyCard
+    }
+
+    var keyboardInset: CGFloat {
+        max(0, rectFrame.maxY - keyboardFrame.minY)
     }
 
     func repeatedCardOffset(for width: CGFloat) -> CGFloat {
