@@ -14,9 +14,7 @@ struct TXRoundButton: View {
     public var body: some View {
         if case let .round(style, size, state) = shape {
             Button {
-                if state != .disabled {
-                    onTap()
-                }
+                onTap()
             } label: {
                 ZStack {
                     Capsule()
