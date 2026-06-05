@@ -80,10 +80,10 @@ public struct StatsDetailReducer {
         /// ```swift
         /// let state = StatsDetailReducer.State(goalId: 1)
         /// ```
-        public init(goalId: Int64) {
+        public init(goalId: Int64, calendarDate: TXCalendarDate?) {
             self.goalId = goalId
             
-            let currentMonth = TXCalendarDate()
+            let currentMonth = calendarDate ?? TXCalendarDate()
             self.currentMonth = currentMonth
             self.monthlyData = TXCalendarDataGenerator.generateMonthData(
                 for: currentMonth,

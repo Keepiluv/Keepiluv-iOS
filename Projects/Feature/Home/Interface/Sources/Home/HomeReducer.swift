@@ -241,7 +241,7 @@ public struct HomeReducer {
         /// 홈 화면에서 외부로 전달하는 이벤트입니다.
         public enum Delegate {
             case goToGoalDetail(id: Int64, owner: GoalDetail.Owner, verificationDate: String)
-            case goToStatsDetail(id: Int64)
+            case goToStatsDetail(id: Int64, calendarDate: TXCalendarDate)
             case goToMakeGoal(GoalCategory)
             case goToEditGoalList(date: TXCalendarDate)
             case goToSettings

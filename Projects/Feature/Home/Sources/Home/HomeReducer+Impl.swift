@@ -286,7 +286,7 @@ extension HomeReducer {
                 return .send(.delegate(.goToGoalDetail(id: card.id, owner: .mySelf, verificationDate: verificationDate)))
                 
             case let .view(.headerTapped(card)):
-                return .send(.delegate(.goToStatsDetail(id: card.id)))
+                return .send(.delegate(.goToStatsDetail(id: card.id, calendarDate: state.calendarDate)))
                 
             case .view(.floatingButtonTapped):
                 state.isAddGoalPresented = true
