@@ -114,7 +114,7 @@ private extension StatsView {
             if store.isOngoing {
                 VStack(spacing: 8) {
                     Image.Illustration.scare
-                    Text("아직 목표가 없어요!")
+                    Text("이 달은 목표가 없어요!")
                         .typography(.t2_16b)
                         .foregroundStyle(Color.Gray.gray400)
                 }
