@@ -222,7 +222,7 @@ extension GoalDetailReducer {
                 
             case .response(.fetchGoalDetailFailed):
                 state.isFetchFailed = true
-                return .send(.presentation(.showToast(.warning(message: "목표 상세 조회에 실패했어요"))))
+                return .none
                 
             case let .response(.updateCurrentCardReaction(photoLogId: photoLogId, reaction: reaction)):
                 guard let item = state.item else { return .none }

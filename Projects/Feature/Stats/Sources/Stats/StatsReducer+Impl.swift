@@ -135,7 +135,7 @@ extension StatsReducer {
                 }
                 state.isLoading = false
                 state.isFetchFailed = true
-                return .send(.presentation(.showToast(.warning(message: "통계 조회에 실패했어요"))))
+                return .none
                 
             case .delegate:
                 return .none

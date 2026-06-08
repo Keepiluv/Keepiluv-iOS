@@ -241,11 +241,13 @@ extension EditGoalListReducer {
 
             case let .response(.apiError(message)):
                 state.isLoading = false
-                if state.cards == nil {
-                    state.isFetchFailed = true
-                }
                 state.pendingGoalId = nil
                 state.pendingAction = nil
+                
+                if state.cards == nil {
+                    state.isFetchFailed = true
+                    return .none
+                }
                 return .send(.presentation(.showToast(.warning(message: message))))
 
             case let .presentation(.showToast(toast)):

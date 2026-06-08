@@ -349,7 +349,7 @@ extension HomeReducer {
                 guard date == state.calendarDate else { return .none }
                 state.isLoading = false
                 state.isFetchFailed = true
-                return .send(.presentation(.showToast(.warning(message: "목표 조회에 실패했어요"))))
+                return .none
                 
             case let .internal(.setCalendarDate(date)):
                 guard date != state.calendarDate else { return .none }
