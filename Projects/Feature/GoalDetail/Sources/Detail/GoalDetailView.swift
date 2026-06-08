@@ -107,6 +107,10 @@ public struct GoalDetailView: View {
             myEmojiFlyingReactionOverlay
         }
         .txToast(item: $store.toast, customPadding: 54)
+        .txDataRetry(
+            isPresented: store.isFetchFailed,
+            onRetry: { store.send(.view(.dataRetryTapped)) }
+        )
         .txLoading(isPresented: store.isSavingPhotoLog)
     }
 }

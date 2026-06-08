@@ -9,6 +9,7 @@ import SwiftUI
 
 import ComposableArchitecture
 import FeatureHomeInterface
+import SharedDesignSystem
 import SharedPerfTestingSupport
 
 /// 홈 화면을 렌더링하는 View입니다.
@@ -74,6 +75,10 @@ public struct HomeView: View {
         .modifier(PerfToastPresentationHarness(toast: $store.presentation.toast))
         .modifier(PerfHomeCounterMarkersHarness())
         .modifier(HomePresentationLayer(store: store))
+        .txDataRetry(
+            isPresented: store.isFetchFailed,
+            onRetry: { store.send(.view(.dataRetryTapped)) }
+        )
         .onAppear {
             store.send(.view(.onAppear))
         }

@@ -33,6 +33,7 @@ public struct StatsReducer {
         public var currentMonth: TXCalendarDate = .init()
         public var monthTitle: String { currentMonth.formattedYearMonth }
         public var isLoading: Bool = false
+        public var isFetchFailed: Bool = false
         public var isOngoing: Bool = true
         public var isNextMonthDisabled: Bool {
             currentMonth >= TXCalendarDate()
@@ -86,6 +87,7 @@ public struct StatsReducer {
             case statsCardTapped(goalId: Int64)
             case previousMonthTapped
             case nextMonthTapped
+            case dataRetryTapped
         }
 
         // MARK: - Internal
@@ -96,7 +98,7 @@ public struct StatsReducer {
         // MARK: - Response
         public enum Response: Equatable {
             case fetchedStats(stats: Stats, month: String)
-            case fetchStatsFailed
+            case fetchStatsFailed(month: String, isOngoing: Bool)
         }
 
         // MARK: - Presentation

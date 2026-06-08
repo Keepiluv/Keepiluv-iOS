@@ -34,6 +34,10 @@ struct StatsView: View {
         }
         .onAppear { store.send(.view(.onAppear)) }
         .txToast(item: $store.toast)
+        .txDataRetry(
+            isPresented: store.isFetchFailed,
+            onRetry: { store.send(.view(.dataRetryTapped)) }
+        )
         .toolbar(.hidden, for: .tabBar)
     }
 }

@@ -94,6 +94,7 @@ extension GoalDetailReducer {
             case .view(.onAppear):
                 let date = state.verificationDate
                 let goalId = state.goalId
+                state.isFetchFailed = false
                 
                 return .run { send in
                     do {
@@ -106,6 +107,9 @@ extension GoalDetailReducer {
                 
             case .view(.onDisappear):
                 return .none
+
+            case .view(.dataRetryTapped):
+                return .send(.view(.onAppear))
                 
                 // MARK: - Action
             case .view(.bottomButtonTapped):
@@ -202,6 +206,7 @@ extension GoalDetailReducer {
                 // MARK: - State Update
             case let .response(.fethedGoalDetailItem(item)):
                 state.item = item
+                state.isFetchFailed = false
                 if let goalIndex = state.completedGoalItems.firstIndex(where: {
                     $0.myPhotoLog?.goalId == state.goalId || $0.yourPhotoLog?.goalId == state.goalId
                 }) {
@@ -216,6 +221,7 @@ extension GoalDetailReducer {
                 return .none
                 
             case .response(.fetchGoalDetailFailed):
+                state.isFetchFailed = true
                 return .send(.presentation(.showToast(.warning(message: "목표 상세 조회에 실패했어요"))))
                 
             case let .response(.updateCurrentCardReaction(photoLogId: photoLogId, reaction: reaction)):

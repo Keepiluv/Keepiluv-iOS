@@ -52,6 +52,7 @@ public struct HomeReducer {
 
         public struct UIState: Equatable {
             public var isLoading: Bool = true
+            public var isFetchFailed: Bool = false
             public var mainTitle: String = "KEEPILUV"
             public var calendarMonthTitle: String = ""
             public var isRefreshHidden: Bool = true
@@ -83,6 +84,10 @@ public struct HomeReducer {
         public var isLoading: Bool {
             get { ui.isLoading }
             set { ui.isLoading = newValue }
+        }
+        public var isFetchFailed: Bool {
+            get { ui.isFetchFailed }
+            set { ui.isFetchFailed = newValue }
         }
         public var mainTitle: String {
             get { ui.mainTitle }
@@ -206,6 +211,7 @@ public struct HomeReducer {
             case proofPhotoDismissed
             case addGoalButtonTapped(GoalCategory)
             case cameraPermissionAlertDismissed
+            case dataRetryTapped
             case perfToastShowTapped
             case perfToastDismissTapped
             case perfCalendarNextTapped
@@ -223,7 +229,7 @@ public struct HomeReducer {
         // MARK: - Response
         public enum Response {
             case fetchGoalsCompleted(GoalList, date: TXCalendarDate)
-            case fetchGoalsFailed
+            case fetchGoalsFailed(date: TXCalendarDate)
             case authorizationCompleted(id: Int64, isAuthorized: Bool)
             case deletePhotoLogCompleted(goalId: Int64)
             case deletePhotoLogFailed

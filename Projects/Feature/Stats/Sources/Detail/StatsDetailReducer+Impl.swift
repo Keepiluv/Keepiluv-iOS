@@ -39,6 +39,12 @@ extension StatsDetailReducer {
                 
             case .view(.onDisappear):
                 return .none
+
+            case .view(.dataRetryTapped):
+                return .merge(
+                    .send(.internal(.fetchStatsDetailCalendar)),
+                    .send(.internal(.fetchStatsDetailSummary))
+                )
                 
                 // MARK: - User Action
             case let .view(.navigationBarTapped(action)):
@@ -163,9 +169,11 @@ extension StatsDetailReducer {
                 var applyCached: Effect<Action> = .none
                 if let cached = state.completedDateCache[month] {
                     state.isLoading = false
+                    state.isCalendarFetchFailed = false
                     applyCached = .send(.internal(.updateMonthlyDate(cached)))
                 } else {
                     state.isLoading = true
+                    state.isCalendarFetchFailed = false
                 }
                 
                 let fetchRemote: Effect<Action> = .run { send in
@@ -173,7 +181,7 @@ extension StatsDetailReducer {
                         let statsDetail = try await statsClient.fetchStatsDetailCalendar(goalId, month)
                         await send(.response(.fetchStatsDetailCalendarSuccess(statsDetail, month: month)))
                     } catch {
-                        await send(.response(.fetchStatsDetailCalendarFailed))
+                        await send(.response(.fetchStatsDetailCalendarFailed(month: month)))
                     }
                 }
                 
@@ -181,6 +189,7 @@ extension StatsDetailReducer {
             
             case .internal(.fetchStatsDetailSummary):
                 let goalId = state.goalId
+                state.isSummaryFetchFailed = false
                 return .run { send in
                     do {
                         let summary = try await statsClient.fetchStatsDetailSummary(goalId)
@@ -192,6 +201,7 @@ extension StatsDetailReducer {
 
             case let .response(.fetchStatsDetailCalendarSuccess(statsDetail, month)):
                 state.isLoading = false
+                state.isCalendarFetchFailed = false
                 state.statsDetail = statsDetail
                 state.completedDateCache[month] = statsDetail.completedDate.filter { $0.date.hasPrefix(month) }
                 
@@ -202,14 +212,18 @@ extension StatsDetailReducer {
                 
                 return .send(.internal(.updateMonthlyDate(state.completedDateCache[month] ?? [])))
                 
-            case .response(.fetchStatsDetailCalendarFailed):
+            case let .response(.fetchStatsDetailCalendarFailed(month)):
+                guard month == state.currentMonth.formattedYearDashMonth else { return .none }
                 state.isLoading = false
+                state.isCalendarFetchFailed = true
                 return .none
 
             case let .response(.fetchStatsDetailSummarySuccess(summary)):
+                state.isSummaryFetchFailed = false
                 return .send(.internal(.updateStatsSummary(summary)))
 
             case .response(.fetchStatsDetailSummaryFailed):
+                state.isSummaryFetchFailed = true
                 return .none
                 
             case .internal(.patchCompleteGoal):

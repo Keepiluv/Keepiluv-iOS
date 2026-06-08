@@ -63,6 +63,9 @@ private func reduceView(
 
     case .loadMore:
         return handleLoadMore(state: &state, notificationClient: notificationClient)
+
+    case .dataRetryTapped:
+        return handleOnAppear(state: &state, notificationClient: notificationClient)
     }
 }
 
@@ -75,6 +78,7 @@ private func reduceResponse(
     switch action {
     case .fetchListResponse(.success(let result)):
         state.isLoading = false
+        state.isFetchFailed = false
         state.notifications = IdentifiedArray(
             uniqueElements: result.notifications.map { NotificationItem(from: $0) }
         )
@@ -84,6 +88,7 @@ private func reduceResponse(
 
     case .fetchListResponse(.failure):
         state.isLoading = false
+        state.isFetchFailed = true
         return .none
 
     case .fetchMoreResponse(.success(let result)):
@@ -117,6 +122,7 @@ private func handleOnAppear(
 ) -> Effect<NotificationReducer.Action> {
     guard !state.isLoading else { return .none }
     state.isLoading = true
+    state.isFetchFailed = false
     return .run { send in
         do {
             let result = try await notificationClient.fetchList(nil, 10)

@@ -30,6 +30,7 @@ public struct NotificationView: View {
                     contentView
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .ignoresSafeArea(.container, edges: .bottom)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -38,6 +39,10 @@ public struct NotificationView: View {
             store.send(.view(.onAppear))
         }
         .toolbar(.hidden, for: .navigationBar)
+        .txDataRetry(
+            isPresented: store.isFetchFailed,
+            onRetry: { store.send(.view(.dataRetryTapped)) }
+        )
         .txLoading(isPresented: store.isLoading && store.notifications.isEmpty)
     }
 }

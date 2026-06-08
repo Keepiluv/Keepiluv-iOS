@@ -42,6 +42,10 @@ struct NotificationSettingsView: View {
                 store.send(.view(.notificationSettingsOnAppear))
             }
         }
+        .txDataRetry(
+            isPresented: store.isNotificationSettingsFetchFailed,
+            onRetry: { store.send(.view(.notificationSettingsDataRetryTapped)) }
+        )
         .txLoading(isPresented: store.isNotificationSettingsLoading)
     }
 }

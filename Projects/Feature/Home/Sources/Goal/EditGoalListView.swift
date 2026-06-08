@@ -60,6 +60,10 @@ struct EditGoalListView: View {
         .txToast(item: $store.toast, onButtonTap: {
             store.send(.view(.toastButtonTapped))
         })
+        .txDataRetry(
+            isPresented: store.isFetchFailed,
+            onRetry: { store.send(.view(.dataRetryTapped)) }
+        )
         .txLoading(isPresented: store.isLoading)
     }
 }

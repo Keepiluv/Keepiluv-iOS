@@ -47,6 +47,9 @@ extension StatsReducer {
             case .view(.nextMonthTapped):
                 state.currentMonth.goToNextMonth()
                 return .send(.internal(.fetchStats))
+
+            case .view(.dataRetryTapped):
+                return .send(.internal(.fetchStats))
                 
             case let .view(.statsCardTapped(goalId)):
                 let date = state.isOngoing ? state.currentMonth : TXCalendarDate()
@@ -66,8 +69,10 @@ extension StatsReducer {
                    let cachedItems = state.ongoingItemsCache[month] {
                     state.ongoingItems = cachedItems
                     state.isLoading = false
+                    state.isFetchFailed = false
                 } else {
                     state.isLoading = true
+                    state.isFetchFailed = false
                 }
                 
                 return .run { send in
@@ -75,12 +80,13 @@ extension StatsReducer {
                         let stats = try await statsClient.fetchStats(month, isOngoing)
                         await send(.response(.fetchedStats(stats: stats, month: month)))
                     } catch {
-                        await send(.response(.fetchStatsFailed))
+                        await send(.response(.fetchStatsFailed(month: month, isOngoing: isOngoing)))
                     }
                 }
                 
             case let .response(.fetchedStats(stats, month)):
                 state.isLoading = false
+                state.isFetchFailed = false
                 let items = stats.stats.map {
                     let goalCount = $0.monthlyCount ?? $0.totalCount ?? 0
                     
@@ -122,8 +128,13 @@ extension StatsReducer {
                 
                 return .none
 
-            case .response(.fetchStatsFailed):
+            case let .response(.fetchStatsFailed(month, isOngoing)):
+                guard month == state.currentMonth.formattedYearDashMonth,
+                      isOngoing == state.isOngoing else {
+                    return .none
+                }
                 state.isLoading = false
+                state.isFetchFailed = true
                 return .send(.presentation(.showToast(.warning(message: "통계 조회에 실패했어요"))))
                 
             case .delegate:

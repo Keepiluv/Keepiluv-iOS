@@ -118,6 +118,9 @@ extension HomeReducer {
             case .view(.refreshPulled):
                 return .send(.internal(.fetchGoals))
 
+            case .view(.dataRetryTapped):
+                return .send(.internal(.fetchGoals))
+
             case .view(.perfToastShowTapped):
                 return .send(.presentation(.showToast(.warning(message: "perf-toast"))))
 
@@ -335,14 +338,17 @@ extension HomeReducer {
                 }
                 
                 state.isLoading = false
+                state.isFetchFailed = false
                 
                 if state.items != items {
                     state.items = items
                 }
                 return .none
                 
-            case .response(.fetchGoalsFailed):
+            case let .response(.fetchGoalsFailed(date)):
+                guard date == state.calendarDate else { return .none }
                 state.isLoading = false
+                state.isFetchFailed = true
                 return .send(.presentation(.showToast(.warning(message: "목표 조회에 실패했어요"))))
                 
             case let .internal(.setCalendarDate(date)):
@@ -384,6 +390,7 @@ extension HomeReducer {
                 } else {
                     state.isLoading = true
                 }
+                state.isFetchFailed = false
                 return .run { send in
                     // 읽지 않은 알림 여부 체크
                     if let hasUnread = try? await notificationClient.fetchUnread() {
@@ -394,7 +401,7 @@ extension HomeReducer {
                         let goalList = try await goalClient.fetchGoals(cacheKey)
                         await send(.response(.fetchGoalsCompleted(goalList, date: date)))
                     } catch {
-                        await send(.response(.fetchGoalsFailed))
+                        await send(.response(.fetchGoalsFailed(date: date)))
                     }
                 }
                 

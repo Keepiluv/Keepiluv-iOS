@@ -29,7 +29,7 @@ struct StatsDetailView: View {
                         .padding(.top, 12)
                     statsInfoContent
                         .padding(.top, 44)
-                    
+
                     Spacer()
                 }
                 .padding(.horizontal, 20)
@@ -64,6 +64,10 @@ struct StatsDetailView: View {
             }
         }
         .txToast(item: $store.toast)
+        .txDataRetry(
+            isPresented: store.isFetchFailed,
+            onRetry: { store.send(.view(.dataRetryTapped)) }
+        )
         .txLoading(isPresented: store.isLoading)
     }
 }

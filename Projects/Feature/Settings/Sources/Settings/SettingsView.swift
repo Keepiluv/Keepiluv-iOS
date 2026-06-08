@@ -62,6 +62,10 @@ public struct SettingsView: View {
             store.send(.view(.onAppear))
         }
         .toolbar(.hidden, for: .navigationBar)
+        .txDataRetry(
+            isPresented: store.isSettingsFetchFailed,
+            onRetry: { store.send(.view(.settingsDataRetryTapped)) }
+        )
     }
 
     private func dismissKeyboard() {

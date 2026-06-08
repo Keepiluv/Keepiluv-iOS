@@ -19,6 +19,7 @@ public struct NotificationReducer {
     public struct State: Equatable {
         public var notifications: IdentifiedArrayOf<NotificationItem>
         public var isLoading: Bool
+        public var isFetchFailed: Bool
         public var isLoadingMore: Bool
         public var hasNext: Bool
         public var lastId: Int64?
@@ -26,12 +27,14 @@ public struct NotificationReducer {
         public init(
             notifications: IdentifiedArrayOf<NotificationItem> = [],
             isLoading: Bool = false,
+            isFetchFailed: Bool = false,
             isLoadingMore: Bool = false,
             hasNext: Bool = false,
             lastId: Int64? = nil
         ) {
             self.notifications = notifications
             self.isLoading = isLoading
+            self.isFetchFailed = isFetchFailed
             self.isLoadingMore = isLoadingMore
             self.hasNext = hasNext
             self.lastId = lastId
@@ -48,6 +51,7 @@ public struct NotificationReducer {
             case backButtonTapped
             case notificationTapped(NotificationItem)
             case loadMore
+            case dataRetryTapped
         }
 
         // MARK: - Response

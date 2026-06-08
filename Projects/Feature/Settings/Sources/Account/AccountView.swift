@@ -32,6 +32,10 @@ struct AccountView: View {
                 store.send(.view(.modalConfirmTapped))
             }
         }
+        .txDataRetry(
+            isPresented: store.isSettingsFetchFailed,
+            onRetry: { store.send(.view(.settingsDataRetryTapped)) }
+        )
         .txLoading(isPresented: store.isLoading)
     }
 }
