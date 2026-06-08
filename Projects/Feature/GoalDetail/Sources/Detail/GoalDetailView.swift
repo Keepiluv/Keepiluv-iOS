@@ -73,6 +73,10 @@ public struct GoalDetailView: View {
                 if shouldShowCommentOverlay {
                     floatingCommentOverlay
                 }
+
+                if store.isShowReactionBar {
+                    reactionBar
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
@@ -258,12 +262,6 @@ private extension GoalDetailView {
                 .padding(.top, 14)
                 .padding(.trailing, 36)
         }
-        
-        if store.isShowReactionBar {
-            reactionBar
-                .padding(.top, Constants.emojiTopPadding)
-                .padding(.horizontal, 20)
-        }
     }
     
     var createdAtText: some View {
@@ -279,6 +277,13 @@ private extension GoalDetailView {
             onSelect: { emoji in
                 store.send(.view(.reactionEmojiTapped(emoji)))
             }
+        )
+        .padding(.horizontal, Constants.reactionBarHorizontalPadding)
+        .position(
+            x: rectFrame.midX,
+            y: rectFrame.maxY
+                + Constants.reactionBarTopPadding
+                + Constants.reactionBarHeight / 2
         )
     }
     
@@ -612,7 +617,9 @@ private extension GoalDetailView {
         static let minimumDragResistance: CGFloat = 0.35
         static var cardTopPadding: CGFloat { isSEDevice ? 34 : 89 }
         static var cardSize: CGFloat { isSEDevice ? 321 : 336 }
-        static var emojiTopPadding: CGFloat { isSEDevice ? 19 : 69 }
+        static let reactionBarHeight: CGFloat = 77
+        static let reactionBarHorizontalPadding: CGFloat = 20
+        static var reactionBarTopPadding: CGFloat { isSEDevice ? 19 : 69 }
     }
 }
 
