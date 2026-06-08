@@ -37,7 +37,6 @@ public struct GoalDetailView: View {
     @State private var rectFrame: CGRect = .zero
     @State private var keyboardFrame: CGRect = .zero
     @StateObject private var myEmojiFlyingReactionEmitter = FlyingReactionEmitter()
-    @State private var didPlayMyEmojiAppearAnimation = false
     @State private var cardOffset: CGFloat = .zero
     @State private var isCrossingDuringDrag: Bool = false
     
@@ -85,7 +84,6 @@ public struct GoalDetailView: View {
             store.send(.view(.onAppear))
         }
         .onDisappear {
-            didPlayMyEmojiAppearAnimation = false
             myEmojiFlyingReactionEmitter.clear()
             store.send(.view(.onDisappear))
         }
@@ -538,10 +536,8 @@ private extension GoalDetailView {
         containerWidth: CGFloat,
         containerHeight: CGFloat
     ) {
-        guard store.myHasEmoji,
-              !didPlayMyEmojiAppearAnimation,
+        guard store.shouldShowMyEmojiAnimation,
               let selectedEmoji = store.selectedReactionEmoji else { return }
-        didPlayMyEmojiAppearAnimation = true
         myEmojiFlyingReactionEmitter.emit(
             emoji: selectedEmoji,
             config: .goalDetailBottom(
@@ -549,6 +545,7 @@ private extension GoalDetailView {
                 height: containerHeight
             )
         )
+        store.send(.view(.myEmojiAppearAnimationPlayed))
     }
 }
 
