@@ -29,14 +29,14 @@ extension HomeCoordinator {
         // swiftlint:disable:next closure_body_length
         let reducer = Reduce<State, Action> { state, action in
             switch action {
-            case let .home(.delegate(.goToGoalDetail(id, owner, verificationDate))):
-                state.routes.append(.detail)
-                state.goalDetail = .init(
-                    currentUser: owner,
-                    id: id,
-                    verificationDate: verificationDate
+            case let .home(.delegate(.goToGoalDetail(id, owner, date))):
+                return .send(
+                    .navigateToGoalDetail(
+                        id: id,
+                        owner: owner,
+                        date: date
+                    )
                 )
-                return .none
                 
             case let .home(.delegate(.goToMakeGoal(category))):
                 state.routes.append(.makeGoal)
@@ -186,12 +186,13 @@ extension HomeCoordinator {
                 
             case let .navigateToGoalDetail(id, owner, date):
                 state.routes.append(.detail)
+                let shouldFetchGoalDetail = state.goalDetail != nil
                 state.goalDetail = .init(
                     currentUser: owner,
                     id: id,
                     verificationDate: date
                 )
-                return .none
+                return shouldFetchGoalDetail ? .send(.goalDetail(.view(.onAppear))) : .none
 
             case .delegate:
                 return .none
