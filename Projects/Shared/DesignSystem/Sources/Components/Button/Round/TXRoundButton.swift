@@ -24,12 +24,12 @@ struct TXRoundButton: View {
                     onTap()
                 }
             } label: {
-                ZStack {
+                ZStack(alignment: .top) {
                     Capsule()
                         .fill(style.backgroundColor(state: state))
                         .frame(maxWidth: size.frameWidth)
-                        .frame(height: size.backgroundHeight(state: state))
-                        .padding(.top, size.bottomYOffset(state: state))
+                        .frame(height: size.backgroundHeight)
+                        .padding(.top, size.backgroundYOffset)
                     
                     Text(style.text)
                         .typography(size.typography)
@@ -42,8 +42,8 @@ struct TXRoundButton: View {
                             lineWidth: size.borderWidth
                         )
                         .background(style.foregroundColor(state: state), in: .capsule)
+                        .padding(.top, size.foregroundYOffset(state: state))
                 }
-                .padding(.top, size.topYOffset(state: state))
             }
             .buttonStyle(.plain)
         } else {
@@ -120,29 +120,19 @@ private extension TXButtonShape.TXRoundSize {
         }
     }
     
-    func backgroundHeight(state: TXButtonShape.TXRoundState) -> CGFloat {
+    var backgroundHeight: CGFloat {
         switch self {
         case .l, .m: 70
             
-        case .s:
-            switch state {
-            case .standard: 31
-            case .disabled: 28
-            }
+        case .s: 28
         }
     }
     
-    func bottomYOffset(state: TXButtonShape.TXRoundState) -> CGFloat {
-        switch self {
-        case .s, .l, .m:
-            switch state {
-            case .standard: 4
-            case .disabled: 1
-            }
-        }
+    var backgroundYOffset: CGFloat {
+        4
     }
     
-    func topYOffset(state: TXButtonShape.TXRoundState) -> CGFloat {
+    func foregroundYOffset(state: TXButtonShape.TXRoundState) -> CGFloat {
         switch self {
         case .s, .l, .m:
             switch state {

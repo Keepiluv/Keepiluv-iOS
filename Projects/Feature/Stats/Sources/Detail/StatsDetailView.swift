@@ -262,7 +262,10 @@ private extension StatsDetailView {
 #Preview {
     StatsDetailView(
         store: Store(
-            initialState: StatsDetailReducer.State(goalId: 1),
+            initialState: StatsDetailReducer.State(
+                goalId: 1,
+                initialMonth: TXCalendarDate()
+            ),
             reducer: { StatsDetailReducer() }
         )
     )

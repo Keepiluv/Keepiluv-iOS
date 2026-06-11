@@ -33,9 +33,9 @@ extension StatsCoordinator {
         let reducer = Reduce<State, Action> { state, action in
             switch action {
                 // MARK: - Child Action
-            case let .stats(.delegate(.goToStatsDetail(goalId))):
+            case let .stats(.delegate(.goToStatsDetail(goalId, calendarDate))):
                 state.routes.append(.statsDetail)
-                state.statsDetail = .init(goalId: goalId)
+                state.statsDetail = .init(goalId: goalId, initialMonth: calendarDate)
                 return .none
 
             case let .statsDetail(.delegate(.goToGoalDetail(goalId, isCompletedPartner, date))):

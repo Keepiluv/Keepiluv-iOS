@@ -18,7 +18,10 @@ import SharedDesignSystem
 /// ## 사용 예시
 /// ```swift
 /// let store = Store(
-///     initialState: StatsDetailReducer.State()
+///     initialState: StatsDetailReducer.State(
+///         goalId: 1,
+///         initialMonth: TXCalendarDate()
+///     )
 /// ) {
 ///     StatsDetailReducer(reducer: Reduce { _, _ in .none })
 /// }
@@ -78,15 +81,17 @@ public struct StatsDetailReducer {
         ///
         /// ## 사용 예시
         /// ```swift
-        /// let state = StatsDetailReducer.State(goalId: 1)
+        /// let state = StatsDetailReducer.State(
+        ///     goalId: 1,
+        ///     initialMonth: TXCalendarDate()
+        /// )
         /// ```
-        public init(goalId: Int64) {
+        public init(goalId: Int64, initialMonth: TXCalendarDate) {
             self.goalId = goalId
-            
-            let currentMonth = TXCalendarDate()
-            self.currentMonth = currentMonth
+
+            self.currentMonth = initialMonth
             self.monthlyData = TXCalendarDataGenerator.generateMonthData(
-                for: currentMonth,
+                for: initialMonth,
                 hideAdjacentDates: true
             )
         }

@@ -49,7 +49,8 @@ extension StatsReducer {
                 return .send(.internal(.fetchStats))
                 
             case let .view(.statsCardTapped(goalId)):
-                return .send(.delegate(.goToStatsDetail(goalId: goalId)))
+                let date = state.isOngoing ? state.currentMonth : TXCalendarDate()
+                return .send(.delegate(.goToStatsDetail(goalId: goalId, calendarDate: date)))
                 
                 // MARK: - Update State
             case let .presentation(.showToast(toast)):

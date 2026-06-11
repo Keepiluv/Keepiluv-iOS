@@ -109,7 +109,7 @@ public struct StatsReducer {
 
         /// StatsReducer가 상위 Coordinator로 전달하는 이벤트입니다.
         public enum Delegate {
-            case goToStatsDetail(goalId: Int64)
+            case goToStatsDetail(goalId: Int64, calendarDate: TXCalendarDate)
         }
 
         case view(View)

@@ -58,9 +58,9 @@ extension HomeCoordinator {
                 state.notification = .init()
                 return .none
                 
-            case let .home(.delegate(.goToStatsDetail(id))):
+            case let .home(.delegate(.goToStatsDetail(id, date))):
                 state.routes.append(.statsDetail)
-                state.statsDetail = .init(goalId: id)
+                state.statsDetail = .init(goalId: id, initialMonth: date)
                 return .none
                 
             case .statsDetail(.delegate(.navigateBack)):

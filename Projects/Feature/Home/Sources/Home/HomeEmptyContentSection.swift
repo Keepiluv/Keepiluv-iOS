@@ -10,42 +10,34 @@ import FeatureHomeInterface
 import SharedDesignSystem
 
 /// `hadFirstGoal`을 읽는 빈 상태 영역입니다.
-/// `emptyScrollHeight`는 로컬 `@State`로 관리해 다른 콘텐츠 section 재렌더링에 의해
-/// 초기화되지 않게 합니다.
+/// `goalEmptyView`의 center anchor를 기기 화면 기준 y축 중앙에 배치합니다.
 struct HomeEmptyContentSection: View {
     let store: StoreOf<HomeReducer>
 
-    @State private var emptyScrollHeight: CGFloat = 0
-
     var body: some View {
         VStack(spacing: 0) {
-            HomeHeaderRow(store: store)
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
+            GeometryReader { geo in
+                let frame = geo.frame(in: .global)
+                let deviceHeight = UIScreen.main.bounds.height
+                let deviceCenterYInSection = max(0, deviceHeight / 2 - frame.minY)
 
-            ScrollView {
-                goalEmptyView
-                    // 실제 가시 영역 기준으로 중앙 정렬되도록 탭바 높이만큼 차감
-                    .frame(maxWidth: .infinity, minHeight: max(0, emptyScrollHeight - 58))
-                    .padding(.bottom, 58)
-            }
-            .scrollIndicators(.hidden)
-            .refreshable {
-                store.send(.view(.refreshPulled))
-            }
-            .overlay(alignment: .bottomTrailing) {
-                emptyArrow
+                ScrollView {
+                    goalEmptyView
+                        .frame(width: geo.size.width)
+                        .position(x: geo.size.width / 2, y: deviceCenterYInSection)
+                }
+                .scrollIndicators(.hidden)
+                .refreshable {
+                    store.send(.view(.refreshPulled))
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    if store.hadFirstGoal == false {
+                        emptyArrow
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxHeight: .infinity)
-            .background {
-                GeometryReader { geo in
-                    Color.clear
-                        .onAppear { emptyScrollHeight = geo.size.height }
-                        .onChange(of: geo.size.height) { _, newValue in
-                            emptyScrollHeight = newValue
-                        }
-                }
-            }
         }
     }
 
@@ -79,12 +71,11 @@ struct HomeEmptyContentSection: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     var emptyArrow: some View {
         Image.Illustration.arrow
-            .padding(.bottom, 71 + 58)
+            .padding(.bottom, 71 + TXTabBarLayout.height)
             .padding(.trailing, 86)
             .ignoresSafeArea()
     }
