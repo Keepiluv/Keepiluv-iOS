@@ -156,8 +156,7 @@ private extension StatsDetailView {
                     summaryTitle(for: summary.title)
                     summartyContent(content: summary.content, isCompletedCount: summary.isCompletedCount)
                         .layoutPriority(1)
-                    
-                    Spacer()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
@@ -188,7 +187,6 @@ private extension StatsDetailView {
             Text(content[0])
                 .typography(.b4_12b)
                 .foregroundStyle(Color.Gray.gray500)
-                .lineLimit(1)
             
             if isCompletedCount {
                 Text("|")
@@ -199,11 +197,9 @@ private extension StatsDetailView {
                 Text(content[1])
                     .typography(.b4_12b)
                     .foregroundStyle(Color.Gray.gray500)
-                    .lineLimit(1)
             }
         }
-        .lineLimit(1)
-        .fixedSize(horizontal: true, vertical: false)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     @ViewBuilder
