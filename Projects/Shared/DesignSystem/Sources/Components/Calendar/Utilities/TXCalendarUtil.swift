@@ -65,4 +65,48 @@ public enum TXCalendarUtil {
         }
         return TXCalendarDate(year: year, month: month, day: day)
     }
+
+    /// 주간 캘린더 스와이프 시 경계 요일을 보정한 날짜를 반환합니다.
+    ///
+    /// ## 사용 예시
+    /// ```swift
+    /// let sunday = TXCalendarDate(year: 2026, month: 2, day: 8)
+    /// let previous = TXCalendarUtil.dateByApplyingWeeklyBoundarySwipe(from: sunday, by: -1)
+    /// ```
+    ///
+    /// 일요일에서 이전으로 이동하면 전날인 토요일로, 토요일에서 다음으로 이동하면 다음 날인 일요일로 이동합니다.
+    /// 그 외 날짜는 기존 주 단위 이동과 동일하게 처리합니다.
+    public static func dateByApplyingWeeklyBoundarySwipe(
+        from date: TXCalendarDate,
+        by offset: Int
+    ) -> TXCalendarDate? {
+        guard let baseDate = date.date else { return nil }
+
+        let calendar = Calendar(identifier: .gregorian)
+        let weekday = calendar.component(.weekday, from: baseDate)
+        let dayOffset: Int
+
+        switch (weekday, offset) {
+        case (1, let offset) where offset < 0:
+            dayOffset = -1
+
+        case (7, let offset) where offset > 0:
+            dayOffset = 1
+
+        default:
+            return dateByAddingWeek(from: date, by: offset)
+        }
+
+        guard let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: baseDate) else {
+            return nil
+        }
+
+        let components = calendar.dateComponents([.year, .month, .day], from: targetDate)
+        guard let year = components.year,
+              let month = components.month,
+              let day = components.day else {
+            return nil
+        }
+        return TXCalendarDate(year: year, month: month, day: day)
+    }
 }
