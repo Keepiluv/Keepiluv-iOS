@@ -35,7 +35,7 @@ extension StatsCoordinator {
                 // MARK: - Child Action
             case let .stats(.delegate(.goToStatsDetail(goalId, calendarDate))):
                 state.routes.append(.statsDetail)
-                state.statsDetail = .init(goalId: goalId, calendarDate: calendarDate)
+                state.statsDetail = .init(goalId: goalId, initialMonth: calendarDate)
                 return .none
 
             case let .statsDetail(.delegate(.goToGoalDetail(goalId, isCompletedPartner, date))):

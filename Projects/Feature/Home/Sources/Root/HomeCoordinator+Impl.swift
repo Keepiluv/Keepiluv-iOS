@@ -60,7 +60,7 @@ extension HomeCoordinator {
                 
             case let .home(.delegate(.goToStatsDetail(id, date))):
                 state.routes.append(.statsDetail)
-                state.statsDetail = .init(goalId: id, calendarDate: date)
+                state.statsDetail = .init(goalId: id, initialMonth: date)
                 return .none
                 
             case .statsDetail(.delegate(.navigateBack)):

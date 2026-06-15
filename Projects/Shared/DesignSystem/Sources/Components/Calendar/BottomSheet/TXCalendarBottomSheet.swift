@@ -183,15 +183,34 @@ public struct DefaultCalendarButton: View {
 
 // MARK: - Private Views
 private extension TXCalendarBottomSheet {
+    static var minimumMonthlyRowCount: Int { 6 }
+
     static var calendarConfig: TXCalendar.Configuration {
         .init(
             monthlyHeaderSpacing: Spacing.spacing7,
-            monthlyRowSpacing: Spacing.spacing6
+            monthlyRowSpacing: Spacing.spacing6,
+            monthlyPaging: .init(minimumRowCount: minimumMonthlyRowCount)
         )
     }
 
     var calendarConfig: TXCalendar.Configuration {
-        Self.calendarConfig
+        let isDateEnabled = isDateEnabled
+        return .init(
+            monthlyHeaderSpacing: Spacing.spacing7,
+            monthlyRowSpacing: Spacing.spacing6,
+            monthlyPaging: .init(
+                isEnabled: true,
+                pageSpacing: Spacing.spacing7,
+                minimumRowCount: Self.minimumMonthlyRowCount,
+                pageWeeks: { date in
+                    let weeks = Self.makeCalendarData(for: date).weeks
+                    return Self.applyDisabledStatus(
+                        to: weeks,
+                        isDateEnabled: isDateEnabled
+                    )
+                }
+            )
+        )
     }
 
     static func makeCalendarData(for date: TXCalendarDate) -> CalendarPresentationData {
@@ -211,9 +230,9 @@ private extension TXCalendarBottomSheet {
 
         guard !weeks.isEmpty else { return headerSectionHeight + verticalPadding }
 
-        let rowCount = CGFloat(weeks.count)
-        let rowSpacing = config.monthlyRowSpacing * CGFloat(weeks.count - 1)
-        let monthGridHeight = (config.dateStyle.size * rowCount) + rowSpacing
+        let rowCount = max(weeks.count, Self.minimumMonthlyRowCount)
+        let rowSpacing = config.monthlyRowSpacing * CGFloat(max(rowCount - 1, 0))
+        let monthGridHeight = (config.dateStyle.size * CGFloat(rowCount)) + rowSpacing
 
         return headerSectionHeight + monthGridHeight + verticalPadding
     }
@@ -244,7 +263,7 @@ private extension TXCalendarBottomSheet {
     func datePickerView(height: CGFloat) -> some View {
         HStack(spacing: 0) {
             Picker("Year", selection: selectedYear) {
-                ForEach(1940...2099, id: \.self) { year in
+                ForEach(1_940...2_099, id: \.self) { year in
                     Text(verbatim: "\(year)년").tag(year)
                 }
             }
@@ -260,7 +279,6 @@ private extension TXCalendarBottomSheet {
         .frame(height: height)
         .padding(.horizontal, Spacing.spacing7)
     }
-
 
     var selectedYear: Binding<Int> {
         Binding(
@@ -297,6 +315,16 @@ private extension TXCalendarBottomSheet {
     }
 
     func applyDisabledStatus(to weeks: [[TXCalendarDateItem]]) -> [[TXCalendarDateItem]] {
+        Self.applyDisabledStatus(
+            to: weeks,
+            isDateEnabled: isDateEnabled
+        )
+    }
+
+    static func applyDisabledStatus(
+        to weeks: [[TXCalendarDateItem]],
+        isDateEnabled: ((TXCalendarDateItem) -> Bool)?
+    ) -> [[TXCalendarDateItem]] {
         guard let isDateEnabled else { return weeks }
         return weeks.map { week in
             week.map { item in

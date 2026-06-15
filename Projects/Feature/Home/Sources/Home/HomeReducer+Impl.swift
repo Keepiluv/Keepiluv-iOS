@@ -306,7 +306,7 @@ extension HomeReducer {
             case let .view(.weekCalendarSwipe(swipe)):
                 switch swipe {
                 case .next:
-                    guard let nextWeekDate = TXCalendarUtil.dateByAddingWeek(
+                    guard let nextWeekDate = TXCalendarUtil.dateByApplyingWeeklyBoundarySwipe(
                         from: state.calendarDate,
                         by: 1
                     ) else {
@@ -315,7 +315,7 @@ extension HomeReducer {
                     return .send(.internal(.setCalendarDate(nextWeekDate)))
                     
                 case .previous:
-                    guard let previousWeekDate = TXCalendarUtil.dateByAddingWeek(
+                    guard let previousWeekDate = TXCalendarUtil.dateByApplyingWeeklyBoundarySwipe(
                         from: state.calendarDate,
                         by: -1
                     ) else {
