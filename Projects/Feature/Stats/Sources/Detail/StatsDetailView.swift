@@ -20,19 +20,25 @@ struct StatsDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             navigationBar
-            
-            ScrollView {
-                VStack(spacing: 0) {
-                    monthNavigation
-                        .padding(.top, 24)
-                    calendar
-                        .padding(.top, 12)
-                    statsInfoContent
-                        .padding(.top, 44)
-                    
-                    Spacer()
+
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
                 }
-                .padding(.horizontal, 20)
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        monthNavigation
+                            .padding(.top, 24)
+                        calendar
+                            .padding(.top, 12)
+                        statsInfoContent
+                            .padding(.top, 44)
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                }
             }
         }
         .background(Color.Gray.gray50)

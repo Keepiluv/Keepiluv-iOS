@@ -36,6 +36,8 @@ public struct StatsDetailReducer {
         public let goalId: Int64
         
         public var isLoading: Bool = false
+        public var isCalendarFetchFailed: Bool = false
+        public var isSummaryFetchFailed: Bool = false
         public var isDropdownPresented: Bool = false
         public var selectedDropDownItem: GoalDropList?
         public var currentMonth: TXCalendarDate
@@ -60,6 +62,7 @@ public struct StatsDetailReducer {
         }
         public var naviBarTitle: String { statsDetail?.goalName ?? "" }
         public var isCompleted: Bool { statsDetail?.isCompleted == true }
+        public var isFetchFailed: Bool { isCalendarFetchFailed || isSummaryFetchFailed }
         
         /// 통계 요약 영역의 단일 행 정보를 표현합니다.
         public struct StatsSummaryInfo: Equatable {
@@ -113,6 +116,7 @@ public struct StatsDetailReducer {
             case dropDownSelected(GoalDropList)
             case backgroundTapped
             case modalConfirmTapped
+            case dataRetryTapped
         }
 
         // MARK: - Internal
@@ -129,7 +133,7 @@ public struct StatsDetailReducer {
         // MARK: - Response
         public enum Response: Equatable {
             case fetchStatsDetailCalendarSuccess(StatsDetail, month: String)
-            case fetchStatsDetailCalendarFailed
+            case fetchStatsDetailCalendarFailed(month: String)
             case fetchStatsDetailSummarySuccess(StatsDetail.Summary)
             case fetchStatsDetailSummaryFailed
             case completeGoalSuccees

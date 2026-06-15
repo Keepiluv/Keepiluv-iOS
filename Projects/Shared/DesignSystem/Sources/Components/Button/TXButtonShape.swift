@@ -48,6 +48,7 @@ public enum TXButtonShape {
     /// 사각형 버튼의 표시 방식을 정의하는 타입입니다.
     public enum TXRectStyle {
         case basic(text: String, typography: TypographyToken? = nil)
+        case round(text: String)
     }
     
     /// 사각형 버튼의 크기 단계를 정의하는 타입입니다.

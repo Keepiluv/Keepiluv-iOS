@@ -19,14 +19,20 @@ struct NotificationSettingsView: View {
         VStack(spacing: 0) {
             navigationBar
 
-            ZStack {
-                if !store.isSystemNotificationEnabled {
-                    disabledView
-                } else {
-                    ScrollView {
-                        notificationList
-                            .padding(.top, Spacing.spacing8)
-                            .padding(.horizontal, Spacing.spacing8)
+            if store.isNotificationSettingsFetchFailed {
+                DataRetryView {
+                    store.send(.view(.notificationSettingsDataRetryTapped))
+                }
+            } else {
+                ZStack {
+                    if !store.isSystemNotificationEnabled {
+                        disabledView
+                    } else {
+                        ScrollView {
+                            notificationList
+                                .padding(.top, Spacing.spacing8)
+                                .padding(.horizontal, Spacing.spacing8)
+                        }
                     }
                 }
             }

@@ -34,12 +34,14 @@ public struct SettingsReducer {
         public var originalNickname: String
         public var isEditing: Bool
         public var isLoading: Bool
+        public var isProfileFetchFailed: Bool
 
         // Language
         public var selectedLanguage: TXLanguage
 
         // Account
         public var coupleCode: String
+        public var isCoupleCodeFetchFailed: Bool
         public var modal: TXModalStyle?
         public var modalPurpose: ModalPurpose?
 
@@ -55,6 +57,7 @@ public struct SettingsReducer {
         public var isMarketingPushEnabled: Bool
         public var isNightMarketingPushEnabled: Bool
         public var isNotificationSettingsLoading: Bool
+        public var isNotificationSettingsFetchFailed: Bool
         public var isSystemNotificationEnabled: Bool
 
         public static let minLength = 2
@@ -100,8 +103,10 @@ public struct SettingsReducer {
             self.originalNickname = nickname
             self.isEditing = isEditing
             self.isLoading = false
+            self.isProfileFetchFailed = false
             self.selectedLanguage = selectedLanguage
             self.coupleCode = coupleCode
+            self.isCoupleCodeFetchFailed = false
             self.modalPurpose = nil
             self.appVersion = appVersion
             self.storeVersion = storeVersion
@@ -109,6 +114,7 @@ public struct SettingsReducer {
             self.isMarketingPushEnabled = isMarketingPushEnabled
             self.isNightMarketingPushEnabled = isNightMarketingPushEnabled
             self.isNotificationSettingsLoading = false
+            self.isNotificationSettingsFetchFailed = false
             self.isSystemNotificationEnabled = true
         }
     }
@@ -137,6 +143,8 @@ public struct SettingsReducer {
             case withdrawTapped
             case modalConfirmTapped
             case notificationSettingsOnAppear
+            case settingsDataRetryTapped
+            case notificationSettingsDataRetryTapped
             case pokePushToggled(Bool)
             case marketingPushToggled(Bool)
             case nightPushToggled(Bool)
@@ -226,5 +234,9 @@ extension SettingsReducer.State {
 
     public var isNicknameValid: Bool {
         isNicknameLengthValid && !containsProfanity
+    }
+
+    public var isSettingsFetchFailed: Bool {
+        isProfileFetchFailed || isCoupleCodeFetchFailed
     }
 }

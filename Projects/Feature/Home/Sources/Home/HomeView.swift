@@ -9,6 +9,7 @@ import SwiftUI
 
 import ComposableArchitecture
 import FeatureHomeInterface
+import SharedDesignSystem
 import SharedPerfTestingSupport
 
 /// 홈 화면을 렌더링하는 View입니다.
@@ -61,10 +62,13 @@ public struct HomeView: View {
             }
             HomeNavigationBarSection(store: store)
             HomeCalendarSection(store: store)
-            // The branch reads `hasCards` / `isEmptyVisible` so it stays in
-            // the parent body. Both are cheap derived booleans. Items /
-            // headerRow read-set lives entirely inside the child sub-view.
-            if store.hasCards {
+            // The branch reads presentation booleans so it stays in the parent
+            // body. Each section owns the rest of its read-set.
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
+                }
+            } else if store.hasCards {
                 HomeContentSection(store: store)
             } else if store.isEmptyVisible {
                 HomeEmptyContentSection(store: store)

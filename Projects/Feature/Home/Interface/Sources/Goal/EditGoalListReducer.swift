@@ -52,6 +52,7 @@ public struct EditGoalListReducer {
 
         public struct UIState: Equatable {
             public var isLoading: Bool = true
+            public var isFetchFailed: Bool = false
             public init() { }
         }
 
@@ -73,6 +74,7 @@ public struct EditGoalListReducer {
         public var modal: TXModalStyle? { get { presentation.modal } set { presentation.modal = newValue } }
         public var toast: TXToastType? { get { presentation.toast } set { presentation.toast = newValue } }
         public var isLoading: Bool { get { ui.isLoading } set { ui.isLoading = newValue } }
+        public var isFetchFailed: Bool { get { ui.isFetchFailed } set { ui.isFetchFailed = newValue } }
         public var pendingGoalId: Int64? { get { data.pendingGoalId } set { data.pendingGoalId = newValue } }
         public var pendingAction: PendingAction? { get { data.pendingAction } set { data.pendingAction = newValue } }
         public var hasCards: Bool { !(cards?.isEmpty ?? true) }
@@ -109,6 +111,7 @@ public struct EditGoalListReducer {
             case backgroundTapped
             case modalConfirmTapped
             case toastButtonTapped
+            case dataRetryTapped
         }
 
         // MARK: - Internal

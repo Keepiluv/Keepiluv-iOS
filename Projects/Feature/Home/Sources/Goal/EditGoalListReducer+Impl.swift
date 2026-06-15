@@ -157,6 +157,9 @@ extension EditGoalListReducer {
                 
             case .view(.toastButtonTapped):
                 return .send(.delegate(.goToCompletedStats))
+
+            case .view(.dataRetryTapped):
+                return .send(.internal(.fetchGoals))
                 
                 // MARK: - Update State
             case let .internal(.setCalendarDate(date)):
@@ -170,6 +173,7 @@ extension EditGoalListReducer {
                 
             case .internal(.fetchGoals):
                 state.isLoading = true
+                state.isFetchFailed = false
                 let date = state.calendarDate
                 return .run { send in
                     do {
@@ -201,6 +205,7 @@ extension EditGoalListReducer {
                     return .none
                 }
                 state.isLoading = false
+                state.isFetchFailed = false
                 state.editableGoals = goals
                 let items = goals.map {
                     GoalEditCardItem(
@@ -238,6 +243,11 @@ extension EditGoalListReducer {
                 state.isLoading = false
                 state.pendingGoalId = nil
                 state.pendingAction = nil
+                
+                if state.cards == nil {
+                    state.isFetchFailed = true
+                    return .none
+                }
                 return .send(.presentation(.showToast(.warning(message: message))))
 
             case let .presentation(.showToast(toast)):

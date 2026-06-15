@@ -118,24 +118,30 @@ private extension GoalDetailView {
             navigationBar
                 .zIndex(1)
 
-            if store.item != nil {
-                cardView
-                    .padding(.horizontal, 27)
-                    .padding(.top, Constants.cardTopPadding)
-
-                if store.isCompleted {
-                    completedBottomContent
-                } else if store.currentCompletedGoal?.status != .completed {
-                    bottomButton
-                        .padding(.top, 105)
-                        .overlay(alignment: .bottomLeading) {
-                            pokeImage
-                                .offset(x: 79, y: -45)
-                        }
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
                 }
-            }
+            } else {
+                if store.item != nil {
+                    cardView
+                        .padding(.horizontal, 27)
+                        .padding(.top, Constants.cardTopPadding)
 
-            Spacer()
+                    if store.isCompleted {
+                        completedBottomContent
+                    } else if store.currentCompletedGoal?.status != .completed {
+                        bottomButton
+                            .padding(.top, 105)
+                            .overlay(alignment: .bottomLeading) {
+                                pokeImage
+                                    .offset(x: 79, y: -45)
+                            }
+                    }
+                }
+
+                Spacer()
+            }
         }
     }
 

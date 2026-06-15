@@ -23,12 +23,19 @@ public struct NotificationView: View {
         VStack(spacing: 0) {
             navigationBar
 
-            ZStack {
-                if filteredNotifications.isEmpty {
-                    emptyView
-                } else {
-                    contentView
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
                 }
+            } else {
+                ZStack {
+                    if filteredNotifications.isEmpty {
+                        emptyView
+                    } else {
+                        contentView
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .ignoresSafeArea(.container, edges: .bottom)

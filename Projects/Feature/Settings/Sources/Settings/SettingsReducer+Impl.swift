@@ -60,6 +60,8 @@ private func reduceCore(
         @Dependency(\.onboardingClient) var onboardingClient
 
         state.appVersion = AppVersionProvider.currentVersion
+        state.isProfileFetchFailed = false
+        state.isCoupleCodeFetchFailed = false
         return .merge(
             .run { send in
                 let storeVersion = await AppVersionProvider.fetchStoreVersion()
@@ -241,9 +243,13 @@ private func reduceCore(
     case .view(.notificationSettingTapped):
         return .send(.delegate(.navigateToNotificationSettings))
 
+    case .view(.settingsDataRetryTapped):
+        return .send(.view(.onAppear))
+
     case .response(.fetchMyProfileResponse(.success(let name))):
         state.nickname = name
         state.originalNickname = name
+        state.isProfileFetchFailed = false
         return .none
 
     case .response(.fetchMyProfileResponse(.failure(let error))):
@@ -251,10 +257,12 @@ private func reduceCore(
            networkError == .authorizationError {
             return .send(.delegate(.sessionExpired))
         }
+        state.isProfileFetchFailed = true
         return .none
 
     case .response(.fetchCoupleCodeResponse(.success(let coupleCode))):
         state.coupleCode = coupleCode
+        state.isCoupleCodeFetchFailed = false
         return .none
 
     case .response(.fetchCoupleCodeResponse(.failure(let error))):
@@ -262,6 +270,7 @@ private func reduceCore(
            networkError == .authorizationError {
             return .send(.delegate(.sessionExpired))
         }
+        state.isCoupleCodeFetchFailed = true
         return .none
 
     case .response(.logoutResponse(.success)):
@@ -320,6 +329,7 @@ private func reduceCore(
         }
 
         state.isNotificationSettingsLoading = true
+        state.isNotificationSettingsFetchFailed = false
         return .merge(
             checkPermissionEffect,
             .run { send in
@@ -334,6 +344,7 @@ private func reduceCore(
 
     case .response(.fetchNotificationSettingsResponse(.success(let settings))):
         state.isNotificationSettingsLoading = false
+        state.isNotificationSettingsFetchFailed = false
         state.isPokePushEnabled = settings.isPushEnabled
         state.isMarketingPushEnabled = settings.isMarketingEnabled
         state.isNightMarketingPushEnabled = settings.isNightEnabled
@@ -345,7 +356,11 @@ private func reduceCore(
            networkError == .authorizationError {
             return .send(.delegate(.sessionExpired))
         }
+        state.isNotificationSettingsFetchFailed = true
         return .none
+
+    case .view(.notificationSettingsDataRetryTapped):
+        return .send(.view(.notificationSettingsOnAppear))
 
     case .view(.pokePushToggled(let enabled)):
         @Dependency(\.notificationClient) var notificationClient
