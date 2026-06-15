@@ -185,14 +185,20 @@ extension HomeCoordinator {
                 return .none
                 
             case let .navigateToGoalDetail(id, owner, date):
-                state.routes.append(.detail)
-                let shouldFetchGoalDetail = state.goalDetail != nil
+                let isAlreadyOnDetail = state.routes.last == .detail
+
+                if !isAlreadyOnDetail {
+                    state.routes.append(.detail)
+                }
+
                 state.goalDetail = .init(
                     currentUser: owner,
                     id: id,
                     verificationDate: date
                 )
-                return shouldFetchGoalDetail ? .send(.goalDetail(.view(.onAppear))) : .none
+                return isAlreadyOnDetail
+                    ? .send(.goalDetail(.view(.onAppear)))
+                    : .none
 
             case .delegate:
                 return .none
