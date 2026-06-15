@@ -27,15 +27,21 @@ public struct SettingsView: View {
         VStack(spacing: 0) {
             navigationBar
 
-            ScrollView {
-                VStack(spacing: Spacing.spacing9) {
-                    profileSection
-                        .padding(.horizontal, Spacing.spacing8)
-
-                    settingsListSection
-                        .padding(.horizontal, Spacing.spacing8)
+            if store.isSettingsFetchFailed {
+                DataRetryView {
+                    store.send(.view(.settingsDataRetryTapped))
                 }
-                .padding(.top, Spacing.spacing8)
+            } else {
+                ScrollView {
+                    VStack(spacing: Spacing.spacing9) {
+                        profileSection
+                            .padding(.horizontal, Spacing.spacing8)
+
+                        settingsListSection
+                            .padding(.horizontal, Spacing.spacing8)
+                    }
+                    .padding(.top, Spacing.spacing8)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -62,10 +68,6 @@ public struct SettingsView: View {
             store.send(.view(.onAppear))
         }
         .toolbar(.hidden, for: .navigationBar)
-        .txDataRetry(
-            isPresented: store.isSettingsFetchFailed,
-            onRetry: { store.send(.view(.settingsDataRetryTapped)) }
-        )
     }
 
     private func dismissKeyboard() {

@@ -18,10 +18,16 @@ struct AccountView: View {
         VStack(spacing: 0) {
             navigationBar
 
-            ScrollView {
-                accountList
-                    .padding(.top, Spacing.spacing8)
-                    .padding(.horizontal, Spacing.spacing8)
+            if store.isSettingsFetchFailed {
+                DataRetryView {
+                    store.send(.view(.settingsDataRetryTapped))
+                }
+            } else {
+                ScrollView {
+                    accountList
+                        .padding(.top, Spacing.spacing8)
+                        .padding(.horizontal, Spacing.spacing8)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -32,10 +38,6 @@ struct AccountView: View {
                 store.send(.view(.modalConfirmTapped))
             }
         }
-        .txDataRetry(
-            isPresented: store.isSettingsFetchFailed,
-            onRetry: { store.send(.view(.settingsDataRetryTapped)) }
-        )
         .txLoading(isPresented: store.isLoading)
     }
 }

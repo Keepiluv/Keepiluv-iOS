@@ -62,10 +62,13 @@ public struct HomeView: View {
             }
             HomeNavigationBarSection(store: store)
             HomeCalendarSection(store: store)
-            // The branch reads `hasCards` / `isEmptyVisible` so it stays in
-            // the parent body. Both are cheap derived booleans. Items /
-            // headerRow read-set lives entirely inside the child sub-view.
-            if store.hasCards {
+            // The branch reads presentation booleans so it stays in the parent
+            // body. Each section owns the rest of its read-set.
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
+                }
+            } else if store.hasCards {
                 HomeContentSection(store: store)
             } else if store.isEmptyVisible {
                 HomeEmptyContentSection(store: store)
@@ -75,10 +78,6 @@ public struct HomeView: View {
         .modifier(PerfToastPresentationHarness(toast: $store.presentation.toast))
         .modifier(PerfHomeCounterMarkersHarness())
         .modifier(HomePresentationLayer(store: store))
-        .txDataRetry(
-            isPresented: store.isFetchFailed,
-            onRetry: { store.send(.view(.dataRetryTapped)) }
-        )
         .onAppear {
             store.send(.view(.onAppear))
         }

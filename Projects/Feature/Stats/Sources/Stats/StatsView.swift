@@ -19,25 +19,24 @@ struct StatsView: View {
         VStack(spacing: 0) {
             navigationBar
             topTabBar
-            
-            if let items = store.items, !items.isEmpty {
-                cardList
+
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
+                }
+            } else if let items = store.items {
+                if items.isEmpty {
+                    statsEmptyView
+                } else {
+                    cardList
+                }
+            } else {
+                Spacer()
             }
-            
-            Spacer()
         }
         .background(Color.Gray.gray50)
-        .overlay {
-            if let items = store.items, items.isEmpty {
-               statsEmptyView
-            }
-        }
         .onAppear { store.send(.view(.onAppear)) }
         .txToast(item: $store.toast)
-        .txDataRetry(
-            isPresented: store.isFetchFailed,
-            onRetry: { store.send(.view(.dataRetryTapped)) }
-        )
         .toolbar(.hidden, for: .tabBar)
     }
 }

@@ -33,29 +33,50 @@ public struct DataRetryView: View {
     }
     
     public var body: some View {
-        VStack(spacing: 0) {
-            Image.Illustration.trash
-            
-            Text(Constants.title)
-                .typography(.t2_16b)
-                .padding(.top, Spacing.spacing5)
-            
-            Text(Constants.subTitle)
-                .typography(.c1_12r)
-                .foregroundStyle(Color.Gray.gray300)
-                .padding(.top, Spacing.spacing3)
-            
-            TXButton(
-                shape: .rect(
-                    style: .round(text: Constants.buttonTitle),
-                    size: .s,
-                    state: .standard
-                ),
-                onTap: onTap
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                Image.Illustration.trash
+
+                Text(Constants.title)
+                    .typography(.t2_16b)
+                    .padding(.top, Spacing.spacing5)
+
+                Text(Constants.subTitle)
+                    .typography(.c1_12r)
+                    .foregroundStyle(Color.Gray.gray300)
+                    .padding(.top, Spacing.spacing3)
+
+                TXButton(
+                    shape: .rect(
+                        style: .round(text: Constants.buttonTitle),
+                        size: .s,
+                        state: .standard
+                    ),
+                    onTap: onTap
+                )
+                .padding(.top, Spacing.spacing8)
+            }
+            .frame(width: Constants.frameWidth)
+            .position(
+                x: proxy.size.width / 2,
+                y: proxy.deviceCenterYInView
             )
-            .padding(.top, Spacing.spacing8)
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .background(Color.Common.white)
         }
-        .frame(width: Constants.frameWidth)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private extension GeometryProxy {
+    var deviceCenterYInView: CGFloat {
+        let frame = frame(in: .global)
+        let deviceCenterY = UIScreen.main.bounds.height / 2
+
+        return min(
+            max(0, deviceCenterY - frame.minY),
+            size.height
+        )
     }
 }
 

@@ -21,20 +21,24 @@ struct EditGoalListView: View {
             navigationBar
             weekCalendar
                 .padding(.top, 4)
-            if let cards = store.cards, !cards.isEmpty {
-                cardScrollView
-                    .padding(.bottom, 1)
+
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
+                }
+            } else if let cards = store.cards {
+                if cards.isEmpty {
+                    emptyContent
+                } else {
+                    cardScrollView
+                        .padding(.bottom, 1)
+                }
+            } else {
+                Spacer()
             }
-            
-            Spacer()
         }
         .ignoresSafeArea(.container, edges: .bottom)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay {
-            if let cards = store.cards, cards.isEmpty {
-                emptyContent
-            }
-        }
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             store.send(.view(.onAppear))
@@ -60,10 +64,6 @@ struct EditGoalListView: View {
         .txToast(item: $store.toast, onButtonTap: {
             store.send(.view(.toastButtonTapped))
         })
-        .txDataRetry(
-            isPresented: store.isFetchFailed,
-            onRetry: { store.send(.view(.dataRetryTapped)) }
-        )
         .txLoading(isPresented: store.isLoading)
     }
 }
