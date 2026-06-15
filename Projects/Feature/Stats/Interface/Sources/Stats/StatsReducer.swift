@@ -97,7 +97,7 @@ public struct StatsReducer {
 
         // MARK: - Response
         public enum Response: Equatable {
-            case fetchedStats(stats: Stats, month: String)
+            case fetchedStats(stats: Stats, month: String, isOngoing: Bool)
             case fetchStatsFailed(month: String, isOngoing: Bool)
         }
 
