@@ -90,7 +90,10 @@ public struct GoalDetailReducer {
         public var isCameraPermissionAlertPresented: Bool = false
         
         public var selectedReactionEmoji: ReactionEmoji?
-        public var myHasEmoji: Bool { isFrontMyCard && selectedReactionEmoji != nil }
+        public var didPlayMyEmojiAppearAnimation: Bool = false
+        public var shouldShowMyEmojiAnimation: Bool {
+            isFrontMyCard && selectedReactionEmoji != nil && !didPlayMyEmojiAppearAnimation
+        }
         public var isShowReactionBar: Bool { !isFrontMyCard && isCompleted }
         public var isLoading: Bool { item == nil }
         public var isFetchFailed: Bool = false
@@ -142,6 +145,7 @@ public struct GoalDetailReducer {
             case navigationBarTapped(TXNavigationBar.Action)
             case reactionEmojiTapped(ReactionEmoji)
             case cardSwiped
+            case myEmojiAppearAnimationPlayed
             case focusChanged(Bool)
             case dimmedBackgroundTapped
             case proofPhotoDismissed

@@ -194,6 +194,10 @@ extension GoalDetailReducer {
                 state.createdAt = timeFormatter.displayText(from: state.currentCard?.createdAt)
                 
                 return .none
+
+            case .view(.myEmojiAppearAnimationPlayed):
+                state.didPlayMyEmojiAppearAnimation = true
+                return .none
                 
             case let .view(.focusChanged(isFocused)):
                 state.isCommentFocused = isFocused

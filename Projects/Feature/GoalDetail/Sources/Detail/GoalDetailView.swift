@@ -37,7 +37,6 @@ public struct GoalDetailView: View {
     @State private var rectFrame: CGRect = .zero
     @State private var keyboardFrame: CGRect = .zero
     @StateObject private var myEmojiFlyingReactionEmitter = FlyingReactionEmitter()
-    @State private var didPlayMyEmojiAppearAnimation = false
     @State private var cardOffset: CGFloat = .zero
     @State private var isCrossingDuringDrag: Bool = false
     
@@ -74,6 +73,10 @@ public struct GoalDetailView: View {
                 if shouldShowCommentOverlay {
                     floatingCommentOverlay
                 }
+
+                if store.isShowReactionBar {
+                    reactionBar
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
@@ -85,7 +88,6 @@ public struct GoalDetailView: View {
             store.send(.view(.onAppear))
         }
         .onDisappear {
-            didPlayMyEmojiAppearAnimation = false
             myEmojiFlyingReactionEmitter.clear()
             store.send(.view(.onDisappear))
         }
@@ -107,7 +109,7 @@ public struct GoalDetailView: View {
             myEmojiFlyingReactionOverlay
         }
         .txToast(item: $store.toast, customPadding: 54)
-        .txLoading(isPresented: store.isSavingPhotoLog)
+        .txLoading(isPresented: store.isLoading || store.isSavingPhotoLog)
     }
 }
 
@@ -260,12 +262,6 @@ private extension GoalDetailView {
                 .padding(.top, 14)
                 .padding(.trailing, 36)
         }
-        
-        if store.isShowReactionBar {
-            reactionBar
-                .padding(.top, Constants.emojiTopPadding)
-                .padding(.horizontal, 20)
-        }
     }
     
     var createdAtText: some View {
@@ -281,6 +277,13 @@ private extension GoalDetailView {
             onSelect: { emoji in
                 store.send(.view(.reactionEmojiTapped(emoji)))
             }
+        )
+        .padding(.horizontal, Constants.reactionBarHorizontalPadding)
+        .position(
+            x: rectFrame.midX,
+            y: rectFrame.maxY
+                + Constants.reactionBarTopPadding
+                + Constants.reactionBarHeight / 2
         )
     }
     
@@ -538,10 +541,8 @@ private extension GoalDetailView {
         containerWidth: CGFloat,
         containerHeight: CGFloat
     ) {
-        guard store.myHasEmoji,
-              !didPlayMyEmojiAppearAnimation,
+        guard store.shouldShowMyEmojiAnimation,
               let selectedEmoji = store.selectedReactionEmoji else { return }
-        didPlayMyEmojiAppearAnimation = true
         myEmojiFlyingReactionEmitter.emit(
             emoji: selectedEmoji,
             config: .goalDetailBottom(
@@ -549,6 +550,7 @@ private extension GoalDetailView {
                 height: containerHeight
             )
         )
+        store.send(.view(.myEmojiAppearAnimationPlayed))
     }
 }
 
@@ -615,7 +617,9 @@ private extension GoalDetailView {
         static let minimumDragResistance: CGFloat = 0.35
         static var cardTopPadding: CGFloat { isSEDevice ? 34 : 89 }
         static var cardSize: CGFloat { isSEDevice ? 321 : 336 }
-        static var emojiTopPadding: CGFloat { isSEDevice ? 19 : 69 }
+        static let reactionBarHeight: CGFloat = 77
+        static let reactionBarHorizontalPadding: CGFloat = 20
+        static var reactionBarTopPadding: CGFloat { isSEDevice ? 19 : 69 }
     }
 }
 
