@@ -37,19 +37,19 @@ extension ProofPhotoReducer {
             switch action {
                 
             // MARK: - Life Cycle
-            case .onAppear:
+            case .view(.onAppear):
                 return .run { [isFlashOn = state.isFlashOn] send in
                     captureSessionClient.setFlashEnabled(isFlashOn)
                     let session = await captureSessionClient.setUpCaptureSession(.back)
                     analyticsClient.logEvent(ProofPhotoAnalyticsEvent.opened)
-                    await send(.setupCaptureSessionCompleted(session: session))
+                    await send(.response(.setupCaptureSessionCompleted(session: session)))
                 }
                 
             // MARK: - Action
-            case .closeButtonTapped:
+            case .view(.closeButtonTapped):
                 return .send(.delegate(.closeProofPhoto))
 
-            case .captureButtonTapped:
+            case .view(.captureButtonTapped):
                 guard !state.isCapturing else { return .none }
                 captureSessionClient.setFlashEnabled(state.isFlashOn)
                 state.isCapturing = true
@@ -57,7 +57,7 @@ extension ProofPhotoReducer {
                     do {
                         let imageData = try await captureSessionClient.capturePhoto()
 
-                        await send(.captureCompleted(imageData: imageData))
+                        await send(.response(.captureCompleted(imageData: imageData)))
                         captureSessionClient.stopRunning()
                     } catch {
                         crashlytics.record(
@@ -66,30 +66,34 @@ extension ProofPhotoReducer {
                                 errorType: String(describing: error)
                             )
                         )
-                        await send(.captureFailed)
+                        await send(.response(.captureFailed))
                     }
                 }
                 
-            case .switchButtonTapped:
+            case .view(.switchButtonTapped):
                 return .run { [isFront = state.isFront, isFlashOn = state.isFlashOn] send in
                     let isFront = !isFront
                     await captureSessionClient.switchCamera(isFront)
                     captureSessionClient.setFlashEnabled(isFlashOn)
                     
-                    await send(.cameraSwitched)
+                    await send(.response(.cameraSwitched))
                 }
                 
-            case .flashButtonTapped:
+            case .view(.flashButtonTapped):
                 state.isFlashOn.toggle()
                 captureSessionClient.setFlashEnabled(state.isFlashOn)
                 return .none
                 
-            case let .commentTextChanged(text):
+            case let .view(.commentTextChanged(text)):
                 state.commentText = String(text.prefix(5))
                 return .none
+
+            case let .view(.galleryPhotoLoaded(imageData)):
+                return .send(.response(.galleryPhotoLoaded(imageData: imageData)))
                 
-            case .returnButtonTapped:
+            case .view(.returnButtonTapped):
                 state.imageData = nil
+                state.previewImage = nil
                 state.selectedPhotoItem = nil
                 state.isCapturing = false
                 let position: AVCaptureDevice.Position = state.isFront ? .front : .back
@@ -97,19 +101,19 @@ extension ProofPhotoReducer {
                 return .run { [isFlashOn = state.isFlashOn] send in
                     let session = await captureSessionClient.setUpCaptureSession(position)
                     captureSessionClient.setFlashEnabled(isFlashOn)
-                    await send(.setupCaptureSessionCompleted(session: session))
+                    await send(.response(.setupCaptureSessionCompleted(session: session)))
                 }
                 
-            case let .focusChanged(isFocused):
+            case let .view(.focusChanged(isFocused)):
                 state.isCommentFocused = isFocused
                 return .none
                 
-            case .uploadButtonTapped:
+            case .view(.uploadButtonTapped):
                 guard !state.isUploading else { return .none }
                 // 코멘트는 비워도 되지만, 입력할 경우 5글자여야 함
                 let commentCount = state.commentText.count
                 if commentCount > 0 && commentCount < 5 {
-                    return .send(.showToast(.fit(message: "코멘트는 5글자로 입력해주세요!")))
+                    return .send(.presentation(.showToast(.fit(message: "코멘트는 5글자로 입력해주세요!"))))
                 } else {
                     guard let imageData = state.imageData else {
                         return .none
@@ -214,54 +218,60 @@ extension ProofPhotoReducer {
                                     originalImageBytes: originalSize
                                 )
                             )
-                            await send(.uploadFailed)
+                            await send(.response(.uploadFailed))
                         }
                     }
                 }
                 
-            case .dimmedBackgroundTapped:
-                return .send(.focusChanged(false))
+            case .view(.dimmedBackgroundTapped):
+                return .send(.view(.focusChanged(false)))
             
             // MARK: - Update State
-            case let .setupCaptureSessionCompleted(session):
+            case let .response(.setupCaptureSessionCompleted(session)):
                 state.captureSession = session
                 return .none
                 
-            case .cameraSwitched:
+            case .response(.cameraSwitched):
                 state.isFront.toggle()
                 return .none
             
             case .binding(\.selectedPhotoItem):
                 guard let selectedPhotoItem = state.selectedPhotoItem else {
                     state.imageData = nil
+                    state.previewImage = nil
                     return .none
                 }
 
                 return .run { send in
                     if let imageData = try? await selectedPhotoItem.loadTransferable(type: Data.self) {
-                        await send(.galleryPhotoLoaded(imageData: imageData))
+                        await send(.response(.galleryPhotoLoaded(imageData: imageData)))
                         captureSessionClient.stopRunning()
                     }
                 }
 
-            case let .galleryPhotoLoaded(imageData):
+            case let .response(.galleryPhotoLoaded(imageData)):
                 state.imageData = imageData
+                // P4-2: decode once at ingestion. `imageData` remains the
+                // upload source-of-truth; preview branch renders from
+                // `previewImage` so body re-evals never re-decode.
+                state.previewImage = UIImage(data: imageData)
                 return .none
-                
-            case let .captureCompleted(imageData: imageData):
-                state.imageData = imageData
-                state.isCapturing = false
-                return .none
-                
-            case .captureFailed:
-                state.isCapturing = false
-                return .send(.showToast(.warning(message: "사진 촬영에 실패했어요")))
 
-            case .uploadFailed:
+            case let .response(.captureCompleted(imageData: imageData)):
+                state.imageData = imageData
+                state.previewImage = UIImage(data: imageData)
+                state.isCapturing = false
+                return .none
+                
+            case .response(.captureFailed):
+                state.isCapturing = false
+                return .send(.presentation(.showToast(.warning(message: "사진 촬영에 실패했어요"))))
+
+            case .response(.uploadFailed):
                 state.isUploading = false
-                return .send(.showToast(.warning(message: "사진 업로드에 실패했어요")))
+                return .send(.presentation(.showToast(.warning(message: "사진 업로드에 실패했어요"))))
 
-            case let .showToast(toast):
+            case let .presentation(.showToast(toast)):
                 state.toast = toast
                 return .none
 

@@ -23,7 +23,7 @@ public struct OnboardingCodeInputView: View {
         VStack(spacing: 0) {
             TXNavigationBar(style: .iconOnly(.back)) { action in
                 if action == .backTapped {
-                    store.send(.backButtonTapped)
+                    store.send(.view(.backButtonTapped))
                 }
             }
 
@@ -106,7 +106,7 @@ private extension OnboardingCodeInputView {
 
     var copyButton: some View {
         Button {
-            store.send(.copyMyCodeButtonTapped)
+            store.send(.view(.copyMyCodeButtonTapped))
         } label: {
             Image.Icon.Symbol.copy
                 .resizable()
@@ -150,11 +150,11 @@ private extension OnboardingCodeInputView {
             .overlay {
                 EditMenuOverlay(
                     onTap: {
-                        store.send(.codeFieldTapped)
+                        store.send(.view(.codeFieldTapped))
                         isTextFieldFocused = true
                     },
                     onPaste: {
-                        store.send(.pasteCodeButtonTapped)
+                        store.send(.view(.pasteCodeButtonTapped))
                     }
                 )
             }
@@ -166,7 +166,7 @@ private extension OnboardingCodeInputView {
             "",
             text: Binding(
                 get: { store.receivedCode },
-                set: { store.send(.codeInputChanged($0)) }
+                set: { store.send(.view(.codeInputChanged($0))) }
             )
         )
         .keyboardType(.asciiCapable)
@@ -219,7 +219,7 @@ private extension OnboardingCodeInputView {
                 size: .l,
                 state: store.isCodeComplete ? .standard : .disabled
             ),
-            onTap: { store.send(.completeButtonTapped) }
+            onTap: { store.send(.view(.completeButtonTapped)) }
         )
         .disabled(!store.isCodeComplete)
     }

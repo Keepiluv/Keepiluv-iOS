@@ -57,22 +57,35 @@ struct FlyingReactionOverlay: View {
     let alignment: Alignment
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { context in
-            ZStack(alignment: alignment) {
-                ForEach(reactions) { reaction in
-                    let progress = reaction.progress(at: context.date)
-                    if progress > 0, progress <= 1 {
-                        reaction.emoji.image
-                            .offset(
-                                x: reaction.xOffset(at: progress),
-                                y: reaction.yOffset(at: progress)
-                            )
-                            .opacity(reaction.opacity(at: progress))
-                            .scaleEffect(reaction.scale)
+        Group {
+            if reactions.isEmpty {
+                // Idle guard: when there are no active particles, do not
+                // run the 60Hz TimelineView. Pass 2 trace identified the
+                // unconditional TimelineView as a ~0.12% idle CPU draw.
+                // When `.emit` adds particles the body re-evaluates and
+                // the else branch starts a fresh TimelineView; when the
+                // emitter clears the array we fall back to this branch
+                // and the TimelineView stops ticking.
+                Color.clear
+            } else {
+                TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { context in
+                    ZStack(alignment: alignment) {
+                        ForEach(reactions) { reaction in
+                            let progress = reaction.progress(at: context.date)
+                            if progress > 0, progress <= 1 {
+                                reaction.emoji.image
+                                    .offset(
+                                        x: reaction.xOffset(at: progress),
+                                        y: reaction.yOffset(at: progress)
+                                    )
+                                    .opacity(reaction.opacity(at: progress))
+                                    .scaleEffect(reaction.scale)
+                            }
+                        }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
         }
         .allowsHitTesting(false)
     }

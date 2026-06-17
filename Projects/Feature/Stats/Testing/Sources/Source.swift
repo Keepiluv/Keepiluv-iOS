@@ -5,4 +5,7 @@
 //  Created by Jihun on 02/18/26.
 //
 
-/// Remove Or Edit
+/// Stable perf seed names for the Stats example app.
+public enum StatsPerfSeed {
+    public static let `default` = "default"
+}

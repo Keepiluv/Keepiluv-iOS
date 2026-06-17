@@ -23,7 +23,7 @@ struct TXTabBar: View {
                     tabItemView(item: item)
                 }
             }
-            .frame(height: Constants.tabBarHeight)
+            .frame(height: TXTabBarLayout.height)
             .background(Constants.backgroundColor)
             .insideRectEdgeBorder(
                 width: Constants.borderWidth,
@@ -53,13 +53,13 @@ private extension TXTabBar {
             .padding(.top, Constants.topPadding)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("tx.tab-bar.item.\(item.accessibilityIdentifier)")
     }
 }
 
 // MARK: - Constants
 private extension TXTabBar {
     enum Constants {
-        static let tabBarHeight: CGFloat = 58
         static let iconSize: CGFloat = 24
         static let iconLabelSpacing: CGFloat = 4
         static let topPadding: CGFloat = 12
@@ -68,5 +68,20 @@ private extension TXTabBar {
         static let borderColor: Color = Color.Gray.gray100
         static let labelColor: Color = Color.Gray.gray500
         static let labelFont: TypographyToken = .c2_11b
+    }
+}
+
+private extension TXTabItem {
+    var accessibilityIdentifier: String {
+        switch self {
+        case .home:
+            return "home"
+
+        case .statistics:
+            return "statistics"
+
+        case .couple:
+            return "couple"
+        }
     }
 }

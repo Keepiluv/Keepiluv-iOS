@@ -36,6 +36,7 @@ public struct TXCalendarBottomSheet<ButtonContent: View>: View {
     @Binding private var selectedDate: TXCalendarDate
     @State private var isDatePickerMode = false
     @State private var frozenCalendarHeight: CGFloat?
+    @State private var calendarData: CalendarPresentationData
 
     private let buttonContent: (_ exitPickerModeIfNeeded: @escaping () -> Bool) -> ButtonContent
     private let completeButtonText: String?
@@ -65,6 +66,7 @@ public struct TXCalendarBottomSheet<ButtonContent: View>: View {
         @ViewBuilder buttonContent: @escaping (_ exitPickerModeIfNeeded: @escaping () -> Bool) -> ButtonContent
     ) {
         self._selectedDate = selectedDate
+        self._calendarData = State(initialValue: Self.makeCalendarData(for: selectedDate.wrappedValue))
         self.buttonContent = buttonContent
         self.completeButtonText = nil
         self.onComplete = nil
@@ -72,9 +74,11 @@ public struct TXCalendarBottomSheet<ButtonContent: View>: View {
     }
 
     public var body: some View {
-        let currentWeeks = TXCalendarDataGenerator.generateMonthData(for: selectedDate)
-        let displayWeeks = applyDisabledStatus(to: currentWeeks)
-        let currentCalendarHeight = calendarContentHeight(for: currentWeeks)
+        let currentData = calendarData.matches(selectedDate)
+            ? calendarData
+            : Self.makeCalendarData(for: selectedDate)
+        let displayWeeks = applyDisabledStatus(to: currentData.weeks)
+        let currentCalendarHeight = currentData.height
 
         VStack(spacing: 0) {
             // MonthNavigation + Calendar
@@ -87,8 +91,8 @@ public struct TXCalendarBottomSheet<ButtonContent: View>: View {
                         }
                         isDatePickerMode.toggle()
                     },
-                    onPrevious: { selectedDate.goToPreviousMonth() },
-                    onNext: { selectedDate.goToNextMonth() }
+                    onPrevious: { updateSelectedDate { $0.goToPreviousMonth() } },
+                    onNext: { updateSelectedDate { $0.goToNextMonth() } }
                 )
                 
                 if isDatePickerMode {
@@ -101,7 +105,7 @@ public struct TXCalendarBottomSheet<ButtonContent: View>: View {
                         config: calendarConfig
                     ) { item in
                         if let day = Int(item.text), item.status != .lastDate {
-                            selectedDate.selectDay(day)
+                            updateSelectedDate { $0.selectDay(day) }
                         }
                     }
                 }
@@ -113,10 +117,18 @@ public struct TXCalendarBottomSheet<ButtonContent: View>: View {
         }
         .frame(maxWidth: .infinity)
         .background(Color.Common.white)
+        .overlay {
+            Color.clear
+                .accessibilityIdentifier("tx.calendar-bottom-sheet")
+                .allowsHitTesting(false)
+        }
         .onChange(of: isDatePickerMode) { _, newValue in
             if !newValue {
                 frozenCalendarHeight = nil
             }
+        }
+        .onChange(of: selectedDate) { _, newValue in
+            updateCalendarData(for: newValue)
         }
     }
 }
@@ -140,6 +152,7 @@ public extension TXCalendarBottomSheet where ButtonContent == DefaultCalendarBut
         isDateEnabled: ((TXCalendarDateItem) -> Bool)? = nil
     ) {
         self._selectedDate = selectedDate
+        self._calendarData = State(initialValue: Self.makeCalendarData(for: selectedDate.wrappedValue))
         self.buttonContent = { _ in
             DefaultCalendarButton(text: completeButtonText, action: onComplete)
         }
@@ -164,28 +177,62 @@ public struct DefaultCalendarButton: View {
             onTap: action
         )
         .padding(.horizontal, Spacing.spacing8)
+        .accessibilityIdentifier("tx.calendar-bottom-sheet.complete-button")
     }
 }
 
 // MARK: - Private Views
 private extension TXCalendarBottomSheet {
-    var calendarConfig: TXCalendar.Configuration {
+    static var minimumMonthlyRowCount: Int { 6 }
+
+    static var calendarConfig: TXCalendar.Configuration {
         .init(
             monthlyHeaderSpacing: Spacing.spacing7,
-            monthlyRowSpacing: Spacing.spacing6
+            monthlyRowSpacing: Spacing.spacing6,
+            monthlyPaging: .init(minimumRowCount: minimumMonthlyRowCount)
         )
     }
 
-    func calendarContentHeight(for weeks: [[TXCalendarDateItem]]) -> CGFloat {
-        let headerHeight = TXCalendarLayout.weekdayLabelHeight(calendarConfig.weekdayTypography)
-        let headerSectionHeight = headerHeight + calendarConfig.monthlyHeaderSpacing
-        let verticalPadding = calendarConfig.verticalPadding * 2
+    var calendarConfig: TXCalendar.Configuration {
+        let isDateEnabled = isDateEnabled
+        return .init(
+            monthlyHeaderSpacing: Spacing.spacing7,
+            monthlyRowSpacing: Spacing.spacing6,
+            monthlyPaging: .init(
+                isEnabled: true,
+                pageSpacing: Spacing.spacing7,
+                minimumRowCount: Self.minimumMonthlyRowCount,
+                pageWeeks: { date in
+                    let weeks = Self.makeCalendarData(for: date).weeks
+                    return Self.applyDisabledStatus(
+                        to: weeks,
+                        isDateEnabled: isDateEnabled
+                    )
+                }
+            )
+        )
+    }
+
+    static func makeCalendarData(for date: TXCalendarDate) -> CalendarPresentationData {
+        let weeks = TXCalendarDataGenerator.generateMonthData(for: date)
+        return CalendarPresentationData(
+            key: .init(date),
+            weeks: weeks,
+            height: calendarContentHeight(for: weeks)
+        )
+    }
+
+    static func calendarContentHeight(for weeks: [[TXCalendarDateItem]]) -> CGFloat {
+        let config = calendarConfig
+        let headerHeight = TXCalendarLayout.weekdayLabelHeight(config.weekdayTypography)
+        let headerSectionHeight = headerHeight + config.monthlyHeaderSpacing
+        let verticalPadding = config.verticalPadding * 2
 
         guard !weeks.isEmpty else { return headerSectionHeight + verticalPadding }
 
-        let rowCount = CGFloat(weeks.count)
-        let rowSpacing = calendarConfig.monthlyRowSpacing * CGFloat(weeks.count - 1)
-        let monthGridHeight = (calendarConfig.dateStyle.size * rowCount) + rowSpacing
+        let rowCount = max(weeks.count, Self.minimumMonthlyRowCount)
+        let rowSpacing = config.monthlyRowSpacing * CGFloat(max(rowCount - 1, 0))
+        let monthGridHeight = (config.dateStyle.size * CGFloat(rowCount)) + rowSpacing
 
         return headerSectionHeight + monthGridHeight + verticalPadding
     }
@@ -215,14 +262,14 @@ private extension TXCalendarBottomSheet {
 
     func datePickerView(height: CGFloat) -> some View {
         HStack(spacing: 0) {
-            Picker("Year", selection: $selectedDate.year) {
-                ForEach(1940...2099, id: \.self) { year in
+            Picker("Year", selection: selectedYear) {
+                ForEach(1_940...2_099, id: \.self) { year in
                     Text(verbatim: "\(year)년").tag(year)
                 }
             }
             .pickerStyle(.wheel)
 
-            Picker("Month", selection: $selectedDate.month) {
+            Picker("Month", selection: selectedMonth) {
                 ForEach(1...12, id: \.self) { month in
                     Text(verbatim: "\(month)월").tag(month)
                 }
@@ -233,7 +280,51 @@ private extension TXCalendarBottomSheet {
         .padding(.horizontal, Spacing.spacing7)
     }
 
+    var selectedYear: Binding<Int> {
+        Binding(
+            get: { selectedDate.year },
+            set: { year in
+                updateSelectedDate { date in
+                    date.year = year
+                }
+            }
+        )
+    }
+
+    var selectedMonth: Binding<Int> {
+        Binding(
+            get: { selectedDate.month },
+            set: { month in
+                updateSelectedDate { date in
+                    date.month = month
+                }
+            }
+        )
+    }
+
+    func updateSelectedDate(_ update: (inout TXCalendarDate) -> Void) {
+        var newDate = selectedDate
+        update(&newDate)
+        selectedDate = newDate
+        updateCalendarData(for: newDate)
+    }
+
+    func updateCalendarData(for date: TXCalendarDate) {
+        guard !calendarData.matches(date) else { return }
+        calendarData = Self.makeCalendarData(for: date)
+    }
+
     func applyDisabledStatus(to weeks: [[TXCalendarDateItem]]) -> [[TXCalendarDateItem]] {
+        Self.applyDisabledStatus(
+            to: weeks,
+            isDateEnabled: isDateEnabled
+        )
+    }
+
+    static func applyDisabledStatus(
+        to weeks: [[TXCalendarDateItem]],
+        isDateEnabled: ((TXCalendarDateItem) -> Bool)?
+    ) -> [[TXCalendarDateItem]] {
         guard let isDateEnabled else { return weeks }
         return weeks.map { week in
             week.map { item in
@@ -247,5 +338,27 @@ private extension TXCalendarBottomSheet {
                 )
             }
         }
+    }
+}
+
+private struct CalendarPresentationData: Equatable {
+    struct Key: Equatable {
+        let year: Int
+        let month: Int
+        let day: Int?
+
+        init(_ date: TXCalendarDate) {
+            self.year = date.year
+            self.month = date.month
+            self.day = date.day
+        }
+    }
+
+    let key: Key
+    let weeks: [[TXCalendarDateItem]]
+    let height: CGFloat
+
+    func matches(_ date: TXCalendarDate) -> Bool {
+        key == Key(date)
     }
 }

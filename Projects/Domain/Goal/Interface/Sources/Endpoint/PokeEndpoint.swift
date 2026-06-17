@@ -11,13 +11,13 @@ import Foundation
 /// 찌르기 관련 API 엔드포인트입니다.
 public enum PokeEndpoint: Endpoint {
     /// 파트너에게 찌르기
-    case poke(goalId: Int64)
+    case poke(goalId: Int64, request: PokeRequestDTO)
 }
 
 extension PokeEndpoint {
     public var path: String {
         switch self {
-        case let .poke(goalId):
+        case let .poke(goalId, _):
             return "/api/v1/pokes/goals/\(goalId)"
         }
     }
@@ -38,7 +38,10 @@ extension PokeEndpoint {
     }
 
     public var body: (any Encodable)? {
-        nil
+        switch self {
+        case let .poke(_, request):
+            return request
+        }
     }
 
     public var requiresAuth: Bool { true }

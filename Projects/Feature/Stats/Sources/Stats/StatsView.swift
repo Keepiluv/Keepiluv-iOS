@@ -10,33 +10,32 @@ import SwiftUI
 import ComposableArchitecture
 import FeatureStatsInterface
 import SharedDesignSystem
+import SharedPerfTestingSupport
 
 struct StatsView: View {
     @Bindable public var store: StoreOf<StatsReducer>
-    
+
     var body: some View {
         VStack(spacing: 0) {
             navigationBar
             topTabBar
-            if store.isOngoing {
-                monthNavigation
-                    .padding(.top, 16)
-                    .background(Color.Gray.gray50)
+
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
+                }
+            } else if let items = store.items {
+                if items.isEmpty {
+                    statsEmptyView
+                } else {
+                    cardList
+                }
+            } else {
+                Spacer()
             }
-            
-            if let items = store.items, !items.isEmpty {
-                cardList
-            }
-            
-            Spacer()
         }
         .background(Color.Gray.gray50)
-        .overlay {
-            if let items = store.items, items.isEmpty {
-               statsEmptyView
-            }
-        }
-        .onAppear { store.send(.onAppear) }
+        .onAppear { store.send(.view(.onAppear)) }
         .txToast(item: $store.toast)
         .toolbar(.hidden, for: .tabBar)
     }
@@ -53,7 +52,7 @@ private extension StatsView {
             style: .line(StatsTopTabItem.allCases),
             selectedItem: store.isOngoing ? .ongoing : .completed,
             onSelect: { item in
-                store.send(.topTabBarSelected(item))
+                store.send(.view(.topTabBarSelected(item)))
             }
         )
         .background(Color.Common.white)
@@ -65,36 +64,60 @@ private extension StatsView {
             title: store.monthTitle,
             onTitleTap: { },
             isNextDisabled: store.isNextMonthDisabled,
-            onPrevious: { store.send(.previousMonthTapped) },
-            onNext: { store.send(.nextMonthTapped) }
+            onPrevious: { store.send(.view(.previousMonthTapped)) },
+            onNext: { store.send(.view(.nextMonthTapped)) }
         )
     }
     
+    @ViewBuilder
     var cardList: some View {
+        #if PERF_TESTING
+        if UITestMode.isEnabled, UITestMode.isSwiftUISelfRunStatsScroll {
+            StatsSelfRunScrollHarness(items: store.items ?? []) {
+                scrollCardList
+            }
+        } else {
+            scrollCardList
+        }
+        #else
+        scrollCardList
+        #endif
+    }
+
+    private var scrollCardList: some View {
         ScrollView {
+            if store.isOngoing {
+                monthNavigation
+                    .padding(.top, 16)
+                    .background(Color.Gray.gray50)
+            }
+            
             LazyVStack(spacing: 16) {
                 ForEach(store.items ?? [], id: \.self.goalId) { item in
                     StatsCardView(
                         item: item,
                         isOngoing: store.isOngoing,
                         onTap: { goalId in
-                            store.send(.statsCardTapped(goalId: goalId))
+                            store.send(.view(.statsCardTapped(goalId: goalId)))
                         }
                     )
+                    .perfCell(slug: "stats", stableId: item.goalId)
                 }
             }
             .padding(.top, store.isOngoing ? 12 : 20)
-            .padding([.horizontal, .bottom], 20)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 85 + TXTabBarLayout.height)
+            .perfFeed("stats")
         }
         .background(Color.Gray.gray50)
     }
-    
+
     var statsEmptyView: some View {
         Group {
             if store.isOngoing {
                 VStack(spacing: 8) {
                     Image.Illustration.scare
-                    Text("아직 목표가 없어요!")
+                    Text("이 달은 목표가 없어요!")
                         .typography(.t2_16b)
                         .foregroundStyle(Color.Gray.gray400)
                 }

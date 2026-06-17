@@ -23,19 +23,26 @@ public struct NotificationView: View {
         VStack(spacing: 0) {
             navigationBar
 
-            ZStack {
-                if filteredNotifications.isEmpty {
-                    emptyView
-                } else {
-                    contentView
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
                 }
+            } else {
+                ZStack {
+                    if filteredNotifications.isEmpty {
+                        emptyView
+                    } else {
+                        contentView
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .ignoresSafeArea(.container, edges: .bottom)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.Common.white)
         .onAppear {
-            store.send(.onAppear)
+            store.send(.view(.onAppear))
         }
         .toolbar(.hidden, for: .navigationBar)
         .txLoading(isPresented: store.isLoading && store.notifications.isEmpty)
@@ -49,7 +56,7 @@ private extension NotificationView {
         TXNavigationBar(style: .subTitle(title: "알림", type: .back)) { action in
             switch action {
             case .backTapped:
-                store.send(.backButtonTapped)
+                store.send(.view(.backButtonTapped))
 
             default:
                 break
@@ -118,7 +125,7 @@ private extension NotificationView {
                     .onAppear {
                         // 마지막 3개 아이템 중 하나가 보이면 미리 로드
                         if index >= filteredNotifications.count - 3 {
-                            store.send(.loadMore)
+                            store.send(.view(.loadMore))
                         }
                     }
             }
@@ -133,7 +140,7 @@ private extension NotificationView {
 
     func notificationListItem(_ item: NotificationItem, isLast: Bool) -> some View {
         Button {
-            store.send(.notificationTapped(item))
+            store.send(.view(.notificationTapped(item)))
         } label: {
             HStack(spacing: Spacing.spacing9) {
                 HStack(alignment: .firstTextBaseline, spacing: 0) {

@@ -9,6 +9,7 @@ import ComposableArchitecture
 import DomainNotificationInterface
 import DomainOnboardingInterface
 import FeatureOnboarding
+import SharedPerfTestingSupport
 import SwiftUI
 
 @main
@@ -16,6 +17,7 @@ struct OnboardingApp: App {
     let store: StoreOf<OnboardingCoordinator>
 
     init() {
+        UITestMode.configureApplication()
         self.store = Store(
             initialState: OnboardingCoordinator.State(
                 myInviteCode: "KDJ34923"
@@ -31,6 +33,8 @@ struct OnboardingApp: App {
     var body: some Scene {
         WindowGroup {
             OnboardingCoordinatorView(store: store)
+                .perfRoot("onboarding")
+                .perfReadyMarker("onboarding")
                 .onOpenURL { url in
                     if let code = parseInviteCode(from: url) {
                         store.send(.deepLinkReceived(code: code))

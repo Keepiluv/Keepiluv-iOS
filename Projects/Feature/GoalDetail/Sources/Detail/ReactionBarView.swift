@@ -8,6 +8,7 @@
 import SwiftUI
 
 import SharedDesignSystem
+import SharedPerfTestingSupport
 
 struct ReactionBarView: View {
     let selectedEmoji: ReactionEmoji?
@@ -26,8 +27,8 @@ struct ReactionBarView: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .top) {
-                shadowView(proxy: proxy)
-                    .offset(y: 10)
+                shadowView
+                    .offset(y: 9)
 
                 reactionBar(proxy: proxy)
             }
@@ -45,45 +46,97 @@ struct ReactionBarView: View {
 // MARK: - SubViews
 
 private extension ReactionBarView {
-    func shadowView(proxy: GeometryProxy) -> some View {
+    var shadowView: some View {
         Color.Gray.gray200
-            .frame(width: proxy.size.width, height: 67)
+            .frame(maxWidth: 368)
+            .frame(height: 68)
             .clipShape(.capsule)
     }
     
     func reactionBar(proxy: GeometryProxy) -> some View {
         HStack(spacing: 0) {
             ForEach(ReactionEmoji.allCases, id: \.self) { emoji in
-                Button {
-                    onSelect(emoji)
-                    flyingReactionEmitter.emit(
-                        emoji: emoji,
-                        config: .reactionBar(width: proxy.size.width)
-                    )
-                } label: {
-                    emoji.image
-                        .padding(.horizontal, 8)
+                Group {
+                    if case .happy = emoji {
+                        firstButton(proxy: proxy, emoji: emoji)
+                    } else if case .fuck = emoji {
+                        lastButton(proxy: proxy, emoji: emoji)
+                    } else {
+                        rectButton(proxy: proxy, emoji: emoji)
+                    }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(selectedEmoji == emoji ? Color.Gray.gray300 : Color.clear)
-                
-                if emoji != ReactionEmoji.allCases.last {
-                    Rectangle()
-                        .frame(width: 1)
-                }
+                .perfControl(slug: "goal-detail", element: "reaction-\(emoji.rawValue)")
             }
         }
         .background(Color.Gray.gray100)
-        .frame(width: proxy.size.width, height: 68)
+        .frame(maxWidth: 368)
+        .frame(height: 68)
         .clipShape(.capsule)
         .overlay(
             Capsule()
                 .stroke(Color.Gray.gray500, lineWidth: 1)
         )
     }
+    
+    func firstButton(proxy: GeometryProxy, emoji: ReactionEmoji) -> some View {
+        Button {
+            onSelect(emoji)
+            flyingReactionEmitter.emit(
+                emoji: emoji,
+                config: .reactionBar(width: proxy.size.width)
+            )
+        } label: {
+            emoji.image
+                .padding(.leading, 10)
+                .padding(.trailing, 6)
+                .padding(.bottom, 2)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(minWidth: 70, maxWidth: 84, maxHeight: .infinity)
+        .background(selectedEmoji == emoji ? Color.Gray.gray300 : Color.clear)
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 999, bottomLeadingRadius: 999))
+    }
+    
+    func lastButton(proxy: GeometryProxy, emoji: ReactionEmoji) -> some View {
+        Button {
+            onSelect(emoji)
+            flyingReactionEmitter.emit(
+                emoji: emoji,
+                config: .reactionBar(width: proxy.size.width)
+            )
+        } label: {
+            emoji.image
+                .padding(.leading, 3)
+                .padding(.trailing, 10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(minWidth: 70, maxWidth: 84, maxHeight: .infinity)
+        .background(selectedEmoji == emoji ? Color.Gray.gray300 : Color.clear)
+        .clipShape(UnevenRoundedRectangle(bottomTrailingRadius: 999, topTrailingRadius: 999))
+    }
+    
+    func rectButton(proxy: GeometryProxy, emoji: ReactionEmoji) -> some View {
+        Button {
+            onSelect(emoji)
+            flyingReactionEmitter.emit(
+                emoji: emoji,
+                config: .reactionBar(width: proxy.size.width)
+            )
+        } label: {
+            emoji.image
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(minWidth: 70, maxWidth: 80, maxHeight: .infinity)
+        .background(selectedEmoji == emoji ? Color.Gray.gray300 : Color.clear)
+        .overlay(
+            Rectangle()
+                .stroke(Color.Gray.gray500, lineWidth: 1)
+        )
+    }
 }
 
 private extension ReactionBarView {
+    
     static func reactionBarConfig(width: CGFloat) -> FlyingReactionConfig {
         let minX: CGFloat = 8
         let maxXInset: CGFloat = 32

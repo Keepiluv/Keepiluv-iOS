@@ -29,14 +29,14 @@ extension HomeCoordinator {
         // swiftlint:disable:next closure_body_length
         let reducer = Reduce<State, Action> { state, action in
             switch action {
-            case let .home(.delegate(.goToGoalDetail(id, owner, verificationDate))):
-                state.routes.append(.detail)
-                state.goalDetail = .init(
-                    currentUser: owner,
-                    id: id,
-                    verificationDate: verificationDate
+            case let .home(.delegate(.goToGoalDetail(id, owner, date))):
+                return .send(
+                    .navigateToGoalDetail(
+                        id: id,
+                        owner: owner,
+                        date: date
+                    )
                 )
-                return .none
                 
             case let .home(.delegate(.goToMakeGoal(category))):
                 state.routes.append(.makeGoal)
@@ -58,9 +58,9 @@ extension HomeCoordinator {
                 state.notification = .init()
                 return .none
                 
-            case let .home(.delegate(.goToStatsDetail(id))):
+            case let .home(.delegate(.goToStatsDetail(id, date))):
                 state.routes.append(.statsDetail)
-                state.statsDetail = .init(goalId: id)
+                state.statsDetail = .init(goalId: id, initialMonth: date)
                 return .none
                 
             case .statsDetail(.delegate(.navigateBack)):
@@ -72,7 +72,7 @@ extension HomeCoordinator {
                 state.makeGoal = .init(mode: .edit(goalData))
                 return .none
                 
-            case .statsDetail(.onDisappear):
+            case .statsDetail(.view(.onDisappear)):
                 if !state.routes.contains(.statsDetail) {
                     state.statsDetail = nil
                 }
@@ -85,7 +85,7 @@ extension HomeCoordinator {
                 popLastRoute(&state.routes)
                 return .none
                 
-            case .goalDetail(.onDisappear):
+            case .goalDetail(.view(.onDisappear)):
                 state.goalDetail = nil
                 return .none
                 
@@ -93,13 +93,13 @@ extension HomeCoordinator {
                 popLastRoute(&state.routes)
                 return .none
                 
-            case .editGoalList(.onDisappear):
+            case .editGoalList(.view(.onDisappear)):
                 if !state.routes.contains(.editGoalList) {
                     state.editGoalList = nil
                 }
                 return .none
                 
-            case .makeGoal(.onDisappear):
+            case .makeGoal(.view(.onDisappear)):
                 state.makeGoal = nil
                 return .none
                 
@@ -185,13 +185,20 @@ extension HomeCoordinator {
                 return .none
                 
             case let .navigateToGoalDetail(id, owner, date):
-                state.routes.append(.detail)
+                let isAlreadyOnDetail = state.routes.last == .detail
+
+                if !isAlreadyOnDetail {
+                    state.routes.append(.detail)
+                }
+
                 state.goalDetail = .init(
                     currentUser: owner,
                     id: id,
                     verificationDate: date
                 )
-                return .none
+                return isAlreadyOnDetail
+                    ? .send(.goalDetail(.view(.onAppear)))
+                    : .none
 
             case .delegate:
                 return .none

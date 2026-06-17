@@ -22,24 +22,24 @@ extension MakeGoalReducer {
         let reducer = Reduce<State, Action> { state, action in
             switch action {
                 // MARK: - LifeCycle
-            case .onAppear:
+            case .view(.onAppear):
                 return .none
 
-            case .onDisappear:
+            case .view(.onDisappear):
                 return .none
 
-            case .createGoalFailed:
+            case .response(.createGoalFailed):
                 state.isLoading = false
                 state.submitMessage = nil
-                return .send(.showToast(.warning(message: "목표 생성에 실패했어요")))
+                return .send(.presentation(.showToast(.warning(message: "목표 생성에 실패했어요"))))
 
-            case .updateGoalFailed:
+            case .response(.updateGoalFailed):
                 state.isLoading = false
                 state.submitMessage = nil
-                return .send(.showToast(.warning(message: "이미 완료한 목표입니다!")))
+                return .send(.presentation(.showToast(.warning(message: "이미 완료한 목표입니다!"))))
 
                 // MARK: - User Action
-            case .emojiButtonTapped:
+            case .view(.emojiButtonTapped):
                 state.isGoalTitleFocused = false
                 state.modal = .selection(
                     title: "아이콘 변경",
@@ -49,36 +49,36 @@ extension MakeGoalReducer {
                 )
                 return .none
                 
-            case let .modalConfirmTapped(index):
+            case let .view(.modalConfirmTapped(index)):
                 state.goalData.icon = state.icons[index]
                 return .none
 
-            case let .goalTitleFocusChanged(isFocused):
+            case let .view(.goalTitleFocusChanged(isFocused)):
                 state.isGoalTitleFocused = isFocused
                 return .none
 
-            case .dismissKeyboard:
+            case .view(.dismissKeyboard):
                 state.isGoalTitleFocused = false
                 return .none
 
-            case let .periodTabSelected(item):
+            case let .view(.periodTabSelected(item)):
                 state.goalData.repeatCycle = item.repeatCycle
                 return .none
                 
-            case .periodSelected:
+            case .view(.periodSelected):
                 state.isGoalTitleFocused = false
                 state.isPeriodSheetPresented = true
                 return .none
                 
-            case .periodSheetWeeklyTapped:
+            case .view(.periodSheetWeeklyTapped):
                 state.goalData.repeatCycle = .weekly
                 return .none
                 
-            case .periodSheetMonthlyTapped:
+            case .view(.periodSheetMonthlyTapped):
                 state.goalData.repeatCycle = .monthly
                 return .none
                 
-            case .periodSheetMinusTapped:
+            case .view(.periodSheetMinusTapped):
                 switch state.goalData.repeatCycle {
                 case .daily:
                     return .none
@@ -94,7 +94,7 @@ extension MakeGoalReducer {
                 
                 return .none
                 
-            case .periodSheetPlusTapped:
+            case .view(.periodSheetPlusTapped):
                 switch state.goalData.repeatCycle {
                 case .daily:
                     return .none
@@ -110,18 +110,18 @@ extension MakeGoalReducer {
                 
                 return .none
                 
-            case .periodSheetCompleteTapped:
+            case .view(.periodSheetCompleteTapped):
                 state.isPeriodSheetPresented = false
                 return .none
                 
-            case .startDateTapped:
+            case .view(.startDateTapped):
                 state.isGoalTitleFocused = false
                 state.calendarTarget = .startDate
                 state.calendarSheetDate = state.goalData.startDate
                 state.isCalendarSheetPresented = true
                 return .none
                 
-            case .endDateTapped:
+            case .view(.endDateTapped):
                 state.isGoalTitleFocused = false
                 state.calendarTarget = .endDate
                 if state.goalData.endDate < state.goalData.startDate {
@@ -131,7 +131,7 @@ extension MakeGoalReducer {
                 state.isCalendarSheetPresented = true
                 return .none
                 
-            case .monthCalendarConfirmTapped:
+            case .view(.monthCalendarConfirmTapped):
                 guard let target = state.calendarTarget else {
                     state.isCalendarSheetPresented = false
                     return .none
@@ -151,10 +151,10 @@ extension MakeGoalReducer {
                 state.isCalendarSheetPresented = false
                 return .none
                 
-            case .completeButtonTapped:
+            case .view(.completeButtonTapped):
                 guard !state.isLoading else { return .none }
                 guard !state.completeButtonDisabled  else {
-                    return .send(.showToast(.warning(message: "목표 이름은 14글자 이내로 입력해 주세요!")))
+                    return .send(.presentation(.showToast(.warning(message: "목표 이름은 14글자 이내로 입력해 주세요!"))))
                 }
 
                 state.isLoading = true
@@ -182,7 +182,7 @@ extension MakeGoalReducer {
                                 )
                             await send(.delegate(.navigateBack))
                         } catch {
-                            await send(.createGoalFailed)
+                            await send(.response(.createGoalFailed))
                         }
                     }
 
@@ -191,7 +191,7 @@ extension MakeGoalReducer {
                     guard let goalId = state.goalData.goalId else {
                         state.isLoading = false
                         state.submitMessage = nil
-                        return .send(.showToast(.warning(message: "목표 수정에 실패했어요")))
+                        return .send(.presentation(.showToast(.warning(message: "목표 수정에 실패했어요"))))
                     }
                     let request = GoalUpdateRequestDTO(
                         goalName: state.goalData.title,
@@ -205,15 +205,15 @@ extension MakeGoalReducer {
                             _ = try await goalClient.updateGoal(goalId, request)
                             await send(.delegate(.navigateBack))
                         } catch {
-                            await send(.updateGoalFailed)
+                            await send(.response(.updateGoalFailed))
                         }
                     }
                 }
                 
-            case .navigationBackButtonTapped:
+            case .view(.navigationBackButtonTapped):
                 return .send(.delegate(.navigateBack))
 
-            case let .showToast(toast):
+            case let .presentation(.showToast(toast)):
                 state.toast = toast
                 return .none
 

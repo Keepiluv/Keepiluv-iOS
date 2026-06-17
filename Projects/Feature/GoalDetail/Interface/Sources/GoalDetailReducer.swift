@@ -90,9 +90,13 @@ public struct GoalDetailReducer {
         public var isCameraPermissionAlertPresented: Bool = false
         
         public var selectedReactionEmoji: ReactionEmoji?
-        public var myHasEmoji: Bool { isFrontMyCard && selectedReactionEmoji != nil }
+        public var didPlayMyEmojiAppearAnimation: Bool = false
+        public var shouldShowMyEmojiAnimation: Bool {
+            isFrontMyCard && selectedReactionEmoji != nil && !didPlayMyEmojiAppearAnimation
+        }
         public var isShowReactionBar: Bool { !isFrontMyCard && isCompleted }
         public var isLoading: Bool { item == nil }
+        public var isFetchFailed: Bool = false
         public var isEditing: Bool = false
         public var isSavingPhotoLog: Bool = false
         public var pendingEditedImageData: Data?
@@ -129,41 +133,58 @@ public struct GoalDetailReducer {
     /// GoalDetail 화면에서 발생하는 액션입니다.
     public enum Action: BindableAction {
         case binding(BindingAction<State>)
-        
-        // MARK: - LifeCycle
-        case onAppear
-        case onDisappear
-        
-        // MARK: - Action
-        case bottomButtonTapped
-        case navigationBarTapped(TXNavigationBar.Action)
-        case reactionEmojiTapped(ReactionEmoji)
-        case cardSwiped
-        case focusChanged(Bool)
-        case dimmedBackgroundTapped
-        case updateMyPhotoLog(GoalDetail.CompletedGoal.PhotoLog)
-        
-        // MARK: - State Update
-        case authorizationCompleted(isAuthorized: Bool)
-        case fethedGoalDetailItem(GoalDetail)
-        case fetchGoalDetailFailed
-        case updateCurrentCardReaction(String?)
-        case reactionUpdateFailed(previousReaction: String?)
-        case showToast(TXToastType)
-        case proofPhotoDismissed
-        case cameraPermissionAlertDismissed
-        case updatePhotoLog
-        
+
         // MARK: - Child Action
         case proofPhoto(ProofPhotoReducer.Action)
-        
+
+        // MARK: - View
+        public enum View: Equatable {
+            case onAppear
+            case onDisappear
+            case bottomButtonTapped
+            case navigationBarTapped(TXNavigationBar.Action)
+            case reactionEmojiTapped(ReactionEmoji)
+            case cardSwiped
+            case myEmojiAppearAnimationPlayed
+            case focusChanged(Bool)
+            case dimmedBackgroundTapped
+            case proofPhotoDismissed
+            case cameraPermissionAlertDismissed
+            case dataRetryTapped
+        }
+
+        // MARK: - Internal
+        public enum Internal: Equatable {
+            case updatePhotoLog
+            case updateMyPhotoLog(GoalDetail.CompletedGoal.PhotoLog)
+        }
+
+        // MARK: - Response
+        public enum Response: Equatable {
+            case authorizationCompleted(isAuthorized: Bool)
+            case fethedGoalDetailItem(GoalDetail)
+            case fetchGoalDetailFailed
+            case updateCurrentCardReaction(photoLogId: Int64, reaction: String?)
+            case reactionUpdateFailed(previousReaction: String?)
+        }
+
+        // MARK: - Presentation
+        public enum Presentation: Equatable {
+            case showToast(TXToastType)
+        }
+
         // MARK: - Delegate
         case delegate(Delegate)
-        
+
         /// GoalDetail 화면에서 외부로 전달하는 이벤트입니다.
         public enum Delegate {
             case navigateBack
         }
+
+        case view(View)
+        case `internal`(Internal)
+        case response(Response)
+        case presentation(Presentation)
     }
     
     /// 외부에서 주입된 Reduce와 ProofPhotoReducer로 리듀서를 구성합니다.

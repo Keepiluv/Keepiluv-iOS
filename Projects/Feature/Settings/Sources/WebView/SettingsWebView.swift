@@ -31,7 +31,7 @@ struct SettingsWebView: View {
     private var navigationBar: some View {
         TXNavigationBar(style: .subTitle(title: title, type: .back)) { action in
             if action == .backTapped {
-                store.send(.subViewBackButtonTapped)
+                store.send(.view(.subViewBackButtonTapped))
             }
         }
     }

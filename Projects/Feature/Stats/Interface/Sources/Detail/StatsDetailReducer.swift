@@ -18,7 +18,10 @@ import SharedDesignSystem
 /// ## 사용 예시
 /// ```swift
 /// let store = Store(
-///     initialState: StatsDetailReducer.State()
+///     initialState: StatsDetailReducer.State(
+///         goalId: 1,
+///         initialMonth: TXCalendarDate()
+///     )
 /// ) {
 ///     StatsDetailReducer(reducer: Reduce { _, _ in .none })
 /// }
@@ -33,6 +36,8 @@ public struct StatsDetailReducer {
         public let goalId: Int64
         
         public var isLoading: Bool = false
+        public var isCalendarFetchFailed: Bool = false
+        public var isSummaryFetchFailed: Bool = false
         public var isDropdownPresented: Bool = false
         public var selectedDropDownItem: GoalDropList?
         public var currentMonth: TXCalendarDate
@@ -57,6 +62,7 @@ public struct StatsDetailReducer {
         }
         public var naviBarTitle: String { statsDetail?.goalName ?? "" }
         public var isCompleted: Bool { statsDetail?.isCompleted == true }
+        public var isFetchFailed: Bool { isCalendarFetchFailed || isSummaryFetchFailed }
         
         /// 통계 요약 영역의 단일 행 정보를 표현합니다.
         public struct StatsSummaryInfo: Equatable {
@@ -78,15 +84,17 @@ public struct StatsDetailReducer {
         ///
         /// ## 사용 예시
         /// ```swift
-        /// let state = StatsDetailReducer.State(goalId: 1)
+        /// let state = StatsDetailReducer.State(
+        ///     goalId: 1,
+        ///     initialMonth: TXCalendarDate()
+        /// )
         /// ```
-        public init(goalId: Int64) {
+        public init(goalId: Int64, initialMonth: TXCalendarDate) {
             self.goalId = goalId
-            
-            let currentMonth = TXCalendarDate()
-            self.currentMonth = currentMonth
+
+            self.currentMonth = initialMonth
             self.monthlyData = TXCalendarDataGenerator.generateMonthData(
-                for: currentMonth,
+                for: initialMonth,
                 hideAdjacentDates: true
             )
         }
@@ -95,47 +103,61 @@ public struct StatsDetailReducer {
     /// 통계 상세 화면에서 발생 가능한 액션입니다.
     public enum Action: BindableAction {
         case binding(BindingAction<State>)
-        
-        // MARK: - LifeCycle
-        case onAppear
-        case onDisappear
-        
-        // MARK: - User Action
-        case navigationBarTapped(TXNavigationBar.Action)
-        case previousMonthTapped
-        case nextMonthTapped
-        case calendarSwiped(TXCalendar.SwipeGesture)
-        case calendarCellTapped(TXCalendarDateItem)
-        case dropDownSelected(GoalDropList)
-        case backgroundTapped
-        case modalConfirmTapped
-        
-        // MARK: - Network
-        case fetchStatsDetailCalendar
-        case fetchStatsDetailCalendarSuccess(StatsDetail, month: String)
-        case fetchStatsDetailCalendarFailed
-        case fetchStatsDetailSummary
-        case fetchStatsDetailSummarySuccess(StatsDetail.Summary)
-        case fetchStatsDetailSummaryFailed
-        case patchCompleteGoal
-        case completeGoalSuccees
-        case deleteGoal
-        case deleteGoalSuccees
-        
-        // MARK: - Update State
-        case updateStatsDetail(StatsDetail)
-        case updateStatsSummary(StatsDetail.Summary)
-        case updateMonthlyDate(([StatsDetail.CompletedDate]))
-        case showToast(String)
-        
+
+        // MARK: - View
+        public enum View: Equatable {
+            case onAppear
+            case onDisappear
+            case navigationBarTapped(TXNavigationBar.Action)
+            case previousMonthTapped
+            case nextMonthTapped
+            case calendarSwiped(TXCalendar.SwipeGesture)
+            case calendarCellTapped(TXCalendarDateItem)
+            case dropDownSelected(GoalDropList)
+            case backgroundTapped
+            case modalConfirmTapped
+            case dataRetryTapped
+        }
+
+        // MARK: - Internal
+        public enum Internal: Equatable {
+            case fetchStatsDetailCalendar
+            case fetchStatsDetailSummary
+            case patchCompleteGoal
+            case deleteGoal
+            case updateStatsDetail(StatsDetail)
+            case updateStatsSummary(StatsDetail.Summary)
+            case updateMonthlyDate(([StatsDetail.CompletedDate]))
+        }
+
+        // MARK: - Response
+        public enum Response: Equatable {
+            case fetchStatsDetailCalendarSuccess(StatsDetail, month: String)
+            case fetchStatsDetailCalendarFailed(month: String)
+            case fetchStatsDetailSummarySuccess(StatsDetail.Summary)
+            case fetchStatsDetailSummaryFailed
+            case completeGoalSuccees
+            case deleteGoalSuccees
+        }
+
+        // MARK: - Presentation
+        public enum Presentation: Equatable {
+            case showToast(String)
+        }
+
         // MARK: - Delegate
         case delegate(Delegate)
-        
+
         public enum Delegate {
             case navigateBack
             case goToGoalDetail(goalId: Int64, isCompletedPartner: Bool, date: String)
             case goToGoalEdit(EditableGoal)
         }
+
+        case view(View)
+        case `internal`(Internal)
+        case response(Response)
+        case presentation(Presentation)
     }
 
     /// 외부에서 주입된 Reduce로 StatsDetailReducer를 구성합니다.

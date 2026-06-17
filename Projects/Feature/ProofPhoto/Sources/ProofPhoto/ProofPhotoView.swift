@@ -11,6 +11,7 @@ import SwiftUI
 import ComposableArchitecture
 import FeatureProofPhotoInterface
 import SharedDesignSystem
+import SharedPerfTestingSupport
 import SharedUtil
 
 /// 인증샷 화면을 렌더링하는 View입니다.
@@ -70,8 +71,23 @@ public struct ProofPhotoView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .observeKeyboardFrame($keyboardFrame)
         .background(Color.Gray.gray500)
+        .perfStateMarker(
+            slug: "proof-photo",
+            key: "comment-text",
+            value: store.commentText
+        )
+        // P4-2: `preview-ready.true` now reflects the **decoded preview
+        // representation** (`store.previewImage != nil`), not merely
+        // `imageData != nil`. Plan §D semantics tightened — distinguishes
+        // "decoded preview prepared and renderable" from "imageData set
+        // but decode failed or pending".
+        .perfStateMarker(
+            slug: "proof-photo",
+            key: "preview-ready",
+            value: store.previewImage != nil ? "true" : "false"
+        )
         .onAppear {
-            store.send(.onAppear)
+            store.send(.view(.onAppear))
         }
         .txToast(item: $store.toast, customPadding: 75)
         .txLoading(item: store.isUploading ? "업로드 중..." : nil)
@@ -105,7 +121,7 @@ private extension ProofPhotoView {
             Spacer()
             
             Button {
-                store.send(.closeButtonTapped)
+                store.send(.view(.closeButtonTapped))
             } label: {
                 Image.Icon.Symbol.closeM
                     .resizable()
@@ -127,30 +143,33 @@ private extension ProofPhotoView {
     
     @ViewBuilder
     var photoPreview: some View {
-        if store.hasImage,
-           let imageData = store.imageData,
-           let image = UIImage(data: imageData) {
-            previewContainer {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
+        Group {
+            // P4-2: render from pre-decoded `previewImage` instead of
+            // recreating `UIImage(data: imageData)` per body re-eval.
+            if let image = store.previewImage {
+                previewContainer {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                }
+            } else if let session = store.captureSession {
+                previewContainer {
+                    CameraPreview(session: session)
+                }
+            } else {
+                Rectangle()
+                    .frame(maxWidth: .infinity)
+                    .aspectRatio(1, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 76))
             }
-        } else if let session = store.captureSession {
-            previewContainer {
-                CameraPreview(session: session)
-            }
-        } else {
-            Rectangle()
-                .frame(maxWidth: .infinity)
-                .aspectRatio(1, contentMode: .fit)
-                .clipShape(RoundedRectangle(cornerRadius: 76))
         }
+        .accessibilityIdentifier("feature.proof-photo.preview")
     }
 
     var previewTopControls: some View {
         HStack {
             Button {
-                store.send(.flashButtonTapped)
+                store.send(.view(.flashButtonTapped))
             } label: {
                 flashIcon
                     .renderingMode(.template)
@@ -202,7 +221,7 @@ private extension ProofPhotoView {
                         backgroundColor: Color.Gray.gray400
                     )
                 ),
-                onTap: { store.send(.switchButtonTapped) }
+                onTap: { store.send(.view(.switchButtonTapped)) }
             )
         }
     }
@@ -210,7 +229,7 @@ private extension ProofPhotoView {
     var uploadControls: some View {
         HStack(spacing: Spacing.spacing6) {
             Button {
-                store.send(.returnButtonTapped)
+                store.send(.view(.returnButtonTapped))
             } label: {
                 Image.Icon.Symbol.icReturn
                     .resizable()
@@ -226,7 +245,7 @@ private extension ProofPhotoView {
                     size: .m,
                     state: .standard
                 ),
-                onTap: { store.send(.uploadButtonTapped) }
+                onTap: { store.send(.view(.uploadButtonTapped)) }
             )
             
             Color.clear
@@ -252,7 +271,7 @@ private extension ProofPhotoView {
     
     var captureButton: some View {
         Button {
-            store.send(.captureButtonTapped)
+            store.send(.view(.captureButtonTapped))
         } label: {
             Circle()
                 .fill(.white)
@@ -279,7 +298,7 @@ private extension ProofPhotoView {
             .transition(.opacity)
             .animation(.easeInOut, value: store.isCommentFocused)
             .onTapGesture {
-                store.send(.dimmedBackgroundTapped)
+                store.send(.view(.dimmedBackgroundTapped))
             }
     }
 }
@@ -328,7 +347,7 @@ private extension ProofPhotoView {
             }
             .padding(.bottom, 28)
             .frame(width: rectFrame.width, height: rectFrame.height, alignment: .bottom)
-            .offset(x: posX, y: posY)
+            .offset(x: posX, y: posY - keyboardInset)
             .animation(.easeOut(duration: 0.25), value: keyboardInset)
         }
     }
@@ -343,12 +362,12 @@ private extension ProofPhotoView {
         TXCommentCircle(
             commentText: $store.commentText,
             isEditable: true,
-            keyboardInset: keyboardInset,
             isFocused: $store.isCommentFocused,
             onFocused: { isFocused in
-                store.send(.focusChanged(isFocused))
+                store.send(.view(.focusChanged(isFocused)))
             }
         )
+        .accessibilityIdentifier("feature.proof-photo.comment-circle")
     }
 }
 

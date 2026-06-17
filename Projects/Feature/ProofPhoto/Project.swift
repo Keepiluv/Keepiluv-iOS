@@ -26,6 +26,7 @@ let project = Project.makeModule(
                     .domain(interface: .goal),
                     .domain(interface: .photoLog),
                     .shared(implements: .designSystem),
+                    .shared(implements: .perfTestingSupport),
                     .shared(implements: .util),
                     .external(dependency: .ComposableArchitecture)
                 ]
@@ -51,9 +52,15 @@ let project = Project.makeModule(
             example: .proofPhoto,
             config: .init(
                 dependencies: [
-                    .feature(interface: .proofPhoto)
+                    .feature(interface: .proofPhoto),
+                    .feature(implements: .proofPhoto),
+                    .core(implements: .captureSession),
+                    .core(interface: .crashlytics),
+                    .domain(interface: .photoLog),
+                    .external(dependency: .ComposableArchitecture)
                 ]
             )
-        )
+        ),
+        .feature(exampleUITests: .proofPhoto)
     ]
 )

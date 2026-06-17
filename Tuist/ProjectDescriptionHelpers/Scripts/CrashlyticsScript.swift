@@ -21,9 +21,9 @@ public extension TargetScript {
             exit 0
         fi
 
-        UPLOAD_SYMBOLS="$SRCROOT/../../Tuist/.build/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols"
+        UPLOAD_SYMBOLS="$SRCROOT/../../Tuist/.build/checkouts/firebase-ios-sdk-xcframeworks/Sources/FirebaseCrashlytics/upload-symbols"
         if [ ! -x "$UPLOAD_SYMBOLS" ]; then
-            UPLOAD_SYMBOLS=$(find "$SRCROOT/../.." -maxdepth 6 -name "upload-symbols" -path "*/firebase-ios-sdk/Crashlytics/*" 2>/dev/null | head -1)
+            UPLOAD_SYMBOLS=$(find "$SRCROOT/../.." -maxdepth 8 -name "upload-symbols" -path "*/FirebaseCrashlytics/*" 2>/dev/null | head -1)
         fi
         if [ -z "$UPLOAD_SYMBOLS" ] || [ ! -x "$UPLOAD_SYMBOLS" ]; then
             echo "warning: Firebase Crashlytics upload-symbols not found. Run 'tuist install'."

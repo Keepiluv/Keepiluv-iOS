@@ -171,6 +171,10 @@ struct AppCoordinator {
                             pushClient: pushClient,
                             notificationClient: notificationClient
                         ),
+                        requestNotificationAuthorizationIfNeededEffect(
+                            pushClient: pushClient,
+                            notificationClient: notificationClient
+                        ),
                         subscribeTokenRefreshEffect(
                             pushClient: pushClient,
                             notificationClient: notificationClient
@@ -184,7 +188,7 @@ struct AppCoordinator {
                     // pending 딥링크가 있으면 처리
                     if let pendingDeepLink = state.pendingNotificationDeepLink {
                         state.pendingNotificationDeepLink = nil
-                        effects.append(.send(.route(.mainTab(.notificationDeepLinkReceived(pendingDeepLink)))))
+                        effects.append(.send(.route(.mainTab(.view(.notificationDeepLinkReceived(pendingDeepLink))))))
                     }
                     
                     return .merge(effects)
@@ -231,7 +235,7 @@ struct AppCoordinator {
                 }
                 
                 state.pendingNotificationDeepLink = nil
-                return .send(.route(.mainTab(.notificationDeepLinkReceived(deepLink))))
+                return .send(.route(.mainTab(.view(.notificationDeepLinkReceived(deepLink)))))
 
             case let .route(.auth(.delegate(.loginSucceeded(authResult)))):
                 crashlytics.setUserIdentifier("\(authResult.userId)")
@@ -280,7 +284,7 @@ struct AppCoordinator {
                 
                 if let pendingDeepLink = state.pendingNotificationDeepLink {
                     state.pendingNotificationDeepLink = nil
-                    effects.append(.send(.route(.mainTab(.notificationDeepLinkReceived(pendingDeepLink)))))
+                    effects.append(.send(.route(.mainTab(.view(.notificationDeepLinkReceived(pendingDeepLink))))))
                 }
                 
                 return .merge(effects)
@@ -348,10 +352,33 @@ private func registerFCMTokenEffect(
         // 1. 현재 권한 상태 확인
         let settings = await UNUserNotificationCenter.current().notificationSettings()
 
-        // 이미 권한이 허용된 경우에만 등록 (notDetermined/denied는 온보딩 완료 시점에서 처리)
+        // 이미 권한이 허용된 경우에만 등록 (notDetermined는 별도 fallback/온보딩에서 처리)
         guard settings.authorizationStatus == .authorized else { return }
 
         // 3. APNS 등록 및 FCM 토큰 획득
+        await pushClient.registerForRemoteNotifications()
+
+        guard let token = try? await pushClient.getFCMToken(),
+              let deviceId = await UIDevice.current.identifierForVendor?.uuidString else {
+            return
+        }
+
+        try? await notificationClient.registerFCMToken(token, deviceId)
+        await send(.registerFCMTokenCompleted)
+    }
+}
+
+private func requestNotificationAuthorizationIfNeededEffect(
+    pushClient: PushClient,
+    notificationClient: NotificationClient
+) -> Effect<AppCoordinator.Action> {
+    .run { send in
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        guard settings.authorizationStatus == .notDetermined else { return }
+
+        let granted = (try? await pushClient.requestAuthorization()) ?? false
+        guard granted else { return }
+
         await pushClient.registerForRemoteNotifications()
 
         guard let token = try? await pushClient.getFCMToken(),

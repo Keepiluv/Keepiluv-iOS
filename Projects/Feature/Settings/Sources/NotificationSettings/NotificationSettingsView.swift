@@ -19,14 +19,20 @@ struct NotificationSettingsView: View {
         VStack(spacing: 0) {
             navigationBar
 
-            ZStack {
-                if !store.isSystemNotificationEnabled {
-                    disabledView
-                } else {
-                    ScrollView {
-                        notificationList
-                            .padding(.top, Spacing.spacing8)
-                            .padding(.horizontal, Spacing.spacing8)
+            if store.isNotificationSettingsFetchFailed {
+                DataRetryView {
+                    store.send(.view(.notificationSettingsDataRetryTapped))
+                }
+            } else {
+                ZStack {
+                    if !store.isSystemNotificationEnabled {
+                        disabledView
+                    } else {
+                        ScrollView {
+                            notificationList
+                                .padding(.top, Spacing.spacing8)
+                                .padding(.horizontal, Spacing.spacing8)
+                        }
                     }
                 }
             }
@@ -35,11 +41,11 @@ struct NotificationSettingsView: View {
         .background(Color.Common.white)
         .navigationBarBackButtonHidden(true)
         .onAppear {
-            store.send(.notificationSettingsOnAppear)
+            store.send(.view(.notificationSettingsOnAppear))
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
-                store.send(.notificationSettingsOnAppear)
+                store.send(.view(.notificationSettingsOnAppear))
             }
         }
         .txLoading(isPresented: store.isNotificationSettingsLoading)
@@ -52,7 +58,7 @@ private extension NotificationSettingsView {
     var navigationBar: some View {
         TXNavigationBar(style: .subTitle(title: "알림 설정", type: .back)) { action in
             if action == .backTapped {
-                store.send(.subViewBackButtonTapped)
+                store.send(.view(.subViewBackButtonTapped))
             }
         }
     }
@@ -73,7 +79,7 @@ private extension NotificationSettingsView {
 
     var enableNotificationBanner: some View {
         Button {
-            store.send(.enableNotificationBannerTapped)
+            store.send(.view(.enableNotificationBannerTapped))
         } label: {
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -125,7 +131,7 @@ private extension NotificationSettingsView {
         toggleItem(
             title: "찌르기 푸쉬알림",
             isOn: store.isPokePushEnabled,
-            onToggle: { store.send(.pokePushToggled($0)) }
+            onToggle: { store.send(.view(.pokePushToggled($0))) }
         )
     }
 
@@ -133,7 +139,7 @@ private extension NotificationSettingsView {
         toggleItem(
             title: "마케팅 정보 푸쉬알림",
             isOn: store.isMarketingPushEnabled,
-            onToggle: { store.send(.marketingPushToggled($0)) }
+            onToggle: { store.send(.view(.marketingPushToggled($0))) }
         )
     }
 
@@ -141,7 +147,7 @@ private extension NotificationSettingsView {
         toggleItem(
             title: "야간 마케팅 정보 푸쉬알림",
             isOn: store.isNightMarketingPushEnabled,
-            onToggle: { store.send(.nightPushToggled($0)) }
+            onToggle: { store.send(.view(.nightPushToggled($0))) }
         )
     }
 

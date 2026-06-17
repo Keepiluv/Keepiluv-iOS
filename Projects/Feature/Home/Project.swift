@@ -41,6 +41,7 @@ let project = Project.makeModule(
                     .feature(interface: .home),
                     .core(interface: .analytics),
                     .shared(implements: .designSystem),
+                    .shared(implements: .perfTestingSupport),
                     .shared(implements: .util),
                     .external(dependency: .ComposableArchitecture)
                 ]
@@ -69,11 +70,20 @@ let project = Project.makeModule(
                     .feature(interface: .common),
                     .feature(implements: .home),
                     .feature(interface: .home),
+                    .feature(implements: .goalDetail),
+                    .feature(implements: .makeGoal),
+                    .feature(implements: .notification),
+                    .feature(implements: .proofPhoto),
+                    .feature(implements: .settings),
+                    .feature(implements: .stats),
+                    .core(implements: .captureSession),
                     .domain(interface: .goal),
+                    .domain(interface: .notification),
                     .shared(implements: .designSystem),
                     .external(dependency: .ComposableArchitecture)
                 ]
             )
-        )
+        ),
+        .feature(exampleUITests: .home)
     ]
 )

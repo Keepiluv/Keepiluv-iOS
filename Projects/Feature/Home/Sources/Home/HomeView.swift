@@ -9,8 +9,8 @@ import SwiftUI
 
 import ComposableArchitecture
 import FeatureHomeInterface
-import FeatureProofPhotoInterface
 import SharedDesignSystem
+import SharedPerfTestingSupport
 
 /// 홈 화면을 렌더링하는 View입니다.
 ///
@@ -24,12 +24,21 @@ import SharedDesignSystem
 ///     }
 /// )
 /// ```
+///
+/// ## Read-set split (Pass 3 Commit 3)
+///
+/// The view is decomposed into sibling sub-view structs so SwiftUI's
+/// `@ObservableState` observation tracking can isolate which fields cause
+/// which sub-view to re-render. Each sub-view's body only reads the fields
+/// it actually uses, so a change to one field only invalidates the views
+/// that observe it. Presentation modifiers (sheets / modal / fullScreenCover
+/// / alert) move into `HomePresentationLayer`, a ViewModifier whose body
+/// reads the presentation bindings — keeping that read-set off the parent
+/// `HomeView.body`.
 public struct HomeView: View {
 
     @Bindable public var store: StoreOf<HomeReducer>
-    @Dependency(\.proofPhotoFactory) var proofPhotoFactory
-    @State private var emptyScrollHeight: CGFloat = 0
-    
+
     /// HomeView를 생성합니다.
     ///
     /// ## 사용 예시
@@ -39,231 +48,40 @@ public struct HomeView: View {
     public init(store: StoreOf<HomeReducer>) {
         self.store = store
     }
-    
+
     public var body: some View {
         VStack(spacing: 0) {
-            navigationBar
-            calendar
-            if store.hasCards {
-                content
+            // PERF probe harness — activated only for probe scenarios
+            // (`-UITEST_PROBE_SCENARIO`). Reading store.toast / store.calendarDate
+            // inside the harness adds an artificial read to the parent body;
+            // this is acceptable because probe scenarios are not the
+            // authoritative rendering metric.
+            if UITestMode.isProbeScenario {
+                HomePerfActionHarness(store: store)
+                PerfRebuildProxyPing("home.view.rebuild.proxy")
+            }
+            HomeNavigationBarSection(store: store)
+            HomeCalendarSection(store: store)
+            // The branch reads presentation booleans so it stays in the parent
+            // body. Each section owns the rest of its read-set.
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
+                }
+            } else if store.hasCards {
+                HomeContentSection(store: store)
             } else if store.isEmptyVisible {
-                emptyContent
+                HomeEmptyContentSection(store: store)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .modifier(PerfToastPresentationHarness(toast: $store.presentation.toast))
+        .modifier(PerfHomeCounterMarkersHarness())
+        .modifier(HomePresentationLayer(store: store))
         .onAppear {
-            store.send(.onAppear)
+            store.send(.view(.onAppear))
         }
-        .txBottomSheet(
-            isPresented: $store.isAddGoalPresented,
-            showDragIndicator: true,
-            sheetContent: {
-                AddGoalListView { category in
-                    store.send(.addGoalButtonTapped(category))
-                }
-            }
-        )
-        .txBottomSheet(
-            isPresented: $store.isCalendarSheetPresented,
-            sheetContent: {
-                TXCalendarBottomSheet(
-                    selectedDate: $store.calendarSheetDate,
-                    completeButtonText: "완료",
-                    onComplete: {
-                        store.send(.monthCalendarConfirmTapped)
-                    }
-                )
-            }
-        )
-        .txModal(
-            item: $store.modal,
-            onAction: { action in
-                if action == .confirm {
-                    store.send(.modalConfirmTapped)
-                }
-            }
-        )
-        .transaction { transaction in
-            transaction.disablesAnimations = false
-        }
-        .fullScreenCover(
-            isPresented: $store.isProofPhotoPresented,
-            onDismiss: { store.send(.proofPhotoDismissed) },
-        ) {
-            IfLetStore(store.scope(state: \.proofPhoto, action: \.proofPhoto)) { store in
-                proofPhotoFactory.makeView(store)
-            }
-        }
-        .cameraPermissionAlert(
-            isPresented: $store.isCameraPermissionAlertPresented,
-            onDismiss: { store.send(.cameraPermissionAlertDismissed) }
-        )
         .toolbar(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
-    }
-}
-
-// MARK: - SubViews
-private extension HomeView {
-    var navigationBar: some View {
-        TXNavigationBar(
-            style: .home(
-                .init(
-                    subTitle: store.calendarMonthTitle,
-                    mainTitle: store.mainTitle,
-                    isHiddenRefresh: store.isRefreshHidden,
-                    isRemainedAlarm: store.hasUnreadNotification
-                )
-            ), onAction: { action in
-                store.send(.navigationBarAction(action))
-            }
-        )
-    }
-    
-    var calendar: some View {
-        TXCalendar(
-            mode: .weekly,
-            currentDate: $store.calendarDate,
-            weeks: store.calendarWeeks,
-            config: .init(
-                dateStyle: .init(lastDateTextColor: Color.Gray.gray500)
-            ),
-            onSelect: { item in
-                store.send(.calendarDateSelected(item))
-            },
-            onSwipe: { swipe in
-                store.send(.weekCalendarSwipe(swipe))
-            }
-        )
-        .frame(maxWidth: .infinity, maxHeight: 76)
-    }
-    
-    var content: some View {
-        ScrollView {
-            Group {
-                headerRow
-                cardList
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 103)
-        }
-        .refreshable {
-            store.send(.fetchGoals)
-        }
-    }
-
-    var emptyContent: some View {
-        VStack(spacing: 0) {
-            headerRow
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-
-            ScrollView {
-                goalEmptyView
-                    // 실제 가시 영역 기준으로 중앙 정렬되도록 탭바 높이만큼 차감
-                    .frame(maxWidth: .infinity, minHeight: max(0, emptyScrollHeight - 58))
-                    .padding(.bottom, 58)
-            }
-            .scrollIndicators(.hidden)
-            .refreshable {
-                store.send(.fetchGoals)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                emptyArrow
-            }
-            .frame(maxHeight: .infinity)
-            .background {
-                GeometryReader { geo in
-                    Color.clear
-                        .onAppear { emptyScrollHeight = geo.size.height }
-                        .onChange(of: geo.size.height) { _, newValue in
-                            emptyScrollHeight = newValue
-                        }
-                }
-            }
-        }
-    }
-    
-    var headerRow: some View {
-        HStack(spacing: 0) {
-            Text(store.goalSectionTitle)
-                .typography(.b1_14b)
-            
-            Spacer()
-            
-            Button {
-                store.send(.editButtonTapped)
-            } label: {
-                Text("편집")
-                    .typography(.b1_14b)
-                    .foregroundStyle(Color.Gray.gray500)
-            }
-        }
-        .frame(height: 24)
-    }
-    
-    var cardList: some View {
-        LazyVStack(spacing: 16) {
-            ForEach(store.items) { item in
-                goalCard(for: item)
-            }
-        }
-        .padding(.top, 12)
-    }
-    
-    func goalCard(for item: HomeGoalItem) -> some View {
-        GoalCardView(
-            item: item.card,
-            onHeaderTapped: { store.send(.headerTapped(item.card)) },
-            onCheckButtonTapped: {
-                store.send(.goalCheckButtonTapped(
-                    id: item.id,
-                    isChecked: item.card.myCard.isSelected
-                ))
-            },
-            actionLeft: { store.send(.myCardTapped(item.card)) },
-            actionRight: { store.send(.yourCardTapped(item.card)) }
-        )
-    }
-    
-    @ViewBuilder
-    var goalEmptyView: some View {
-        Group {
-            if store.hadFirstGoal == true {
-                VStack(spacing: 8) {
-                    Image.Illustration.scare
-                        .resizable()
-                        .frame(width: 164, height: 164)
-                    
-                    Text("이 날은 목표가 없어요!")
-                        .typography(.t2_16b)
-                        .foregroundStyle(Color.Gray.gray400)
-                }
-            } else if store.hadFirstGoal == false {
-                VStack(spacing: 0) {
-                    Image.Illustration.emptyPoke
-                        .frame(height: 116)
-                    
-                    Text("첫 목표를 세워볼까요?")
-                        .typography(.t2_16b)
-                        .foregroundStyle(Color.Gray.gray400)
-                        .padding(.top, 16)
-                    
-                    Text("+ 버튼을 눌러 목표를 추가해보세요")
-                        .typography(.c1_12r)
-                        .foregroundStyle(Color.Gray.gray300)
-                        .padding(.top, 4)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    var emptyArrow: some View {
-        Image.Illustration.arrow
-            .padding(.bottom, 71 + 58)
-            .padding(.trailing, 86)
-            .ignoresSafeArea()
     }
 }

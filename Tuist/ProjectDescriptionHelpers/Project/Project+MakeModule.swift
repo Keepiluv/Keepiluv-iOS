@@ -17,6 +17,50 @@ import ProjectDescription
 ///
 /// **Project.swift**에서 사용됩니다.
 public extension Project {
+    private static var defaultModuleSettings: Settings {
+        .settings(
+            configurations: [
+                .debug(name: "Debug"),
+                .release(name: "Release"),
+                .release(
+                    name: "Profile",
+                    settings: [
+                        "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym",
+                        "COPY_PHASE_STRIP": "NO",
+                        "STRIP_INSTALLED_PRODUCT": "NO",
+                        "CONFIGURATION_BUILD_DIR": "$(BUILD_DIR)/Release$(EFFECTIVE_PLATFORM_NAME)",
+                        "FRAMEWORK_SEARCH_PATHS": [
+                            "$(inherited)",
+                            "$(BUILD_DIR)/Release$(EFFECTIVE_PLATFORM_NAME)"
+                        ],
+                        "LIBRARY_SEARCH_PATHS": [
+                            "$(inherited)",
+                            "$(BUILD_DIR)/Release$(EFFECTIVE_PLATFORM_NAME)"
+                        ]
+                    ]
+                ),
+                .release(
+                    name: "PerfProfile",
+                    settings: [
+                        "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym",
+                        "COPY_PHASE_STRIP": "NO",
+                        "STRIP_INSTALLED_PRODUCT": "NO",
+                        "SWIFT_ACTIVE_COMPILATION_CONDITIONS": "$(inherited) PERF_TESTING",
+                        "CONFIGURATION_BUILD_DIR": "$(BUILD_DIR)/Release$(EFFECTIVE_PLATFORM_NAME)",
+                        "FRAMEWORK_SEARCH_PATHS": [
+                            "$(inherited)",
+                            "$(BUILD_DIR)/Release$(EFFECTIVE_PLATFORM_NAME)"
+                        ],
+                        "LIBRARY_SEARCH_PATHS": [
+                            "$(inherited)",
+                            "$(BUILD_DIR)/Release$(EFFECTIVE_PLATFORM_NAME)"
+                        ]
+                    ]
+                )
+            ]
+        )
+    }
+
     /// `Project`모듈을 생성합니다.
     ///  내부적으로 `Project.init`과 1:1로 매핑됩니다.
     /// - Parameters:
@@ -53,7 +97,7 @@ public extension Project {
             classPrefix: classPrefix,
             options: options,
             packages: packages,
-            settings: settings,
+            settings: settings ?? defaultModuleSettings,
             targets: targets,
             schemes: schemes,
             fileHeaderTemplate: fileHeaderTemplate,

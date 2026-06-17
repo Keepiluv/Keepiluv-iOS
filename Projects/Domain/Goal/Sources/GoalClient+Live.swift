@@ -99,10 +99,13 @@ extension GoalClient: @retroactive DependencyKey {
                     throw error
                 }
             },
-            pokePartner: { goalId in
+            pokePartner: { goalId, requestDTO in
                 do {
                     let _: EmptyResponse = try await networkClient.request(
-                        endpoint: PokeEndpoint.poke(goalId: goalId)
+                        endpoint: PokeEndpoint.poke(
+                            goalId: goalId,
+                            request: requestDTO
+                        )
                     )
                 } catch {
                     throw error

@@ -34,4 +34,23 @@ public extension Target {
         
         return makeTarget(config: newConfig)
     }
+
+    /// Shared PerfTestingSupport의 XCTest 전용 지원 타겟을 생성합니다.
+    /// 앱 런타임 모듈과 XCTest import 경계를 분리하기 위한 타겟입니다.
+    static func sharedPerfTestingSupportUITests(config: TargetConfig) -> Self {
+        var newConfig = config
+        newConfig.name = Module.Shared.name + Module.Shared.perfTestingSupport.rawValue + "UITests"
+        newConfig.product = .staticFramework
+        newConfig.sources = "UITests/Sources/**"
+        newConfig.dependencies = [
+            .shared(implements: .perfTestingSupport)
+        ] + newConfig.dependencies
+        newConfig.settings = .settings(
+            base: [
+                "ENABLE_TESTING_SEARCH_PATHS": "YES"
+            ]
+        )
+
+        return makeTarget(config: newConfig)
+    }
 }

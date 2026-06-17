@@ -63,8 +63,8 @@ public struct MainTabView: View {
             }
         }
         .txToast(
-            item: $store.home.home.toast,
-            customPadding: Constants.tabBarHeight
+            item: $store.home.home.presentation.toast,
+            customPadding: TXTabBarLayout.height
         )
         .txLoading(isPresented: isTabLoading)
     }
@@ -72,8 +72,8 @@ public struct MainTabView: View {
 
 private extension MainTabView {
     var isTabLoading: Bool {
-        (store.selectedTab == .home && store.home.routes.isEmpty && store.home.home.isLoading) ||
-        (store.selectedTab == .statistics && store.stats.routes.isEmpty && store.stats.stats.isLoading)
+        (store.selectedTab == .home && store.home.routes.isEmpty && store.home.home.ui.isLoading) ||
+        (store.selectedTab == .statistics && store.stats.routes.isEmpty && store.stats.stats.ui.isLoading)
     }
 }
 
@@ -85,7 +85,7 @@ private extension MainTabView {
                 size: .m,
                 state: .standard
             ),
-            onTap: { store.send(.home(.home(.floatingButtonTapped))) }
+            onTap: { store.send(.home(.home(.view(.floatingButtonTapped)))) }
         )
         .outsideBorder(
             Color.Gray.gray300,
@@ -94,13 +94,7 @@ private extension MainTabView {
         )
         .shadow(color: .black.opacity(0.16), radius: 20, x: 2, y: 1)
         .padding(.trailing, 16)
-        .padding(.bottom, 12 + Constants.tabBarHeight)
-    }
-}
-
-private extension MainTabView {
-    enum Constants {
-        static let tabBarHeight: CGFloat = 58
+        .padding(.bottom, 12 + TXTabBarLayout.height)
     }
 }
 

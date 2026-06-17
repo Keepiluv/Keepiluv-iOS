@@ -23,8 +23,7 @@ let project = Project.makeModule(
                     .external(dependency: .KakaoSDKCommon),
                     .external(dependency: .KakaoSDKAuth),
                     .external(dependency: .KakaoSDKUser),
-                    .external(dependency: .GoogleSignIn),
-                    .external(dependency: .GoogleSignInSwift)
+                    .external(dependency: .GoogleSignIn)
                 ]
             )
         ),

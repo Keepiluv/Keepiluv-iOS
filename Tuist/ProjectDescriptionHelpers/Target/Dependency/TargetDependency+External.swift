@@ -16,14 +16,15 @@ public extension TargetDependency {
     /// 각 case는 SPM 패키지를 나타내며,
     /// `TargetDependency.external(dependency:)`와 유기적으로 사용됩니다.
     enum External: String {
+        // Firebase: akaffenberger 미러는 product 단위로 노출하며 FirebaseCore는
+        // 별도 product가 아닌 다른 Firebase product의 transitive 의존성으로 포함된다.
+        // 따라서 FirebaseCore는 enum에 두지 않는다.
         case FirebaseAnalytics
-        case FirebaseCore
         case FirebaseMessaging
         case FirebaseRemoteConfig
         case FirebaseCrashlytics
-        
+
         case GoogleSignIn
-        case GoogleSignInSwift
 
         case KakaoSDKCommon
         case KakaoSDKAuth

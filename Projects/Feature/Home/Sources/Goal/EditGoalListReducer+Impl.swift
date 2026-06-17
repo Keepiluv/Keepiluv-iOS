@@ -30,52 +30,52 @@ extension EditGoalListReducer {
         let reducer = Reduce<State, Action> { state, action in
             switch action {
                 // MARK: - LifeCycle
-            case .onAppear:
-                return .send(.fetchGoals)
+            case .view(.onAppear):
+                return .send(.internal(.fetchGoals))
                 
-            case .onDisappear:
+            case .view(.onDisappear):
                 state.selectedCardMenu = nil
                 return .none
                 
                 // MARK: - User Action
-            case let .calendarDateSelected(item):
+            case let .view(.calendarDateSelected(item)):
                 guard let components = item.dateComponents,
                       let year = components.year,
                       let month = components.month,
                       let day = components.day else {
                     return .none
                 }
-                return .send(.setCalendarDate(.init(year: year, month: month, day: day)))
+                return .send(.internal(.setCalendarDate(.init(year: year, month: month, day: day))))
                 
-            case let .weekCalendarSwipe(swipe):
+            case let .view(.weekCalendarSwipe(swipe)):
                 switch swipe {
                 case .next:
-                    guard let nextWeekDate = TXCalendarUtil.dateByAddingWeek(
+                    guard let nextWeekDate = TXCalendarUtil.dateByApplyingWeeklyBoundarySwipe(
                         from: state.calendarDate,
                         by: 1
                     ) else {
                         return .none
                     }
-                    return .send(.setCalendarDate(nextWeekDate))
+                    return .send(.internal(.setCalendarDate(nextWeekDate)))
 
                 case .previous:
-                    guard let previousWeekDate = TXCalendarUtil.dateByAddingWeek(
+                    guard let previousWeekDate = TXCalendarUtil.dateByApplyingWeeklyBoundarySwipe(
                         from: state.calendarDate,
                         by: -1
                     ) else {
                         return .none
                     }
-                    return .send(.setCalendarDate(previousWeekDate))
+                    return .send(.internal(.setCalendarDate(previousWeekDate)))
                 }
                 
-            case .navigationBackButtonTapped:
+            case .view(.navigationBackButtonTapped):
                 return .send(.delegate(.navigateBack))
                 
-            case let .cardMenuButtonTapped(card):
+            case let .view(.cardMenuButtonTapped(card)):
                 state.selectedCardMenu = state.selectedCardMenu == card ? nil : card
                 return .none
                 
-            case let .cardMenuItemSelected(item):
+            case let .view(.cardMenuItemSelected(item)):
                 guard let card = state.selectedCardMenu else { return .none }
                 
                 switch item {
@@ -88,7 +88,7 @@ extension EditGoalListReducer {
                         state.toast = .warning(message: "이미 완료한 목표입니다!")
                     } else {
                         guard let editableGoal = state.editableGoals?.first(where: { $0.id == card.id }) else {
-                            return .send(.apiError("목표 수정에 실패했어요"))
+                            return .send(.response(.apiError("목표 수정에 실패했어요")))
                         }
                         return .send(.delegate(.goToGoalEdit(editableGoal)))
                     }
@@ -119,11 +119,11 @@ extension EditGoalListReducer {
                 state.selectedCardMenu = nil
                 return .none
                 
-            case .backgroundTapped:
+            case .view(.backgroundTapped):
                 state.selectedCardMenu = nil
                 return .none
                 
-            case .modalConfirmTapped:
+            case .view(.modalConfirmTapped):
                 guard !state.isLoading,
                       let goalId = state.pendingGoalId,
                       let pendingAction = state.pendingAction else {
@@ -138,9 +138,9 @@ extension EditGoalListReducer {
                     return .run { send in
                         do {
                             _ = try await goalClient.completeGoal(goalId)
-                            await send(.completeGoalCompleted(goalId: goalId))
+                            await send(.response(.completeGoalCompleted(goalId: goalId)))
                         } catch {
-                            await send(.apiError("이미 끝났습니다."))
+                            await send(.response(.apiError("이미 끝났습니다.")))
                         }
                     }
                     
@@ -148,28 +148,32 @@ extension EditGoalListReducer {
                     return .run { send in
                         do {
                             try await goalClient.deleteGoal(goalId)
-                            await send(.deleteGoalCompleted(goalId: goalId))
+                            await send(.response(.deleteGoalCompleted(goalId: goalId)))
                         } catch {
-                            await send(.apiError("목표 삭제에 실패했어요"))
+                            await send(.response(.apiError("목표 삭제에 실패했어요")))
                         }
                     }
                 }
                 
-            case .toastButtonTapped:
+            case .view(.toastButtonTapped):
                 return .send(.delegate(.goToCompletedStats))
+
+            case .view(.dataRetryTapped):
+                return .send(.internal(.fetchGoals))
                 
                 // MARK: - Update State
-            case let .setCalendarDate(date):
+            case let .internal(.setCalendarDate(date)):
                 if date == state.calendarDate {
                     return .none
                 }
                 state.calendarDate = date
                 state.calendarWeeks = TXCalendarDataGenerator.generateWeekData(for: date)
                 state.isLoading = true
-                return .send(.fetchGoals)
+                return .send(.internal(.fetchGoals))
                 
-            case .fetchGoals:
+            case .internal(.fetchGoals):
                 state.isLoading = true
+                state.isFetchFailed = false
                 let date = state.calendarDate
                 return .run { send in
                     do {
@@ -190,17 +194,18 @@ extension EditGoalListReducer {
                                     endDate: goal.endDate
                                 )
                             }
-                        await send(.fetchGoalsCompleted(goals, date: date))
+                        await send(.response(.fetchGoalsCompleted(goals, date: date)))
                     } catch {
-                        await send(.apiError("목표 조회에 실패했어요"))
+                        await send(.response(.apiError("목표 조회에 실패했어요")))
                     }
                 }
 
-            case let .fetchGoalsCompleted(goals, date):
+            case let .response(.fetchGoalsCompleted(goals, date)):
                 if date != state.calendarDate {
                     return .none
                 }
                 state.isLoading = false
+                state.isFetchFailed = false
                 state.editableGoals = goals
                 let items = goals.map {
                     GoalEditCardItem(
@@ -218,29 +223,34 @@ extension EditGoalListReducer {
                 }
                 return .none
 
-            case let .deleteGoalCompleted(goalId):
+            case let .response(.deleteGoalCompleted(goalId)):
                 state.isLoading = false
                 state.pendingGoalId = nil
                 state.pendingAction = nil
                 state.editableGoals?.removeAll { $0.id == goalId }
                 state.cards?.removeAll { $0.id == goalId }
-                return .send(.showToast(.delete(message: "목표가 삭제되었어요")))
+                return .send(.presentation(.showToast(.delete(message: "목표가 삭제되었어요"))))
 
-            case let .completeGoalCompleted(goalId):
+            case let .response(.completeGoalCompleted(goalId)):
                 state.isLoading = false
                 state.pendingGoalId = nil
                 state.pendingAction = nil
                 state.editableGoals?.removeAll { $0.id == goalId }
                 state.cards?.removeAll { $0.id == goalId }
-                return .send(.showToast(.success(message: "목표를 이뤘어요", buttonText: "보러가기")))
+                return .send(.presentation(.showToast(.success(message: "목표를 이뤘어요", buttonText: "보러가기"))))
 
-            case let .apiError(message):
+            case let .response(.apiError(message)):
                 state.isLoading = false
                 state.pendingGoalId = nil
                 state.pendingAction = nil
-                return .send(.showToast(.warning(message: message)))
+                
+                if state.cards == nil {
+                    state.isFetchFailed = true
+                    return .none
+                }
+                return .send(.presentation(.showToast(.warning(message: message))))
 
-            case let .showToast(toast):
+            case let .presentation(.showToast(toast)):
                 state.toast = toast
                 return .none
 

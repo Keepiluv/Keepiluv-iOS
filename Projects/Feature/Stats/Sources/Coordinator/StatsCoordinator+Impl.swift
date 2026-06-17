@@ -33,9 +33,9 @@ extension StatsCoordinator {
         let reducer = Reduce<State, Action> { state, action in
             switch action {
                 // MARK: - Child Action
-            case let .stats(.delegate(.goToStatsDetail(goalId))):
+            case let .stats(.delegate(.goToStatsDetail(goalId, calendarDate))):
                 state.routes.append(.statsDetail)
-                state.statsDetail = .init(goalId: goalId)
+                state.statsDetail = .init(goalId: goalId, initialMonth: calendarDate)
                 return .none
 
             case let .statsDetail(.delegate(.goToGoalDetail(goalId, isCompletedPartner, date))):
@@ -60,7 +60,7 @@ extension StatsCoordinator {
                 state.routes.removeLast()
                 return .none
 
-            case .goalDetail(.onDisappear):
+            case .goalDetail(.view(.onDisappear)):
                 if !state.routes.contains(.goalDetail) {
                     state.goalDetail = nil
                 }
@@ -70,7 +70,7 @@ extension StatsCoordinator {
                 state.routes.removeLast()
                 return .none
 
-            case .makeGoal(.onDisappear):
+            case .makeGoal(.view(.onDisappear)):
                 if !state.routes.contains(.makeGoal) {
                     state.makeGoal = nil
                 }

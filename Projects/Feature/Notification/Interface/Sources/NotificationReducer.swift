@@ -19,6 +19,7 @@ public struct NotificationReducer {
     public struct State: Equatable {
         public var notifications: IdentifiedArrayOf<NotificationItem>
         public var isLoading: Bool
+        public var isFetchFailed: Bool
         public var isLoadingMore: Bool
         public var hasNext: Bool
         public var lastId: Int64?
@@ -26,12 +27,14 @@ public struct NotificationReducer {
         public init(
             notifications: IdentifiedArrayOf<NotificationItem> = [],
             isLoading: Bool = false,
+            isFetchFailed: Bool = false,
             isLoadingMore: Bool = false,
             hasNext: Bool = false,
             lastId: Int64? = nil
         ) {
             self.notifications = notifications
             self.isLoading = isLoading
+            self.isFetchFailed = isFetchFailed
             self.isLoadingMore = isLoadingMore
             self.hasNext = hasNext
             self.lastId = lastId
@@ -42,26 +45,31 @@ public struct NotificationReducer {
     public enum Action: BindableAction {
         case binding(BindingAction<State>)
 
-        // MARK: - User Action
-        case backButtonTapped
-        case notificationTapped(NotificationItem)
-        case loadMore
+        // MARK: - View
+        public enum View: Equatable {
+            case onAppear
+            case backButtonTapped
+            case notificationTapped(NotificationItem)
+            case loadMore
+            case dataRetryTapped
+        }
 
-        // MARK: - Lifecycle
-        case onAppear
-
-        // MARK: - Internal
-        case fetchListResponse(Result<NotificationListResult, Error>)
-        case fetchMoreResponse(Result<NotificationListResult, Error>)
-        case markAsReadResponse(NotificationItem, Result<Void, Error>)
+        // MARK: - Response
+        public enum Response {
+            case fetchListResponse(Result<NotificationListResult, Error>)
+            case fetchMoreResponse(Result<NotificationListResult, Error>)
+            case markAsReadResponse(NotificationItem, Result<Void, Error>)
+        }
 
         // MARK: - Delegate
-        case delegate(Delegate)
-
         public enum Delegate: Equatable {
             case navigateBack
             case notificationSelected(NotificationItem)
         }
+
+        case view(View)
+        case response(Response)
+        case delegate(Delegate)
     }
 
     public init(reducer: Reduce<State, Action>) {

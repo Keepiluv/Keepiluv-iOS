@@ -50,6 +50,8 @@ private struct TXBottomSheetModifier<SheetContent: View>: ViewModifier {
     @State private var sheetOffset: CGFloat = UIScreen.main.bounds.height
     @State private var dimmedOpacity: CGFloat = 0
     @State private var contentHeight: CGFloat = 0
+    @State private var isDismissing = false
+    @State private var dismissalGeneration = 0
     private let animationDuration: TimeInterval = 0.2
     private let dragAreaHeight: CGFloat = 28
 
@@ -57,7 +59,13 @@ private struct TXBottomSheetModifier<SheetContent: View>: ViewModifier {
         content
             .onChange(of: isPresented) {
                 if isPresented {
-                    isCoverPresented = true
+                    dismissalGeneration += 1
+                    isDismissing = false
+                    if isCoverPresented {
+                        presentAnimated()
+                    } else {
+                        isCoverPresented = true
+                    }
                 } else {
                     startDismiss()
                 }
@@ -66,22 +74,31 @@ private struct TXBottomSheetModifier<SheetContent: View>: ViewModifier {
                 isPresented: $isCoverPresented,
                 onDismiss: {
                     resetSheetState()
+                },
+                content: {
+                    ZStack(alignment: .bottom) {
+                        sheetView
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .ignoresSafeArea(.container, edges: .bottom)
+                    .onAppear { presentAnimated() }
+                    .presentationBackground { dimmedBackground }
                 }
-            ) {
-                ZStack(alignment: .bottom) {
-                    sheetView
+            )
+            .transaction { transaction in
+                if shouldDisableCoverTransactionAnimation {
+                    transaction.disablesAnimations = true
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .ignoresSafeArea(.container, edges: .bottom)
-                .onAppear { presentAnimated() }
-                .presentationBackground { dimmedBackground }
             }
-            .transaction { $0.disablesAnimations = true }
     }
 }
 
 // MARK: - SubViews {
 private extension TXBottomSheetModifier {
+    var shouldDisableCoverTransactionAnimation: Bool {
+        isDismissing || isCoverPresented != isPresented
+    }
+
     var sheetView: some View {
         VStack(spacing: 0) {
             dragContainer
@@ -90,6 +107,11 @@ private extension TXBottomSheetModifier {
         .padding(.bottom, TXSafeArea.inset(.bottom))
         .frame(maxWidth: .infinity, alignment: .bottom)
         .background(Color.Common.white)
+        .overlay {
+            Color.clear
+                .accessibilityIdentifier("tx.bottom-sheet.content")
+                .allowsHitTesting(false)
+        }
         .clipShape(
             UnevenRoundedRectangle(cornerRadii: .init(topLeading: Radius.m, topTrailing: Radius.m))
         )
@@ -121,6 +143,7 @@ private extension TXBottomSheetModifier {
                     .padding(.vertical, 11)
             }
         }
+        .accessibilityIdentifier("tx.bottom-sheet.drag-area")
         .gesture(
             DragGesture(coordinateSpace: .global)
                 .onChanged { value in
@@ -147,6 +170,7 @@ private extension TXBottomSheetModifier {
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture { startDismiss() }
+            .accessibilityIdentifier("tx.bottom-sheet.backdrop")
     }
 }
 
@@ -156,10 +180,17 @@ private extension TXBottomSheetModifier {
         sheetOffset = UIScreen.main.bounds.height
         dimmedOpacity = 0
         isPresented = false
+        isDismissing = false
+        dismissalGeneration += 1
     }
 
     func presentAnimated() {
+        let currentGeneration = dismissalGeneration
+
         Task { @MainActor in
+            await Task.yield()
+            guard currentGeneration == dismissalGeneration, isPresented else { return }
+
             withAnimation(.easeOut(duration: animationDuration)) {
                 dimmedOpacity = 1
                 sheetOffset = 0
@@ -168,6 +199,11 @@ private extension TXBottomSheetModifier {
     }
     
     func startDismiss() {
+        guard !isDismissing else { return }
+        isDismissing = true
+        dismissalGeneration += 1
+        let currentDismissalGeneration = dismissalGeneration
+
         if isPresented {
             isPresented = false
         }
@@ -179,12 +215,14 @@ private extension TXBottomSheetModifier {
         
         Task { @MainActor in
             try await Task.sleep(for: .seconds(animationDuration))
+            guard currentDismissalGeneration == dismissalGeneration else { return }
             isCoverPresented = false
+            isDismissing = false
         }
     }
 
     func updateContentHeight(_ newHeight: CGFloat) {
-        guard newHeight > 0 else { return }
+        guard newHeight > 0, abs(contentHeight - newHeight) > 0.5 else { return }
         contentHeight = newHeight
     }
 }

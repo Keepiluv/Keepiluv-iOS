@@ -21,30 +21,34 @@ struct EditGoalListView: View {
             navigationBar
             weekCalendar
                 .padding(.top, 4)
-            if let cards = store.cards, !cards.isEmpty {
-                cardScrollView
-                    .padding(.bottom, 1)
+
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
+                }
+            } else if let cards = store.cards {
+                if cards.isEmpty {
+                    emptyContent
+                } else {
+                    cardScrollView
+                        .padding(.bottom, 1)
+                }
+            } else {
+                Spacer()
             }
-            
-            Spacer()
         }
         .ignoresSafeArea(.container, edges: .bottom)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay {
-            if let cards = store.cards, cards.isEmpty {
-                emptyContent
-            }
-        }
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
-            store.send(.onAppear)
+            store.send(.view(.onAppear))
         }
         .onDisappear {
-            store.send(.onDisappear)
+            store.send(.view(.onDisappear))
         }
         .onTapGesture {
             guard store.selectedCardMenu != nil else { return }
-            store.send(.backgroundTapped)
+            store.send(.view(.backgroundTapped))
         }
         .transaction { transaction in
             transaction.animation = nil
@@ -53,12 +57,12 @@ struct EditGoalListView: View {
             item: $store.modal,
             onAction: { action in
                 if action == .confirm {
-                    store.send(.modalConfirmTapped)
+                    store.send(.view(.modalConfirmTapped))
                 }
             }
         )
         .txToast(item: $store.toast, onButtonTap: {
-            store.send(.toastButtonTapped)
+            store.send(.view(.toastButtonTapped))
         })
         .txLoading(isPresented: store.isLoading)
     }
@@ -67,7 +71,7 @@ struct EditGoalListView: View {
 private extension EditGoalListView {
     var navigationBar: some View {
         TXNavigationBar(style: .subTitle(title: "편집", type: .back)) { _ in
-            store.send(.navigationBackButtonTapped)
+            store.send(.view(.navigationBackButtonTapped))
         }
     }
     
@@ -77,10 +81,10 @@ private extension EditGoalListView {
             currentDate: $store.calendarDate,
             weeks: store.calendarWeeks,
             onSelect: { item in
-                store.send(.calendarDateSelected(item))
+                store.send(.view(.calendarDateSelected(item)))
             },
             onSwipe: { swipe in
-                store.send(.weekCalendarSwipe(swipe))
+                store.send(.view(.weekCalendarSwipe(swipe)))
             }
         )
         .frame(maxWidth: .infinity, maxHeight: 76)
@@ -100,7 +104,7 @@ private extension EditGoalListView {
                             endDate: card.endDate
                         ),
                         onMenuTap: {
-                            store.send(.cardMenuButtonTapped(card))
+                            store.send(.view(.cardMenuButtonTapped(card)))
                         }
                     )
                     .overlay(alignment: .topTrailing) {
@@ -117,7 +121,7 @@ private extension EditGoalListView {
 
     var dropdown: some View {
         TXDropdown(items: GoalDropList.allCases) { action in
-            store.send(.cardMenuItemSelected(action))
+            store.send(.view(.cardMenuItemSelected(action)))
         }
         .offset(x: -16, y: 48)
     }

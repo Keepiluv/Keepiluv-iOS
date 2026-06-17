@@ -169,6 +169,7 @@ private extension GoalCardView {
                         size: .s,
                         state: isButtonDisabled ? .disabled : .standard
                     ),
+                    allowsActionWhenDisabled: true,
                     onTap: { buttonAction?() }
                 )
                 .padding(.bottom, 14)
@@ -179,7 +180,7 @@ private extension GoalCardView {
                     .padding(.bottom, 10)
             }
         }
-        .frame(maxHeight: .infinity)
+        .frame(maxHeight: .infinity, alignment: .center)
     }
     
     func emojiImage(emoji: Image) -> some View {

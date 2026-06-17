@@ -21,6 +21,10 @@ private enum PokeCancelID: Hashable {
     case poke(Int64)
 }
 
+private enum ReactionUpdateCancelID: Hashable {
+    case update(Int64)
+}
+
 private enum PokeCooldownManager {
     private static let userDefaultsKey = "pokeCooldownTimestamps"
     private static let cooldownInterval: TimeInterval = 3 * 60 * 60
@@ -79,6 +83,7 @@ extension GoalDetailReducer {
         @Dependency(\.goalClient) var goalClient
         @Dependency(\.photoLogClient) var photoLogClient
         @Dependency(\.analyticsClient) var analyticsClient
+        @Dependency(\.continuousClock) var clock
         
         let timeFormatter = RelativeTimeFormatter()
         
@@ -86,59 +91,64 @@ extension GoalDetailReducer {
         let reducer = Reduce<GoalDetailReducer.State, GoalDetailReducer.Action> { state, action in
             switch action {
                 // MARK: - LifeCycle
-            case .onAppear:
+            case .view(.onAppear):
                 let date = state.verificationDate
                 let goalId = state.goalId
+                state.isFetchFailed = false
                 
                 return .run { send in
                     do {
                         let item = try await goalClient.fetchGoalDetail(date, goalId)
-                        await send(.fethedGoalDetailItem(item))
+                        await send(.response(.fethedGoalDetailItem(item)))
                     } catch {
-                        await send(.fetchGoalDetailFailed)
+                        await send(.response(.fetchGoalDetailFailed))
                     }
                 }
                 
-            case .onDisappear:
+            case .view(.onDisappear):
                 return .none
+
+            case .view(.dataRetryTapped):
+                return .send(.view(.onAppear))
                 
                 // MARK: - Action
-            case .bottomButtonTapped:
+            case .view(.bottomButtonTapped):
                 if state.currentCompletedGoal?.status == .completed {
-                    return .send(.showToast(.warning(message: "끝난 목표는 인증이 불가능해요!")))
+                    return .send(.presentation(.showToast(.warning(message: "끝난 목표는 인증이 불가능해요!"))))
                 }
                 let shouldGoToProofPhoto = (state.currentUser == .mySelf && !state.isCompleted) || state.isEditing
                 if shouldGoToProofPhoto {
                     return .run { send in
                         let isAuthorized = await captureSessionClient.fetchIsAuthorized()
-                        await send(.authorizationCompleted(isAuthorized: isAuthorized))
+                        await send(.response(.authorizationCompleted(isAuthorized: isAuthorized)))
                     }
                 }
                 guard state.currentUser == .you, !state.isCompleted else { return .none }
                 let goalId = state.currentGoalId
                 if let remaining = PokeCooldownManager.remainingCooldown(goalId: goalId) {
                     let timeText = PokeCooldownManager.formatRemainingTime(remaining)
-                    return .send(.showToast(.warning(message: "\(timeText) 뒤에 다시 찌를 수 있어요")))
+                    return .send(.presentation(.showToast(.warning(message: "\(timeText) 뒤에 다시 찌를 수 있어요"))))
                 }
+                let date = state.verificationDate
                 return .run { send in
                     PokeCooldownManager.recordPoke(goalId: goalId)
                     do {
-                        try await goalClient.pokePartner(goalId)
+                        try await goalClient.pokePartner(goalId, PokeRequestDTO(date: date))
                         analyticsClient.logEvent(GoalDetailAnalyticsEvent.pokeSent)
-                        await send(.showToast(.poke(message: "상대방을 찔렀어요!")))
+                        await send(.presentation(.showToast(.poke(message: "상대방을 찔렀어요!"))))
                     } catch {
                         PokeCooldownManager.removePoke(goalId: goalId)
-                        await send(.showToast(.warning(message: "찌르기에 실패했어요")))
+                        await send(.presentation(.showToast(.warning(message: "찌르기에 실패했어요"))))
                     }
                 }
                 .debounce(id: PokeCancelID.poke(goalId), for: .milliseconds(300), scheduler: DispatchQueue.main)
 
-            case let .navigationBarTapped(action):
+            case let .view(.navigationBarTapped(action)):
                 if case .backTapped = action {
                     return .send(.delegate(.navigateBack))
                 } else if case .rightTapped = action {
                     if state.isEditing {
-                        return .send(.updatePhotoLog)
+                        return .send(.internal(.updatePhotoLog))
                     } else {
                         state.isEditing = true
                         state.commentText = state.comment
@@ -146,47 +156,61 @@ extension GoalDetailReducer {
                 }
                 return .none
                 
-            case let .reactionEmojiTapped(reactionEmoji):
+            case let .view(.reactionEmojiTapped(reactionEmoji)):
                 guard state.currentUser == .you else { return .none }
                 guard state.selectedReactionEmoji != reactionEmoji else { return .none }
                 guard let photoLogId = state.currentCard?.photologId else { return .none }
                 let previousReaction = state.currentCard?.reaction
                 state.selectedReactionEmoji = reactionEmoji
-                return .concatenate(
-                    .send(.updateCurrentCardReaction(reactionEmoji.rawValue)),
-                    .run { send in
-                        do {
-                            let request = PhotoLogUpdateReactionRequestDTO(reaction: reactionEmoji.rawValue)
-                            _ = try await photoLogClient.updateReaction(photoLogId, request)
-                            analyticsClient
-                                .logEvent(
-                                    GoalDetailAnalyticsEvent.emojiReactionSent(emoji: reactionEmoji.rawValue)
+                return .run { [clock] send in
+                    try await clock.sleep(for: .milliseconds(300))
+                    do {
+                        let request = PhotoLogUpdateReactionRequestDTO(reaction: reactionEmoji.rawValue)
+                        _ = try await photoLogClient.updateReaction(photoLogId, request)
+                        analyticsClient
+                            .logEvent(
+                                GoalDetailAnalyticsEvent.emojiReactionSent(emoji: reactionEmoji.rawValue)
+                            )
+                        await send(
+                            .response(
+                                .updateCurrentCardReaction(
+                                    photoLogId: photoLogId,
+                                    reaction: reactionEmoji.rawValue
                                 )
-                        } catch {
-                            await send(.reactionUpdateFailed(previousReaction: previousReaction))
-                        }
+                            )
+                        )
+                    } catch is CancellationError {
+                        return
+                    } catch {
+                        await send(.response(.reactionUpdateFailed(previousReaction: previousReaction)))
                     }
-                )
+                }
+                .cancellable(id: ReactionUpdateCancelID.update(photoLogId), cancelInFlight: true)
                 
-            case .cardSwiped:
+            case .view(.cardSwiped):
                 state.currentUser = state.currentUser == .mySelf ? .you : .mySelf
                 state.commentText = state.comment
                 state.selectedReactionEmoji = state.currentCard?.reaction.flatMap(ReactionEmoji.init(from:))
                 state.createdAt = timeFormatter.displayText(from: state.currentCard?.createdAt)
                 
                 return .none
+
+            case .view(.myEmojiAppearAnimationPlayed):
+                state.didPlayMyEmojiAppearAnimation = true
+                return .none
                 
-            case let .focusChanged(isFocused):
+            case let .view(.focusChanged(isFocused)):
                 state.isCommentFocused = isFocused
                 return .none
                 
-            case .dimmedBackgroundTapped:
+            case .view(.dimmedBackgroundTapped):
                 state.isCommentFocused = false
                 return .none
                 
                 // MARK: - State Update
-            case let .fethedGoalDetailItem(item):
+            case let .response(.fethedGoalDetailItem(item)):
                 state.item = item
+                state.isFetchFailed = false
                 if let goalIndex = state.completedGoalItems.firstIndex(where: {
                     $0.myPhotoLog?.goalId == state.goalId || $0.yourPhotoLog?.goalId == state.goalId
                 }) {
@@ -200,18 +224,17 @@ extension GoalDetailReducer {
                 
                 return .none
                 
-            case .fetchGoalDetailFailed:
-                return .send(.showToast(.warning(message: "목표 상세 조회에 실패했어요")))
+            case .response(.fetchGoalDetailFailed):
+                state.isFetchFailed = true
+                return .none
                 
-            case let .updateCurrentCardReaction(reaction):
-                guard state.currentUser == .you else { return .none }
+            case let .response(.updateCurrentCardReaction(photoLogId: photoLogId, reaction: reaction)):
                 guard let item = state.item else { return .none }
-                let targetGoalId = state.currentGoalId
                 var updatedCompletedGoals = item.completedGoals
                 
                 guard let index = updatedCompletedGoals.firstIndex(where: { goal in
                     guard let goal else { return false }
-                    return goal.myPhotoLog?.goalId == targetGoalId || goal.yourPhotoLog?.goalId == targetGoalId
+                    return goal.yourPhotoLog?.photologId == photoLogId
                 }) else { return .none }
                 guard let currentGoal = updatedCompletedGoals[index] else { return .none }
                 
@@ -229,15 +252,17 @@ extension GoalDetailReducer {
                 )
                 return .none
                 
-            case let .reactionUpdateFailed(previousReaction):
-                state.selectedReactionEmoji = previousReaction.flatMap(ReactionEmoji.init(from:))
-                return .send(.showToast(.warning(message: "리액션 전송에 실패했어요")))
+            case let .response(.reactionUpdateFailed(previousReaction)):
+                if state.currentUser == .you {
+                    state.selectedReactionEmoji = previousReaction.flatMap(ReactionEmoji.init(from:))
+                }
+                return .send(.presentation(.showToast(.warning(message: "리액션 전송에 실패했어요"))))
 
-            case let .showToast(toast):
+            case let .presentation(.showToast(toast)):
                 state.toast = toast
                 return .none
                 
-            case let .authorizationCompleted(isAuthorized):
+            case let .response(.authorizationCompleted(isAuthorized)):
                 if !isAuthorized {
                     state.isCameraPermissionAlertPresented = true
                     return .none
@@ -252,11 +277,11 @@ extension GoalDetailReducer {
                 
                 return .none
                 
-            case .cameraPermissionAlertDismissed:
+            case .view(.cameraPermissionAlertDismissed):
                 state.isCameraPermissionAlertPresented = false
                 return .none
                 
-            case .updatePhotoLog:
+            case .internal(.updatePhotoLog):
                 if let current = state.currentCard, state.currentUser == .mySelf {
                     guard let photologId = current.photologId else { return .none }
                     let pendingEditedImageData = state.pendingEditedImageData
@@ -297,7 +322,7 @@ extension GoalDetailReducer {
                             await send(.binding(.set(\.isSavingPhotoLog, false)))
                         } catch {
                             await send(.binding(.set(\.isSavingPhotoLog, false)))
-                            await send(.showToast(.warning(message: "인증샷 수정에 실패했어요")))
+                            await send(.presentation(.showToast(.warning(message: "인증샷 수정에 실패했어요"))))
                         }
                     }
                 }
@@ -316,13 +341,13 @@ extension GoalDetailReducer {
                 myPhotoLog.goalName = state.goalName
                 myPhotoLog.photologId = state.currentCard?.photologId
                 
-                return .send(.updateMyPhotoLog(myPhotoLog))
+                return .send(.internal(.updateMyPhotoLog(myPhotoLog)))
                 
-            case .proofPhotoDismissed:
+            case .view(.proofPhotoDismissed):
                 state.proofPhoto = nil
                 return .none
 
-            case let .updateMyPhotoLog(myPhotoLog):
+            case let .internal(.updateMyPhotoLog(myPhotoLog)):
                 guard let item = state.item else { return .none }
 
                 let targetGoalId = myPhotoLog.goalId

@@ -18,16 +18,16 @@ struct TXRectButton: View {
                     .typography(style.typography ?? size.typhography)
                     .foregroundStyle(state.fontColor)
                     .padding(.horizontal, size.horizontalPadding)
-                    .frame(minWidth: size.minWidth, maxWidth: size.maxWidth)
-                    .frame(height: size.height)
+                    .frame(minWidth: size.minWidth(style: style), maxWidth: size.maxWidth(style: style))
+                    .frame(height: size.height(style: style))
                     .background(state.backgroundColor)
                     .insideBorder(
                         state.borderColor,
-                        shape: RoundedRectangle(cornerRadius: size.radius),
+                        shape: RoundedRectangle(cornerRadius: size.radius(style: style)),
                         lineWidth: state.borderWidth
                     )
             }
-            .clipShape(RoundedRectangle(cornerRadius: size.radius))
+            .clipShape(RoundedRectangle(cornerRadius: size.radius(style: style)))
             .padding(.vertical, size.outVerticalPadding)
             .buttonStyle(.plain)
         } else {
@@ -41,36 +41,44 @@ private extension TXButtonShape.TXRectStyle {
     var text: String {
         switch self {
         case .basic(let text, _): text
+        case .round(let text): text
         }
     }
     
     var typography: TypographyToken? {
         switch self {
         case .basic(_, let typography): typography
+        case .round: nil
         }
     }
 }
 
 private extension TXButtonShape.TXRectSize {
-    var maxWidth: CGFloat? {
-        switch self {
-        case .l: .infinity
-        case .m: 151
-        case .s: nil
+    func maxWidth(style: TXButtonShape.TXRectStyle) -> CGFloat? {
+        switch (style, self) {
+        case (.basic, .l): .infinity
+        case (.basic, .m): 151
+        case (.basic, .s): nil
+        case (.round, .s): .infinity
+        case (.round, .m), (.round, .l): nil
         }
     }
     
-    var minWidth: CGFloat? {
-        switch self {
-        case .l, .m: nil
-        case .s: 56
+    func minWidth(style: TXButtonShape.TXRectStyle) -> CGFloat? {
+        switch (style, self) {
+        case (.basic, .l), (.basic, .m): nil
+        case (.basic, .s): 56
+        case (.round, .s): 100
+        case (.round, .m), (.round, .l): nil
         }
     }
     
-    var height: CGFloat {
-        switch self {
-        case .l, .m: 52
-        case .s: 32
+    func height(style: TXButtonShape.TXRectStyle) -> CGFloat? {
+        switch (style, self) {
+        case (.basic, .l), (.basic, .m): 52
+        case (.basic, .s): 32
+        case (.round, .s): 42
+        case (.round, .m), (.round, .l): nil
         }
     }
     
@@ -81,13 +89,15 @@ private extension TXButtonShape.TXRectSize {
         }
     }
     
-    var radius: CGFloat {
-        switch self {
-        case .l, .m: Radius.s
-        case .s: Radius.xs
+    func radius(style: TXButtonShape.TXRectStyle) -> CGFloat {
+        switch (style, self) {
+        case (.basic, .l), (.basic, .m): Radius.s
+        case (.basic, .s): Radius.xs
+        case (.round, .s): 999
+        case (.round, .m), (.round, .l): .zero
         }
     }
-    
+        
     var horizontalPadding: CGFloat {
         switch self {
         case .s: Spacing.spacing6

@@ -44,12 +44,12 @@ public struct MakeGoalView: View {
         .padding(.horizontal, 20)
         .ignoresSafeArea(.keyboard)
         .toolbar(.hidden, for: .navigationBar)
-        .onAppear { store.send(.onAppear) }
-        .onDisappear { store.send(.onDisappear) }
-        .onTapGesture { store.send(.dismissKeyboard) }
+        .onAppear { store.send(.view(.onAppear)) }
+        .onDisappear { store.send(.view(.onDisappear)) }
+        .onTapGesture { store.send(.view(.dismissKeyboard)) }
         .onChange(of: isGoalTitleTextFieldFocused) { _, newValue in
             guard store.isGoalTitleFocused != newValue else { return }
-            store.send(.goalTitleFocusChanged(newValue))
+            store.send(.view(.goalTitleFocusChanged(newValue)))
         }
         .onChange(of: store.isGoalTitleFocused) { _, newValue in
             guard isGoalTitleTextFieldFocused != newValue else { return }
@@ -61,7 +61,7 @@ public struct MakeGoalView: View {
             TXCalendarBottomSheet(
                 selectedDate: $store.calendarSheetDate,
                 completeButtonText: "완료",
-                onComplete: { store.send(.monthCalendarConfirmTapped) },
+                onComplete: { store.send(.view(.monthCalendarConfirmTapped)) },
                 isDateEnabled: store.isCalendarDateEnabled
             )
         }
@@ -74,7 +74,7 @@ public struct MakeGoalView: View {
             item: $store.modal,
             onAction: { action in
                 if case let .confirmWithIndex(index) = action {
-                    store.send(.modalConfirmTapped(index))
+                    store.send(.view(.modalConfirmTapped(index)))
                 }
             }
         )
@@ -92,7 +92,7 @@ private extension MakeGoalView {
                 title: store.mode.title,
                 type: .back
             ), onAction: { _ in
-                store.send(.navigationBackButtonTapped)
+                store.send(.view(.navigationBackButtonTapped))
             }
         )
     }
@@ -108,7 +108,7 @@ private extension MakeGoalView {
                 shape: .circle,
                 lineWidth: LineWidth.m
             )
-            .onTapGesture { store.send(.emojiButtonTapped) }
+            .onTapGesture { store.send(.view(.emojiButtonTapped)) }
             .overlay(alignment: .bottomTrailing) {
                 TXButton(
                     shape: .circle(
@@ -122,7 +122,7 @@ private extension MakeGoalView {
                             backgroundColor: Color.Common.white
                         )
                     ),
-                    onTap: { }
+                    onTap: { store.send(.view(.emojiButtonTapped)) }
                 )
                 .insideBorder(
                     Color.Gray.gray500,
@@ -171,14 +171,15 @@ private extension MakeGoalView {
                 TXTab(
                     style: .button(PeriodItem.allCases),
                     selectedItem: selectedPeriodItem,
-                    onSelect: { store.send(.periodTabSelected($0)) }
+                    onSelect: { store.send(.view(.periodTabSelected($0))) }
                 )
                 
                 Spacer()
                 
                 if store.showPeriodCount {
-                    valueText(store.periodCountText)
-                    dropDownButton { store.send(.periodSelected) }
+                    dropDownButton(text: store.periodCountText) {
+                        store.send(.view(.periodSelected))
+                    }
                 }
             }
         }
@@ -191,8 +192,9 @@ private extension MakeGoalView {
             
             Spacer()
             
-            valueText(store.startDateText)
-            dropDownButton { store.send(.startDateTapped) }
+            dropDownButton(text: store.startDateText) {
+                store.send(.view(.startDateTapped))
+            }
         }
         .frame(height: 32)
         .padding(.vertical, 16)
@@ -216,8 +218,9 @@ private extension MakeGoalView {
             
             Spacer()
             
-            valueText(store.endDateText)
-            dropDownButton { store.send(.endDateTapped) }
+            dropDownButton(text: store.endDateText) {
+                store.send(.view(.endDateTapped))
+            }
         }
         .padding(.vertical, 21.5)
     }
@@ -229,7 +232,7 @@ private extension MakeGoalView {
                 size: .l,
                 state: store.completeButtonDisabled ? .disabled : .standard
             )
-        ) { store.send(.completeButtonTapped) }
+        ) { store.send(.view(.completeButtonTapped)) }
     }
     
     var divider: some View {
@@ -239,11 +242,18 @@ private extension MakeGoalView {
             .padding(.vertical, -1)
     }
     
-    func dropDownButton(_ action: @escaping () -> Void) -> some View {
-        Button {
-            action()
-        } label: {
+    func dropDownButton(
+        text: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: 0) {
+            Text(text)
+                .typography(.b2_14r)
+                .foregroundStyle(Color.Gray.gray500)
             Image.Icon.Symbol.arrow2Down
+        }
+        .onTapGesture {
+            action()
         }
     }
     
@@ -267,7 +277,7 @@ private extension MakeGoalView {
             
             TXButton(
                 shape: .rect(style: .basic(text: "완료"), size: .l, state: .standard),
-                onTap: { store.send(.periodSheetCompleteTapped) }
+                onTap: { store.send(.view(.periodSheetCompleteTapped)) }
             )
             .padding(.top, 32)
             .padding(.horizontal, 20)
@@ -283,7 +293,7 @@ private extension MakeGoalView {
                     size: .s,
                     state: store.goalData.repeatCycle == .weekly ? .standard : .line
                 ),
-                onTap: { store.send(.periodSheetWeeklyTapped) }
+                onTap: { store.send(.view(.periodSheetWeeklyTapped)) }
             )
             
             TXButton(
@@ -292,7 +302,7 @@ private extension MakeGoalView {
                     size: .s,
                     state: store.goalData.repeatCycle == .monthly ? .standard : .line
                 ),
-                onTap: { store.send(.periodSheetMonthlyTapped) }
+                onTap: { store.send(.view(.periodSheetMonthlyTapped)) }
             )
         }
     }
@@ -308,7 +318,7 @@ private extension MakeGoalView {
                     ),
                     state: store.isMinusEnable ? .standard : .disabled
                 ),
-                onTap: { store.send(.periodSheetMinusTapped) }
+                onTap: { store.send(.view(.periodSheetMinusTapped)) }
             )
             .disabled(!store.isMinusEnable)
             
@@ -323,7 +333,7 @@ private extension MakeGoalView {
                     ),
                     state: store.isPlusEnable ? .standard : .disabled
                 ),
-                onTap: { store.send(.periodSheetPlusTapped) }
+                onTap: { store.send(.view(.periodSheetPlusTapped)) }
             )
             .disabled(!store.isPlusEnable)
         }

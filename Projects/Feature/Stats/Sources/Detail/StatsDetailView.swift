@@ -20,19 +20,25 @@ struct StatsDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             navigationBar
-            
-            ScrollView {
-                VStack(spacing: 0) {
-                    monthNavigation
-                        .padding(.top, 24)
-                    calendar
-                        .padding(.top, 12)
-                    statsInfoContent
-                        .padding(.top, 44)
-                    
-                    Spacer()
+
+            if store.isFetchFailed {
+                DataRetryView {
+                    store.send(.view(.dataRetryTapped))
                 }
-                .padding(.horizontal, 20)
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        monthNavigation
+                            .padding(.top, 24)
+                        calendar
+                            .padding(.top, 12)
+                        statsInfoContent
+                            .padding(.top, 44)
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                }
             }
         }
         .background(Color.Gray.gray50)
@@ -41,7 +47,7 @@ struct StatsDetailView: View {
                 TXDropdown(
                     items: GoalDropList.allCases,
                     onSelect: { item in
-                        store.send(.dropDownSelected(item))
+                        store.send(.view(.dropDownSelected(item)))
                     }
                 )
                 .offset(x: -12, y: 65)
@@ -49,18 +55,18 @@ struct StatsDetailView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
-            store.send(.onAppear)
+            store.send(.view(.onAppear))
         }
         .onDisappear {
-            store.send(.onDisappear)
+            store.send(.view(.onDisappear))
         }
         .onTapGesture {
             guard store.isDropdownPresented else { return }
-            store.send(.backgroundTapped)
+            store.send(.view(.backgroundTapped))
         }
         .txModal(item: $store.modal) { action in
             if action == .confirm {
-                store.send(.modalConfirmTapped)
+                store.send(.view(.modalConfirmTapped))
             }
         }
         .txToast(item: $store.toast)
@@ -82,7 +88,7 @@ private extension StatsDetailView {
                 )
             ),
             onAction: { action in
-                store.send(.navigationBarTapped(action))
+                store.send(.view(.navigationBarTapped(action)))
             }
         )
     }
@@ -92,8 +98,8 @@ private extension StatsDetailView {
             title: store.currentMonthTitle,
             isPreviousDisabled: store.previousMonthDisabled,
             isNextDisabled: store.nextMonthDisabled,
-            onPrevious: { store.send(.previousMonthTapped) },
-            onNext: { store.send(.nextMonthTapped) }
+            onPrevious: { store.send(.view(.previousMonthTapped)) },
+            onNext: { store.send(.view(.nextMonthTapped)) }
         )
     }
     
@@ -124,16 +130,16 @@ private extension StatsDetailView {
             ),
             onSelect: { item in
                 if item.status == .completed {
-                    store.send(.calendarCellTapped(item))
+                    store.send(.view(.calendarCellTapped(item)))
                 }
             },
             onSwipe: { swipe in
-                store.send(.calendarSwiped(swipe))
+                store.send(.view(.calendarSwiped(swipe)))
             }
         )
             .padding(.top, 24)
             .padding(.bottom, 32)
-            .background(Color.Common.white)
+            .background(Color.Common.white, in: RoundedRectangle(cornerRadius: 16))
             .insideBorder(
                 Color.Gray.gray500,
                 shape: RoundedRectangle(cornerRadius: 16),
@@ -156,8 +162,7 @@ private extension StatsDetailView {
                     summaryTitle(for: summary.title)
                     summartyContent(content: summary.content, isCompletedCount: summary.isCompletedCount)
                         .layoutPriority(1)
-                    
-                    Spacer()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
@@ -188,7 +193,6 @@ private extension StatsDetailView {
             Text(content[0])
                 .typography(.b4_12b)
                 .foregroundStyle(Color.Gray.gray500)
-                .lineLimit(1)
             
             if isCompletedCount {
                 Text("|")
@@ -199,11 +203,9 @@ private extension StatsDetailView {
                 Text(content[1])
                     .typography(.b4_12b)
                     .foregroundStyle(Color.Gray.gray500)
-                    .lineLimit(1)
             }
         }
-        .lineLimit(1)
-        .fixedSize(horizontal: true, vertical: false)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     @ViewBuilder
@@ -266,7 +268,10 @@ private extension StatsDetailView {
 #Preview {
     StatsDetailView(
         store: Store(
-            initialState: StatsDetailReducer.State(goalId: 1),
+            initialState: StatsDetailReducer.State(
+                goalId: 1,
+                initialMonth: TXCalendarDate()
+            ),
             reducer: { StatsDetailReducer() }
         )
     )

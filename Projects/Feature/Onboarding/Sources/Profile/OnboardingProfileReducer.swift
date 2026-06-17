@@ -42,20 +42,26 @@ public struct OnboardingProfileReducer {
         // MARK: - Binding
         case binding(BindingAction<State>)
 
-        // MARK: - User Action
-        case backButtonTapped
-        case completeButtonTapped
+        // MARK: - View (사용자 이벤트)
+        public enum View: Equatable {
+            case backButtonTapped
+            case completeButtonTapped
+        }
 
-        // MARK: - API Response
-        case registerProfileResponse(Result<Void, Error>)
+        // MARK: - Response (비동기 응답)
+        public enum Response {
+            case registerProfileResponse(Result<Void, Error>)
+        }
 
-        // MARK: - Delegate
-        case delegate(Delegate)
-
+        // MARK: - Delegate (부모에게 알림)
         public enum Delegate: Equatable {
             case navigateBack
             case profileCompleted
         }
+
+        case view(View)
+        case response(Response)
+        case delegate(Delegate)
     }
 
     public init() {}
@@ -67,52 +73,80 @@ public struct OnboardingProfileReducer {
             case .binding:
                 return .none
 
-            case .backButtonTapped:
-                return .send(.delegate(.navigateBack))
+            case .view(let viewAction):
+                return reduceView(state: &state, action: viewAction)
 
-            case .completeButtonTapped:
-                guard !state.isLoading else { return .none }
-
-                // 비속어 체크
-                if state.containsProfanity {
-                    state.toast = .fit(message: "닉네임에 비속어가 포함되어 있습니다.")
-                    return .none
-                }
-
-                // 길이 체크
-                guard state.isNicknameLengthValid else {
-                    state.toast = .fit(message: "2자에서 8자 이내로 닉네임을 입력해주세요.")
-                    return .none
-                }
-
-                state.isLoading = true
-                let nickname = state.nickname
-                return .run { send in
-                    do {
-                        try await onboardingClient.registerProfile(nickname)
-                        await send(.registerProfileResponse(.success(())))
-                    } catch {
-                        await send(.registerProfileResponse(.failure(error)))
-                    }
-                }
-
-            case .registerProfileResponse(.success):
-                state.isLoading = false
-                return .send(.delegate(.profileCompleted))
-
-            case let .registerProfileResponse(.failure(error)):
-                state.isLoading = false
-                // 이미 온보딩이 완료된 경우 (G4000), 성공과 동일하게 처리
-                if let onboardingError = error as? OnboardingError,
-                   onboardingError == .alreadyOnboarded {
-                    return .send(.delegate(.profileCompleted))
-                }
-                state.toast = .fit(message: "프로필 등록에 실패했어요. 다시 시도해주세요")
-                return .none
+            case .response(let responseAction):
+                return reduceResponse(state: &state, action: responseAction)
 
             case .delegate:
                 return .none
             }
+        }
+    }
+}
+
+// MARK: - View
+
+private extension OnboardingProfileReducer {
+    func reduceView(
+        state: inout State,
+        action: Action.View
+    ) -> Effect<Action> {
+        switch action {
+        case .backButtonTapped:
+            return .send(.delegate(.navigateBack))
+
+        case .completeButtonTapped:
+            guard !state.isLoading else { return .none }
+
+            // 비속어 체크
+            if state.containsProfanity {
+                state.toast = .fit(message: "닉네임에 비속어가 포함되어 있습니다.")
+                return .none
+            }
+
+            // 길이 체크
+            guard state.isNicknameLengthValid else {
+                state.toast = .fit(message: "2자에서 8자 이내로 닉네임을 입력해주세요.")
+                return .none
+            }
+
+            state.isLoading = true
+            let nickname = state.nickname
+            return .run { send in
+                do {
+                    try await onboardingClient.registerProfile(nickname)
+                    await send(.response(.registerProfileResponse(.success(()))))
+                } catch {
+                    await send(.response(.registerProfileResponse(.failure(error))))
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Response
+
+private extension OnboardingProfileReducer {
+    func reduceResponse(
+        state: inout State,
+        action: Action.Response
+    ) -> Effect<Action> {
+        switch action {
+        case .registerProfileResponse(.success):
+            state.isLoading = false
+            return .send(.delegate(.profileCompleted))
+
+        case let .registerProfileResponse(.failure(error)):
+            state.isLoading = false
+            // 이미 온보딩이 완료된 경우 (G4000), 성공과 동일하게 처리
+            if let onboardingError = error as? OnboardingError,
+               onboardingError == .alreadyOnboarded {
+                return .send(.delegate(.profileCompleted))
+            }
+            state.toast = .fit(message: "프로필 등록에 실패했어요. 다시 시도해주세요")
+            return .none
         }
     }
 }
