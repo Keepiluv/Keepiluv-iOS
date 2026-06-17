@@ -124,9 +124,7 @@ private extension SettingsView {
             } label: {
                 Image.Icon.Symbol.edit
                     .resizable()
-                    .renderingMode(.template)
                     .frame(width: 24, height: 24)
-                    .foregroundStyle(Color.Gray.gray500)
             }
             .frame(width: 44, height: 44)
         }
