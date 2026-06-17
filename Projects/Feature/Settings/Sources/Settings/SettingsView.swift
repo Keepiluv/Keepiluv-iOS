@@ -139,17 +139,18 @@ private extension SettingsView {
             nicknameTextField
                 .frame(maxWidth: .infinity)
         }
+        .padding(.bottom, Spacing.spacing9)
     }
 
     var nicknameTextField: some View {
         TXTextField(
             text: $store.nickname,
             placeholderText: "닉네임을 입력해 주세요.",
+            isFocused: $isTextFieldFocused,
             submitLabel: .done,
             tintColor: Color.Gray.gray500,
             subText: .init(text: "닉네임 2-8자", state: validationState)
         )
-        .focused($isTextFieldFocused)
         .onAppear {
             isTextFieldFocused = true
         }
