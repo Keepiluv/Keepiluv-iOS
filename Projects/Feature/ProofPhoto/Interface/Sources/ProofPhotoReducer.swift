@@ -40,6 +40,7 @@ public struct ProofPhotoReducer {
         public var isCapturing: Bool = false
         public var isUploading: Bool = false
         public var hasImage: Bool { imageData != nil }
+        public var shouldShowComment: Bool = false
         public var toast: TXToastType?
         public var goalId: Int64
         public var verificationDate: String
