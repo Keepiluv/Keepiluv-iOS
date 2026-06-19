@@ -132,7 +132,7 @@ private extension GoalDetailView {
 
     var refreshableGoalContent: some View {
         ZStack(alignment: .top) {
-            ProgressView()
+            TXLoadingIndicator()
                 .padding(.top, 16)
                 .opacity(dragState.pullOffset > 0 || store.isRefreshing ? 1 : 0)
 

@@ -7,10 +7,19 @@
 
 import SwiftUI
 
-struct TXLoadingIndicator: View {
+/// 회전하는 로딩 인디케이터를 표시하는 View입니다.
+public struct TXLoadingIndicator: View {
     @State private var rotation: Double = 0
 
-    var body: some View {
+    /// TXLoadingIndicator를 생성합니다.
+    ///
+    /// ## 사용 예시
+    /// ```swift
+    /// TXLoadingIndicator()
+    /// ```
+    public init() {}
+
+    public var body: some View {
         Circle()
             .trim(from: 0.175, to: 0.825)
             .stroke(
