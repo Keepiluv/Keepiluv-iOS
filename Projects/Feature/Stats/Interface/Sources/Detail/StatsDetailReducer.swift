@@ -92,9 +92,10 @@ public struct StatsDetailReducer {
         public init(goalId: Int64, initialMonth: TXCalendarDate) {
             self.goalId = goalId
 
-            self.currentMonth = initialMonth
+            let month = TXCalendarDate(year: initialMonth.year, month: initialMonth.month)
+            self.currentMonth = month
             self.monthlyData = TXCalendarDataGenerator.generateMonthData(
-                for: initialMonth,
+                for: month,
                 hideAdjacentDates: true
             )
         }
