@@ -38,10 +38,10 @@ extension StatsCoordinator {
                 state.statsDetail = .init(goalId: goalId, initialMonth: calendarDate)
                 return .none
 
-            case let .statsDetail(.delegate(.goToGoalDetail(goalId, isCompletedPartner, date))):
+            case let .statsDetail(.delegate(.goToGoalDetail(goalId, owner, date))):
                 state.routes.append(.goalDetail)
                 state.goalDetail = .init(
-                    currentUser: isCompletedPartner ? .you : .mySelf,
+                    currentUser: owner,
                     id: goalId,
                     verificationDate: date
                 )

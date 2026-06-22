@@ -72,6 +72,15 @@ extension HomeCoordinator {
                 state.makeGoal = .init(mode: .edit(goalData))
                 return .none
                 
+            case let .statsDetail(.delegate(.goToGoalDetail(id, owner, date))):
+                return .send(
+                    .navigateToGoalDetail(
+                        id: id,
+                        owner: owner,
+                        date: date
+                    )
+                )
+
             case .statsDetail(.view(.onDisappear)):
                 if !state.routes.contains(.statsDetail) {
                     state.statsDetail = nil
