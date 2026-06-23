@@ -229,6 +229,7 @@ extension ProofPhotoReducer {
             // MARK: - Update State
             case let .response(.setupCaptureSessionCompleted(session)):
                 state.captureSession = session
+                state.shouldShowComment = true
                 return .none
                 
             case .response(.cameraSwitched):
@@ -278,7 +279,9 @@ extension ProofPhotoReducer {
             case .binding:
                 return .none
                 
-            default: return .none
+            case .delegate:
+                state.shouldShowComment = false
+                return .none
             }
         }
         // swiftlint: enable closure_body_length

@@ -280,19 +280,23 @@ private extension GoalDetailView {
     }
     
     @ViewBuilder var reactionBar: some View {
-        ReactionBarView(
-            selectedEmoji: store.selectedReactionEmoji,
-            onSelect: { emoji in
-                store.send(.view(.reactionEmojiTapped(emoji)))
-            }
-        )
-        .padding(.horizontal, Constants.reactionBarHorizontalPadding)
-        .position(
-            x: rectFrame.midX,
-            y: rectFrame.maxY
-                + Constants.reactionBarTopPadding
-                + Constants.reactionBarHeight / 2
-        )
+        GeometryReader { rootGeo in
+            let rootFrame = rootGeo.frame(in: .global)
+
+            ReactionBarView(
+                selectedEmoji: store.selectedReactionEmoji,
+                onSelect: { emoji in
+                    store.send(.view(.reactionEmojiTapped(emoji)))
+                }
+            )
+            .padding(.horizontal, Constants.reactionBarHorizontalPadding)
+            .frame(maxWidth: .infinity, alignment: .top)
+            .offset(
+                y: rectFrame.maxY
+                    - rootFrame.minY
+                    + Constants.reactionBarTopPadding
+            )
+        }
     }
     
     var backgroundCard: some View {
@@ -626,11 +630,10 @@ private extension GoalDetailView {
         static let minimumDragResistance: CGFloat = 0.35
         static let pullToRefreshThreshold: CGFloat = 80
         static let maxPullToRefreshOffset: CGFloat = 120
-        static var cardTopPadding: CGFloat { isSEDevice ? 34 : 89 }
+        static var cardTopPadding: CGFloat { isSEDevice ? 46 : 103 }
         static var cardSize: CGFloat { isSEDevice ? 321 : 336 }
-        static let reactionBarHeight: CGFloat = 77
         static let reactionBarHorizontalPadding: CGFloat = 20
-        static var reactionBarTopPadding: CGFloat { isSEDevice ? 19 : 69 }
+        static var reactionBarTopPadding: CGFloat { isSEDevice ? 55 : 105 }
     }
 }
 

@@ -113,7 +113,7 @@ private extension ProofPhotoView {
     }
 
     var shouldShowCommentOverlay: Bool {
-        (store.captureSession != nil || store.hasImage) && rectFrame != .zero
+        store.shouldShowComment && rectFrame != .zero
     }
 
     var topBar: some View {

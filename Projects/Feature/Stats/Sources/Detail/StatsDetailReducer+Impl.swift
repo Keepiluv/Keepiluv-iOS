@@ -91,13 +91,13 @@ extension StatsDetailReducer {
                 else { return .none }
                 let dateString = txDate.formattedAPIDateString()
                 let completedItem = state.completedDateByKey[dateString]
-                let isCompletedPartner = completedItem?.partnerImageUrl != nil
+                let owner: GoalDetail.Owner = completedItem?.partnerImageUrl != nil ? .you : .mySelf
                 
                 return .send(
                     .delegate(
                         .goToGoalDetail(
                             goalId: state.goalId,
-                            isCompletedPartner: isCompletedPartner,
+                            owner: owner,
                             date: dateString
                         )
                     )

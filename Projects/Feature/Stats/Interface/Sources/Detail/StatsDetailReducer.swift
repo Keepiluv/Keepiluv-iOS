@@ -92,9 +92,10 @@ public struct StatsDetailReducer {
         public init(goalId: Int64, initialMonth: TXCalendarDate) {
             self.goalId = goalId
 
-            self.currentMonth = initialMonth
+            let month = TXCalendarDate(year: initialMonth.year, month: initialMonth.month)
+            self.currentMonth = month
             self.monthlyData = TXCalendarDataGenerator.generateMonthData(
-                for: initialMonth,
+                for: month,
                 hideAdjacentDates: true
             )
         }
@@ -150,7 +151,7 @@ public struct StatsDetailReducer {
 
         public enum Delegate {
             case navigateBack
-            case goToGoalDetail(goalId: Int64, isCompletedPartner: Bool, date: String)
+            case goToGoalDetail(goalId: Int64, owner: GoalDetail.Owner, date: String)
             case goToGoalEdit(EditableGoal)
         }
 
