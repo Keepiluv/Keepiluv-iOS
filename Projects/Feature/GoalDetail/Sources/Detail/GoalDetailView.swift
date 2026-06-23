@@ -37,8 +37,7 @@ public struct GoalDetailView: View {
     @State private var rectFrame: CGRect = .zero
     @State private var keyboardFrame: CGRect = .zero
     @StateObject private var myEmojiFlyingReactionEmitter = FlyingReactionEmitter()
-    @State private var cardOffset: CGFloat = .zero
-    @State private var isCrossingDuringDrag: Bool = false
+    @State private var dragState = GoalDetailDragState()
     
     /// GoalDetailView를 생성합니다.
     ///
@@ -125,6 +124,19 @@ private extension GoalDetailView {
                     store.send(.view(.dataRetryTapped))
                 }
             } else {
+                refreshableGoalContent
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    var refreshableGoalContent: some View {
+        ZStack(alignment: .top) {
+            TXLoadingIndicator()
+                .padding(.top, 16)
+                .opacity(dragState.pullOffset > 0 || store.isRefreshing ? 1 : 0)
+
+            VStack(spacing: 0) {
                 if store.item != nil {
                     cardView
                         .padding(.horizontal, 27)
@@ -144,7 +156,12 @@ private extension GoalDetailView {
 
                 Spacer()
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .offset(y: dragState.pullOffset)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .contentShape(Rectangle())
+        .simultaneousGesture(pullToRefreshGesture)
     }
 
     var navigationBar: some View {
@@ -177,43 +194,34 @@ private extension GoalDetailView {
             DragGesture()
                 .onChanged { value in
                     guard !store.isEditing else { return }
-                    let translation = value.translation
-                    let width = resistedDragWidth(
-                        for: translation.width,
-                        velocity: value.velocity.width
+                    dragState.updateCard(
+                        translation: value.translation,
+                        velocityWidth: value.velocity.width,
+                        maxCardOffset: Constants.maxCardOffset,
+                        dragVelocityThreshold: Constants.dragVelocityThreshold,
+                        minimumDragResistance: Constants.minimumDragResistance
                     )
-                    guard abs(width) >= abs(translation.height) else {
-                        resetDragState()
-                        return
-                    }
-                    
-                    let maxOffset = Constants.maxCardOffset * 2
-                    
-                    guard (-maxOffset...maxOffset).contains(width) else {
-                        return
-                    }
-                    
-                    cardOffset = repeatedCardOffset(for: width)
-                    isCrossingDuringDrag = shouldCrossCards(for: width)
                 }
                 .onEnded { value in
                     guard !store.isEditing else { return }
-                    
-                    let translation = value.translation
-                    let width = resistedDragWidth(
-                        for: translation.width,
-                        velocity: value.velocity.width
-                    )
-                    
-                    guard abs(width) >= abs(translation.height) else {
+                    guard dragState.axis != .vertical else {
+                        dragState.resetCard()
+                        return
+                    }
+                    guard dragState.shouldCompleteCardSwipe(
+                        translation: value.translation,
+                        velocityWidth: value.velocity.width,
+                        dragVelocityThreshold: Constants.dragVelocityThreshold,
+                        minimumDragResistance: Constants.minimumDragResistance
+                    ) else {
                         withAnimation(.spring(response: 0.2, dampingFraction: 0.94)) {
-                            resetDragState()
+                            dragState.reset()
                         }
                         return
                     }
 
                     withAnimation(.spring(response: 0.2, dampingFraction: 0.94)) {
-                        resetDragState()
+                        dragState.reset()
                         store.send(.view(.cardSwiped))
                     }
                 }
@@ -235,7 +243,7 @@ private extension GoalDetailView {
             imageURL: store.myCard?.imageUrl,
             showsMyEmoji: effectiveIsFrontMyCard && store.selectedReactionEmoji != nil
         )
-        .offset(x: cardOffset * (effectiveIsFrontMyCard ? 1 : -1))
+        .offset(x: dragState.cardOffset * (effectiveIsFrontMyCard ? 1 : -1))
     }
     
     @ViewBuilder
@@ -247,7 +255,7 @@ private extension GoalDetailView {
             imageURL: store.partnerCard?.imageUrl,
             showsMyEmoji: false
         )
-        .offset(x: cardOffset * (effectiveIsFrontMyCard ? -1 : 1))
+        .offset(x: dragState.cardOffset * (effectiveIsFrontMyCard ? -1 : 1))
         .rotationEffect(.degrees(-8))
     }
     
@@ -454,7 +462,7 @@ private extension GoalDetailView {
                 .padding(.bottom, 26)
                 .frame(width: rectFrame.width, height: rectFrame.height, alignment: .bottom)
                 .rotationEffect(frontCardRotation)
-                .offset(x: posX + cardOffset, y: posY - keyboardInset)
+                .offset(x: posX + dragState.cardOffset, y: posY - keyboardInset)
                 .animation(.easeOut(duration: 0.25), value: keyboardInset)
         }
     }
@@ -556,8 +564,40 @@ private extension GoalDetailView {
 
 // MARK: - Methods
 private extension GoalDetailView {
+    var pullToRefreshGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                guard !store.isEditing,
+                      !store.isRefreshing,
+                      !store.isLoading else { return }
+
+                dragState.updatePull(
+                    translation: value.translation,
+                    maxOffset: Constants.maxPullToRefreshOffset
+                )
+            }
+            .onEnded { _ in
+                guard dragState.axis != .horizontal else { return }
+
+                let shouldRefresh = dragState.shouldRefresh(
+                    threshold: Constants.pullToRefreshThreshold
+                )
+
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.94)) {
+                    dragState.reset()
+                }
+
+                guard shouldRefresh,
+                      !store.isEditing,
+                      !store.isRefreshing,
+                      !store.isLoading else { return }
+
+                store.send(.view(.refreshPulled))
+            }
+    }
+
     var effectiveIsFrontMyCard: Bool {
-        isCrossingDuringDrag ? !store.isFrontMyCard : store.isFrontMyCard
+        dragState.isCrossingDuringCardDrag ? !store.isFrontMyCard : store.isFrontMyCard
     }
 
     var keyboardInset: CGFloat {
@@ -572,37 +612,6 @@ private extension GoalDetailView {
         effectiveIsFrontMyCard ? store.myCardIsCompleted : store.partnerCardIsCompleted
     }
 
-    func repeatedCardOffset(for width: CGFloat) -> CGFloat {
-        let maxOffset = Constants.maxCardOffset
-        let direction: CGFloat = width >= 0 ? 1 : -1
-        let progress = abs(width).truncatingRemainder(dividingBy: maxOffset * 2)
-        let offset = progress <= maxOffset ? progress : maxOffset * 2 - progress
-        
-        return offset * direction
-    }
-
-    func shouldCrossCards(for width: CGFloat) -> Bool {
-        abs(width).truncatingRemainder(dividingBy: Constants.maxCardOffset * 2) > Constants.maxCardOffset
-    }
-
-    func resistedDragWidth(for proposedWidth: CGFloat, velocity: CGFloat) -> CGFloat {
-        let speed = abs(velocity)
-        guard speed > Constants.dragVelocityThreshold else {
-            return proposedWidth
-        }
-
-        let overflow = min(
-            (speed - Constants.dragVelocityThreshold) / Constants.dragVelocityThreshold,
-            1
-        )
-        let resistance = 1 - (overflow * (1 - Constants.minimumDragResistance))
-        return proposedWidth * resistance
-    }
-
-    func resetDragState() {
-        cardOffset = .zero
-        isCrossingDuringDrag = false
-    }
 }
 
 // MARK: - Constants
@@ -615,6 +624,8 @@ private extension GoalDetailView {
         static let maxCardOffset: CGFloat = 100
         static let dragVelocityThreshold: CGFloat = 1200
         static let minimumDragResistance: CGFloat = 0.35
+        static let pullToRefreshThreshold: CGFloat = 80
+        static let maxPullToRefreshOffset: CGFloat = 120
         static var cardTopPadding: CGFloat { isSEDevice ? 34 : 89 }
         static var cardSize: CGFloat { isSEDevice ? 321 : 336 }
         static let reactionBarHeight: CGFloat = 77

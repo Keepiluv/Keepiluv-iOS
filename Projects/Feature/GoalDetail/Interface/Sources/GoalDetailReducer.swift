@@ -97,6 +97,7 @@ public struct GoalDetailReducer {
         public var isShowReactionBar: Bool { !isFrontMyCard && isCompleted }
         public var isLoading: Bool { item == nil }
         public var isFetchFailed: Bool = false
+        public var isRefreshing: Bool = false
         public var isEditing: Bool = false
         public var isSavingPhotoLog: Bool = false
         public var pendingEditedImageData: Data?
@@ -151,6 +152,7 @@ public struct GoalDetailReducer {
             case proofPhotoDismissed
             case cameraPermissionAlertDismissed
             case dataRetryTapped
+            case refreshPulled
         }
 
         // MARK: - Internal
