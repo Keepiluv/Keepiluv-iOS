@@ -110,6 +110,21 @@ extension GoalDetailReducer {
 
             case .view(.dataRetryTapped):
                 return .send(.view(.onAppear))
+
+            case .view(.refreshPulled):
+                let date = state.verificationDate
+                let goalId = state.goalId
+                state.isRefreshing = true
+                state.isFetchFailed = false
+
+                return .run { send in
+                    do {
+                        let item = try await goalClient.fetchGoalDetail(date, goalId)
+                        await send(.response(.fethedGoalDetailItem(item)))
+                    } catch {
+                        await send(.response(.fetchGoalDetailFailed))
+                    }
+                }
                 
                 // MARK: - Action
             case .view(.bottomButtonTapped):
@@ -211,6 +226,7 @@ extension GoalDetailReducer {
             case let .response(.fethedGoalDetailItem(item)):
                 state.item = item
                 state.isFetchFailed = false
+                state.isRefreshing = false
                 if let goalIndex = state.completedGoalItems.firstIndex(where: {
                     $0.myPhotoLog?.goalId == state.goalId || $0.yourPhotoLog?.goalId == state.goalId
                 }) {
@@ -226,6 +242,7 @@ extension GoalDetailReducer {
                 
             case .response(.fetchGoalDetailFailed):
                 state.isFetchFailed = true
+                state.isRefreshing = false
                 return .none
                 
             case let .response(.updateCurrentCardReaction(photoLogId: photoLogId, reaction: reaction)):
