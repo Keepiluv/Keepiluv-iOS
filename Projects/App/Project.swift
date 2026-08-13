@@ -64,6 +64,32 @@ private let commonBuildSettings: SettingsDictionary = [
     "API_BASE_URL": "https://api.dev.teamtwix.com"
 ]
 
+// MARK: - Xcode Cloud 서명 분기
+
+/// Xcode Cloud 빌드 여부. `ci_scripts/ci_post_clone.sh` 가 `TUIST_XCODE_CLOUD` 를 설정한다.
+///
+/// `ProjectDescription.Environment` 로 완전 수식해야 한다 — 이 저장소에는 `Project.Environment`
+/// 가 따로 있어서(`Tuist/ProjectDescriptionHelpers/Project/Project+Environment.swift`) 짧게
+/// `Environment` 라고 쓰면 그쪽으로 해석된다.
+///
+/// 이 파일은 Swift top-level script 모드로 컴파일되므로 선언 순서가 의미를 갖는다.
+/// 아래 `let project` 보다 반드시 먼저 선언되어 있어야 한다.
+private let isXcodeCloudBuild = ProjectDescription.Environment.xcodeCloud.getBoolean(default: false)
+
+/// Xcode Cloud 는 cloud-managed 자동 서명을 쓰며 match 프로파일이 존재하지 않는다.
+/// `CODE_SIGN_STYLE` 만 뒤집어서는 부족하고 `PROVISIONING_PROFILE_SPECIFIER` 도 비워야 한다.
+///
+/// `DEVELOPMENT_TEAM` 은 그대로 둔다 — 자동 서명에도 팀 정보는 필요하다.
+///
+/// 플래그가 꺼져 있으면 빈 딕셔너리이고 `merging([:])` 는 항등이므로, 로컬 `make generate`
+/// 와 기존 GitHub Actions + fastlane 경로의 생성 결과는 한 바이트도 달라지지 않는다.
+private let xcodeCloudSigningOverrides: SettingsDictionary = isXcodeCloudBuild
+    ? [
+        "CODE_SIGN_STYLE": "Automatic",
+        "PROVISIONING_PROFILE_SPECIFIER": ""
+    ]
+    : [:]
+
 // MARK: - Project
 
 let project = Project(
@@ -82,7 +108,7 @@ let project = Project(
                 settings: .settings(
                     base: commonBuildSettings.merging([
                         "PROVISIONING_PROFILE_SPECIFIER": "match Development \(Project.Environment.BundleId.bundlePrefix)"
-                    ])
+                    ]).merging(xcodeCloudSigningOverrides)
                 )
             )
         ),
@@ -106,7 +132,7 @@ let project = Project(
                     base: commonBuildSettings.merging([
                         "PROVISIONING_PROFILE_SPECIFIER": "match Development \(Project.Environment.BundleId.bundlePrefix)",
                         "SWIFT_ACTIVE_COMPILATION_CONDITIONS": "DEBUG CORE_LOGGING_DEBUG"
-                    ])
+                    ]).merging(xcodeCloudSigningOverrides)
                 )
             )
         )
