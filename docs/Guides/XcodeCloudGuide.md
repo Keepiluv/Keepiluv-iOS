@@ -129,20 +129,23 @@ Apple 문서(*Writing custom build scripts*)에 이런 문장이 있습니다:
 
 ---
 
-## 7. dSYM — 미해결 공백 ⚠️
+## 7. dSYM
 
-**Xcode Cloud로 올라간 빌드는 Crashlytics에 dSYM이 등록되지 않습니다. 해당 빌드의 크래시 리포트는 심볼화되지 않습니다.**
+`ci_scripts/ci_post_xcodebuild.sh`가 아카이브 안의 dSYM 전부(앱 + 프레임워크)를 Crashlytics에 올립니다.
 
-`Tuist/ProjectDescriptionHelpers/Scripts/CrashlyticsScript.swift:14-17`의 빌드 페이즈 스크립트가 `CI=true`면 "fastlane이 처리한다"며 업로드를 건너뜁니다. Xcode Cloud도 `CI=true`를 설정하지만 fastlane은 돌지 않으므로, 아무도 올리지 않습니다.
+경로별 담당이 겹치지 않습니다.
 
-GitHub Actions 경로는 영향이 없습니다 — `fastlane deploy_*`가 `upload_symbols_to_crashlytics`를 직접 호출합니다.
+| 경로 | dSYM 업로드 주체 |
+|---|---|
+| 로컬 개발 | 빌드 페이즈 스크립트 (`CrashlyticsScript.swift`, `CI` 미설정) |
+| GitHub Actions | `fastlane upload_symbols_to_crashlytics` |
+| Xcode Cloud | `ci_post_xcodebuild.sh` |
 
-해결 방법 두 가지 (아직 적용 안 됨):
+`CrashlyticsScript.swift:14-17`이 `CI=true`일 때 건너뛰는 동작은 그대로 두었습니다. Xcode Cloud도 `CI=true`를 설정하므로 그 자리를 이 스크립트가 대신 메웁니다.
 
-- `ci_scripts/ci_post_xcodebuild.sh`를 추가해 `$CI_ARCHIVE_PATH`의 dSYM을 업로드
-- `CrashlyticsScript.swift`의 분기 조건을 `CI=true`가 아니라 "GitHub Actions일 때만 skip"으로 좁힘 (`GITHUB_ACTIONS` 환경변수 사용)
+**실패 정책:** 업로드가 실패하면 **빌드를 실패시킵니다.** dSYM이 조용히 빠지는 상황이 이 스크립트를 만들게 된 원인이기 때문입니다. 경고만 남기고 넘기려면 스크립트 끝부분의 `exit 1`을 `exit 0`으로 바꾸면 됩니다.
 
-임시로는 App Store Connect에서 dSYM을 내려받아 Crashlytics에 수동 업로드할 수 있습니다.
+아카이브가 아닌 액션이거나 `xcodebuild`가 실패한 빌드에서는 그냥 건너뜁니다(`exit 0`).
 
 ---
 
@@ -150,8 +153,8 @@ GitHub Actions 경로는 영향이 없습니다 — `fastlane deploy_*`가 `uplo
 
 Xcode Cloud가 안정화되어 GitHub Actions CD를 폐기할 때 필요한 작업입니다.
 
-- **dSYM 공백 해소** (7절) — 현재 유일한 실질 미해결 항목
 - ~~빌드번호 전략 통일~~ — 완료. 양쪽 모두 UTC `YYMMDDHHMM`
+- ~~dSYM 공백 해소~~ — 완료. `ci_post_xcodebuild.sh`
 - `.github/workflows/cd_develop.yml`, `cd_main.yml`, `ci_pr.yml` 및 fastlane 자산 정리
 - `.gitignore`의 fastlane 블록이 존재하지 않는 `src/` 경로를 가리키고 있어 `fastlane/report.xml` 등이 실제로는 무시되지 않는 문제
 
