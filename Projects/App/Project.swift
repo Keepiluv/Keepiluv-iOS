@@ -31,7 +31,7 @@ private let commonInfoPlist: [String: Plist.Value] = Project.Environment.InfoPli
     "DEEPLINK_HOST": "$(DEEPLINK_HOST)",
     "API_BASE_URL": "$(API_BASE_URL)",
     "NSCameraUsageDescription": "UseCamera",
-    "CFBundleShortVersionString": "1.1.4"
+    "CFBundleShortVersionString": "1.1.5"
 ], uniquingKeysWith: { current, _ in current })
 
 private let commonDependencies: [TargetDependency] = [
