@@ -177,9 +177,10 @@ platform :ios do
       is_key_content_base64: true
     )
 
-    commit_count = sh("git rev-list --count HEAD").strip.to_i
-    run_number = (ENV["GITHUB_RUN_NUMBER"] || "0").to_i
-    new_build = commit_count * 100 + (run_number % 100)
+    # 빌드번호 = UTC YYMMDDHHMM. ci_scripts/ci_pre_xcodebuild.sh 와 동일한 규칙이다.
+    # TwixDebug 와 Twix 는 번들 ID 가 같아 App Store Connect 앱 레코드를 공유하므로,
+    # GitHub Actions 와 Xcode Cloud 가 같은 규칙을 써야 서로의 업로드를 막지 않는다.
+    new_build = Time.now.utc.strftime("%y%m%d%H%M")
 
     sh("cd .. && /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion #{new_build}' Projects/App/Derived/InfoPlists/TwixDebug-Info.plist")
 
@@ -222,9 +223,10 @@ platform :ios do
       is_key_content_base64: true
     )
 
-    commit_count = sh("git rev-list --count HEAD").strip.to_i
-    run_number = (ENV["GITHUB_RUN_NUMBER"] || "0").to_i
-    new_build = commit_count * 100 + (run_number % 100)
+    # 빌드번호 = UTC YYMMDDHHMM. ci_scripts/ci_pre_xcodebuild.sh 와 동일한 규칙이다.
+    # TwixDebug 와 Twix 는 번들 ID 가 같아 App Store Connect 앱 레코드를 공유하므로,
+    # GitHub Actions 와 Xcode Cloud 가 같은 규칙을 써야 서로의 업로드를 막지 않는다.
+    new_build = Time.now.utc.strftime("%y%m%d%H%M")
 
     sh("cd .. && /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion #{new_build}' Projects/App/Derived/InfoPlists/Twix-Info.plist")
 

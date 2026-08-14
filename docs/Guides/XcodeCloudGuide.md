@@ -8,7 +8,7 @@
 
 이 저장소는 Tuist로 프로젝트를 생성하고 `.xcodeproj` / `.xcworkspace`를 커밋하지 않습니다(`.gitignore`). Xcode Cloud는 clone 직후 `ci_scripts/ci_post_clone.sh`가 프로젝트를 생성해야만 빌드할 대상을 갖습니다.
 
-병행 기간 동안 Xcode Cloud는 **아카이브까지만** 수행하고 TestFlight·App Store 업로드는 하지 않습니다. 기존 GitHub Actions가 이미 `commit_count * 100 + (GITHUB_RUN_NUMBER % 100)` 규칙으로 빌드번호를 올리고 있어, Xcode Cloud의 `CI_BUILD_NUMBER`(1부터 시작)와 같은 앱 레코드에서 충돌하기 때문입니다.
+`TwixDebug`와 `Twix`는 번들 ID가 `org.yapp.twix`로 같아 **App Store Connect 앱 레코드를 공유**합니다. 즉 GitHub Actions CD와 Xcode Cloud가 같은 레코드에 업로드합니다. 두 파이프라인이 서로의 업로드를 막지 않으려면 빌드번호 규칙이 같아야 하며, 현재 양쪽 모두 **UTC `YYMMDDHHMM`** 을 씁니다(아래 4절).
 
 ---
 
@@ -17,7 +17,9 @@
 | 파일 | 역할 |
 |---|---|
 | `ci_scripts/ci_post_clone.sh` | mise 확보 → Tuist 설치 → `tuist install` → `tuist generate` |
+| `ci_scripts/ci_pre_xcodebuild.sh` | 생성된 Info.plist 에 `CFBundleVersion` 주입 (UTC `YYMMDDHHMM`) |
 | `Projects/App/Project.swift` | `TUIST_XCODE_CLOUD` 플래그에 따른 서명 분기 |
+| `fastlane/Fastfile` | 빌드번호 규칙을 위 스크립트와 동일하게 통일 |
 
 ### 서명 분기가 필요한 이유
 
@@ -36,6 +38,19 @@ Xcode Cloud는 cloud-managed 자동 서명을 쓰고 match 프로파일이 존�
 Tuist 매니페스트는 `TUIST_` 접두 환경변수만 읽으므로 Xcode Cloud의 `CI_XCODE_CLOUD`를 직접 볼 수 없습니다. `ci_post_clone.sh`가 이를 `TUIST_XCODE_CLOUD`로 번역합니다.
 
 `getBoolean`은 `1` / `true` / `TRUE` / `yes` / `YES`만 참으로 읽고 나머지는 **조용히 기본값(false)** 으로 떨어집니다. 값을 그대로 넘기면 표기가 달라졌을 때 아무 경고 없이 Manual 서명으로 빌드되므로, 스크립트가 `true` / `false` 리터럴로 정규화해서 내보냅니다.
+
+### 빌드번호
+
+Tuist가 생성하는 Info.plist의 `CFBundleVersion` 기본값은 `1`입니다. 그대로 아카이브하면 App Store Connect가 "이미 올라간 빌드보다 높아야 한다"며 거부합니다. `ci_pre_xcodebuild.sh`가 아카이브 직전에 주입합니다.
+
+| | 규칙 |
+|---|---|
+| 이전 (GitHub Actions 전용) | `commit_count * 100 + (GITHUB_RUN_NUMBER % 100)` |
+| 현재 (양쪽 공통) | UTC `YYMMDDHHMM` |
+
+이전 규칙을 Xcode Cloud에 그대로 가져올 수 없었던 이유: 같은 커밋에서 GHA의 `GITHUB_RUN_NUMBER % 100`과 Xcode Cloud의 `CI_BUILD_NUMBER % 100`은 서로 무관한 카운터라 0~99 슬롯이 겹칩니다. 이전 규칙은 같은 커밋에서 재실행할 때 번호가 역행할 수도 있었습니다(run 199 → 75499, run 200 → 75400).
+
+**한계:** 분 단위 해상도라 같은 분에 두 번 업로드하면 충돌합니다. 그 경우 재실행하면 됩니다. `CFBundleVersion` 구성요소 상한이 2³²−1이라 이 규칙은 2042년까지 유효합니다.
 
 ---
 
@@ -62,9 +77,8 @@ Xcode에서 진행합니다 (App Store Connect 웹에서는 최초 생성이 제
 | 항목 | 값 | 이유 |
 |---|---|---|
 | **Xcode 버전** | **26.4.1** | `.github/actions/setup-build-env/action.yml`이 고정한 버전과 일치시킵니다 |
-| **Action** | **Archive** 만 | 병행 기간에는 배포하지 않습니다 |
-| **Scheme** | `TwixDebug` (먼저) → `Twix` | 위험이 낮은 쪽부터 검증합니다 |
-| **Post-Actions** | **없음** (TestFlight·App Store 비활성) | 빌드번호 충돌 회피 |
+| **Action** | **Archive** | |
+| **Scheme** | `Twix` (App Store) / `TwixDebug` (TestFlight) | |
 | **Start Conditions** | 대상 브랜치 한정 권장 | 모든 PR에 걸면 컴퓨트 시간을 빠르게 소진합니다 |
 | **테스트 액션** | 넣지 않음 | 이 프로젝트에는 테스트 실행이 정착되어 있지 않습니다 |
 
@@ -109,17 +123,26 @@ Apple 문서(*Writing custom build scripts*)에 이런 문장이 있습니다:
 
 동일한 구성(Tuist + gitignore된 프로젝트 + `ci_post_clone.sh`)에서 워크플로 생성 시 브랜치 선택기가 비어버린다는 [미해결 포럼 리포트](https://developer.apple.com/forums/thread/821480)가 있습니다.
 
-**저장소 측에서 해결할 수 없는 문제입니다.** 실제로 시도해봐야 판명됩니다.
+**이 저장소에서는 발생하지 않았습니다.** 2026-08-13 첫 빌드에서 `Run ci_post_clone.sh script`(1분 24초) → `Resolve package dependencies` → `Run xcodebuild archive`(5분 19초) → ad-hoc / development / app-store export 3종이 모두 통과했습니다. Xcode 26.4.1 / macOS Tahoe 26.5.1 환경.
+
+다만 Apple이 보장하지 않는 구성이라는 점은 그대로입니다. Xcode·Tuist 버전을 올릴 때 이 경로가 먼저 깨질 수 있다고 보고 확인하세요.
 
 ---
 
-## 7. dSYM 방침 (병행 기간)
+## 7. dSYM — 미해결 공백 ⚠️
 
-**Xcode Cloud 빌드는 dSYM을 업로드하지 않습니다.** 배포를 하지 않으므로 실제 공백은 없습니다.
+**Xcode Cloud로 올라간 빌드는 Crashlytics에 dSYM이 등록되지 않습니다. 해당 빌드의 크래시 리포트는 심볼화되지 않습니다.**
 
-다만 Xcode Cloud에서 배포를 켤 때는 반드시 재검토해야 합니다. `Tuist/ProjectDescriptionHelpers/Scripts/CrashlyticsScript.swift`의 빌드 페이즈 스크립트가 `CI=true`일 때 "fastlane이 처리한다"며 업로드를 건너뛰는데, **Xcode Cloud도 `CI=true`를 설정하면서 fastlane은 돌지 않습니다.** 그대로 배포를 켜면 dSYM이 아무 데도 올라가지 않습니다.
+`Tuist/ProjectDescriptionHelpers/Scripts/CrashlyticsScript.swift:14-17`의 빌드 페이즈 스크립트가 `CI=true`면 "fastlane이 처리한다"며 업로드를 건너뜁니다. Xcode Cloud도 `CI=true`를 설정하지만 fastlane은 돌지 않으므로, 아무도 올리지 않습니다.
 
-해결하려면 `ci_scripts/ci_post_xcodebuild.sh`를 추가하거나 위 스크립트의 분기 조건을 좁혀야 합니다. 둘 다 이번 범위 밖입니다.
+GitHub Actions 경로는 영향이 없습니다 — `fastlane deploy_*`가 `upload_symbols_to_crashlytics`를 직접 호출합니다.
+
+해결 방법 두 가지 (아직 적용 안 됨):
+
+- `ci_scripts/ci_post_xcodebuild.sh`를 추가해 `$CI_ARCHIVE_PATH`의 dSYM을 업로드
+- `CrashlyticsScript.swift`의 분기 조건을 `CI=true`가 아니라 "GitHub Actions일 때만 skip"으로 좁힘 (`GITHUB_ACTIONS` 환경변수 사용)
+
+임시로는 App Store Connect에서 dSYM을 내려받아 Crashlytics에 수동 업로드할 수 있습니다.
 
 ---
 
@@ -127,8 +150,8 @@ Apple 문서(*Writing custom build scripts*)에 이런 문장이 있습니다:
 
 Xcode Cloud가 안정화되어 GitHub Actions CD를 폐기할 때 필요한 작업입니다.
 
-- 빌드번호 전략 통일 — `CI_BUILD_NUMBER` vs 현재의 `commit_count * 100 + run # % 100`. **Xcode Cloud 업로드를 켜기 전 필수**
-- `ci_post_xcodebuild.sh` + dSYM 업로드 + `CrashlyticsScript.swift`의 `CI=true` 분기 재검토
+- **dSYM 공백 해소** (7절) — 현재 유일한 실질 미해결 항목
+- ~~빌드번호 전략 통일~~ — 완료. 양쪽 모두 UTC `YYMMDDHHMM`
 - `.github/workflows/cd_develop.yml`, `cd_main.yml`, `ci_pr.yml` 및 fastlane 자산 정리
 - `.gitignore`의 fastlane 블록이 존재하지 않는 `src/` 경로를 가리키고 있어 `fastlane/report.xml` 등이 실제로는 무시되지 않는 문제
 
